@@ -1,11 +1,15 @@
-/* Shared EverittOS type roles only. Layout belongs to the canonical stage files. */
+/* Shared EverittOS type roles and spacing. */
 :root {
   --eo-type-ink: #132433;
   --eo-type-muted: #526777;
   --eo-type-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --eo-space-xs: 8px;
+  --eo-space-sm: 12px;
+  --eo-space-md: 16px;
+  --eo-space-lg: 22px;
+  --eo-space-xl: 28px;
 }
 
-/* Keep Manrope inside app content; footer and tab chrome may retain their own system treatment. */
 .dashboard-shell .app-page-content,
 .dashboard-shell .app-page-content input,
 .dashboard-shell .app-page-content select,
@@ -15,7 +19,6 @@
   font-family: var(--eo-type-family) !important;
 }
 
-/* Page title */
 .dashboard-shell .app-page-content h1,
 .dashboard-shell .app-page-content .page-header h1,
 .dashboard-shell .app-page-content .page-head h1 {
@@ -26,7 +29,6 @@
   letter-spacing: -0.025em !important;
 }
 
-/* Card and section title */
 .dashboard-shell .app-page-content h2,
 .dashboard-shell .app-page-content h3,
 .dashboard-shell .app-page-content .job-card-title,
@@ -39,7 +41,6 @@
   letter-spacing: -0.01em !important;
 }
 
-/* Body and row labels */
 .dashboard-shell .app-page-content p,
 .dashboard-shell .app-page-content label,
 .dashboard-shell .app-page-content li,
@@ -51,7 +52,6 @@
   line-height: 1.45 !important;
 }
 
-/* Meta */
 .dashboard-shell .app-page-content .meta,
 .dashboard-shell .app-page-content .muted,
 .dashboard-shell .app-page-content .page-subtitle,
@@ -65,7 +65,6 @@
   opacity: 1 !important;
 }
 
-/* Buttons */
 .dashboard-shell .app-page-content .btn,
 .dashboard-shell .app-page-content button:not(.unstyled-button) {
   font-size: 15px !important;
@@ -73,7 +72,6 @@
   line-height: 1.2 !important;
 }
 
-/* Chips and status */
 .dashboard-shell .app-page-content .badge,
 .dashboard-shell .app-page-content .status,
 .dashboard-shell .app-page-content .status-pill,
@@ -91,4 +89,89 @@
 
 .dashboard-shell .app-page-content em {
   font-style: normal !important;
+}
+
+/* Universal content rhythm. Visual only, no behavior or data changes. */
+.dashboard-shell .app-page-content .card,
+.dashboard-shell .app-page-content .panel,
+.dashboard-shell .app-page-content .section-card,
+.dashboard-shell .app-page-content .content-card {
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-content .page-header,
+.dashboard-shell .app-page-content .page-head {
+  margin-bottom: var(--eo-space-lg) !important;
+}
+
+.dashboard-shell .app-page-content .page-header > * + *,
+.dashboard-shell .app-page-content .page-head > * + * {
+  margin-top: var(--eo-space-xs) !important;
+}
+
+.dashboard-shell .app-page-content .inline-actions,
+.dashboard-shell .app-page-content .button-row,
+.dashboard-shell .app-page-content .actions,
+.dashboard-shell .app-page-content .toolbar,
+.dashboard-shell .app-page-content .filter-actions,
+.dashboard-shell .app-page-content .jobs-actions,
+.dashboard-shell .app-page-content .customer-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: var(--eo-space-sm) !important;
+}
+
+.dashboard-shell .app-page-content .filter-row,
+.dashboard-shell .app-page-content .filters,
+.dashboard-shell .app-page-content .jobs-filters,
+.dashboard-shell .app-page-content .customer-tabs,
+.dashboard-shell .app-page-content .tabs,
+.dashboard-shell .app-page-content [role='tablist'] {
+  gap: var(--eo-space-sm) !important;
+}
+
+.dashboard-shell .app-page-content form > * + *,
+.dashboard-shell .app-page-content .form-grid > * + *,
+.dashboard-shell .app-page-content .field-stack > * + * {
+  margin-top: var(--eo-space-md) !important;
+}
+
+.dashboard-shell .app-page-content .card > h1 + *,
+.dashboard-shell .app-page-content .card > h2 + *,
+.dashboard-shell .app-page-content .card > h3 + *,
+.dashboard-shell .app-page-content section > h1 + *,
+.dashboard-shell .app-page-content section > h2 + *,
+.dashboard-shell .app-page-content section > h3 + * {
+  margin-top: var(--eo-space-md) !important;
+}
+
+.dashboard-shell .app-page-content .card + .card,
+.dashboard-shell .app-page-content section + section {
+  margin-top: var(--eo-space-lg) !important;
+}
+
+.dashboard-shell .app-page-content input,
+.dashboard-shell .app-page-content select,
+.dashboard-shell .app-page-content textarea,
+.dashboard-shell .app-page-content .btn,
+.dashboard-shell .app-page-content button:not(.unstyled-button) {
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-shell .app-page-content .inline-actions,
+  .dashboard-shell .app-page-content .button-row,
+  .dashboard-shell .app-page-content .actions,
+  .dashboard-shell .app-page-content .toolbar,
+  .dashboard-shell .app-page-content .filter-actions,
+  .dashboard-shell .app-page-content .jobs-actions,
+  .dashboard-shell .app-page-content .customer-actions {
+    gap: 12px !important;
+  }
+
+  .dashboard-shell .app-page-content .card + .card,
+  .dashboard-shell .app-page-content section + section {
+    margin-top: 20px !important;
+  }
 }
