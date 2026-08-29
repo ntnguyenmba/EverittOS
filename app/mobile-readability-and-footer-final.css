@@ -1,0 +1,105 @@
+/* Final signed-in readability and mobile chrome guard.
+   Keeps the Everitt hero visible, makes text readable everywhere, and prevents
+   legal/footer chrome from covering page content or actions. */
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: rgba(247, 249, 250, 0.62) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Empty/loading states are content, not structural wrappers. They always need
+   their own readable paper surface when shown over photography. */
+.dashboard-shell .empty-state.card,
+.role-portal-shell .empty-state.card,
+.contractor-main .empty-state.card,
+.client-main .empty-state.card {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border: 1px solid #d5dee5 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 34px rgba(9, 24, 35, 0.11) !important;
+  color: #132433 !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.dashboard-shell .empty-state h3,
+.dashboard-shell .empty-state p,
+.role-portal-shell .empty-state h3,
+.role-portal-shell .empty-state p,
+.contractor-main .empty-state h3,
+.contractor-main .empty-state p,
+.client-main .empty-state h3,
+.client-main .empty-state p {
+  color: #132433 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.dashboard-shell .empty-state p,
+.role-portal-shell .empty-state p,
+.contractor-main .empty-state p,
+.client-main .empty-state p {
+  color: #405668 !important;
+}
+
+/* Do not let the legal strip become a second fixed bar. It belongs at the end
+   of page content, while the primary mobile nav is the only fixed bottom UI. */
+@media (max-width: 1279px) {
+  .app-footer,
+  .dashboard-shell .app-footer {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 3 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    height: auto !important;
+    margin: 20px auto calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 10px 16px !important;
+    border: 1px solid rgba(36, 63, 83, 0.11) !important;
+    border-radius: 16px !important;
+    background: rgba(248, 250, 251, 0.97) !important;
+    box-shadow: 0 8px 24px rgba(9, 24, 35, 0.08) !important;
+  }
+
+  .dashboard-shell > .main {
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .dashboard-shell .app-page-content {
+    padding-bottom: 20px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-footer,
+  .dashboard-shell .app-footer {
+    width: 100% !important;
+    margin-top: 18px !important;
+    margin-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 10px 12px !important;
+  }
+
+  .app-footer-links,
+  .dashboard-shell .app-footer-links {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .app-footer-links a,
+  .dashboard-shell .app-footer-links a {
+    min-height: 30px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+}
