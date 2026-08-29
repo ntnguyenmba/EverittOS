@@ -2,15 +2,32 @@
 
 @media (max-width: 1100px), (hover: none) and (pointer: coarse) {
   .dashboard-shell .jobs-list-page {
-    gap: 14px !important;
+    gap: 20px !important;
+  }
+
+  .dashboard-shell .jobs-list-page > .page-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 18px !important;
+  }
+
+  .dashboard-shell .jobs-list-page > .page-header > div:first-child,
+  .dashboard-shell .jobs-list-page > .page-header h1,
+  .dashboard-shell .jobs-list-page > .page-header p {
+    width: 100% !important;
+    text-align: center !important;
   }
 
   .dashboard-shell .jobs-header-actions {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-    width: 100% !important;
+    gap: 12px !important;
+    width: min(100%, 660px) !important;
+    margin: 0 auto !important;
     align-items: stretch !important;
+    justify-content: center !important;
   }
 
   .dashboard-shell .jobs-header-actions > * {
@@ -19,6 +36,7 @@
     min-height: 48px !important;
     margin: 0 !important;
     justify-content: center !important;
+    align-items: center !important;
     text-align: center !important;
   }
 
@@ -26,12 +44,12 @@
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
     min-height: 0 !important;
     height: auto !important;
     margin: 0 !important;
-    padding: 8px !important;
+    padding: 10px !important;
     box-sizing: border-box !important;
     overflow: visible !important;
     white-space: normal !important;
@@ -44,10 +62,10 @@
     display: inline-flex !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 42px !important;
+    min-height: 44px !important;
     height: auto !important;
     margin: 0 !important;
-    padding: 9px 10px !important;
+    padding: 10px !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
@@ -74,15 +92,13 @@
     overflow: visible !important;
   }
 
-  .dashboard-shell .jobs-filter-heading {
-    display: none !important;
-  }
+  .dashboard-shell .jobs-filter-heading { display: none !important; }
 
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     align-items: stretch !important;
-    gap: 10px !important;
+    gap: 14px !important;
     width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
@@ -99,9 +115,7 @@
     padding: 0 !important;
   }
 
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
-    grid-column: 1 / -1 !important;
-  }
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) { grid-column: 1 / -1 !important; }
 
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control > span {
     position: absolute !important;
@@ -120,8 +134,8 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
-    min-height: 46px !important;
-    height: 46px !important;
+    min-height: 48px !important;
+    height: 48px !important;
     margin: 0 !important;
     padding: 8px 38px 8px 14px !important;
     box-sizing: border-box !important;
@@ -135,7 +149,7 @@
   }
 
   .dashboard-shell .jobs-advanced-filters > details {
-    margin: 8px 0 0 !important;
+    margin: 12px 0 0 !important;
     padding: 0 !important;
     border: 0 !important;
     background: transparent !important;
@@ -148,9 +162,9 @@
     align-items: center !important;
     justify-content: center !important;
     width: auto !important;
-    min-height: 42px !important;
+    min-height: 44px !important;
     margin: 0 8px 0 0 !important;
-    padding: 8px 14px !important;
+    padding: 9px 15px !important;
     border: 1px solid rgba(70,91,106,.22) !important;
     border-radius: 999px !important;
     background: rgba(255,255,255,.97) !important;
@@ -161,8 +175,8 @@
   }
 
   .dashboard-shell .jobs-advanced-filters > details[open] {
-    margin-top: 10px !important;
-    padding: 14px !important;
+    margin-top: 14px !important;
+    padding: 16px !important;
     border-radius: 18px !important;
     background: rgba(255,255,255,.98) !important;
     box-shadow: 0 18px 48px rgba(9,24,35,.12) !important;
@@ -171,9 +185,9 @@
   .dashboard-shell .jobs-advanced-filters > details[open] > .jobs-filter-grid {
     display: grid !important;
     grid-template-columns: minmax(0,1fr) !important;
-    gap: 10px !important;
+    gap: 12px !important;
     width: 100% !important;
-    margin-top: 10px !important;
+    margin-top: 12px !important;
     overflow: visible !important;
   }
 
@@ -207,7 +221,7 @@
   .dashboard-shell .jobs-list-more {
     width: fit-content !important;
     max-width: 100% !important;
-    margin: 16px auto 0 !important;
+    margin: 20px auto 0 !important;
     padding: 10px 14px !important;
     border: 1px solid rgba(19,36,51,.12) !important;
     border-radius: 14px !important;
@@ -221,44 +235,24 @@
     opacity: 1 !important;
   }
 
-  .dashboard-shell .jobs-operations-row {
-    padding: 18px !important;
-    border-radius: 20px !important;
-  }
-
-  .dashboard-shell .jobs-property-link {
-    font-size: 20px !important;
-    line-height: 1.22 !important;
-  }
-
-  .dashboard-shell .jobs-col-date {
-    padding-top: 10px !important;
-    margin-top: 10px !important;
-    border-top: 1px solid rgba(37,54,74,.10) !important;
-  }
+  .dashboard-shell .jobs-operations-row { padding: 18px !important; border-radius: 20px !important; }
+  .dashboard-shell .jobs-property-link { font-size: 20px !important; line-height: 1.22 !important; }
+  .dashboard-shell .jobs-col-date { padding-top: 10px !important; margin-top: 10px !important; border-top: 1px solid rgba(37,54,74,.10) !important; }
 }
 
 @media (max-width: 560px) {
   .dashboard-shell .jobs-header-actions {
     grid-template-columns: 1fr !important;
+    width: min(100%, 230px) !important;
+    gap: 12px !important;
   }
 
-  .dashboard-shell .jobs-filter-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
+  .dashboard-shell .jobs-filter-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 
 @media (max-width: 390px) {
   .dashboard-shell .jobs-filter-tabs,
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
-    grid-column: auto !important;
-  }
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid { grid-template-columns: 1fr !important; }
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) { grid-column: auto !important; }
 }
