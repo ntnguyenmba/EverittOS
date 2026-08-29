@@ -99,7 +99,9 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                     onError.accept(billingResult.getDebugMessage());
                     return;
                 }
-                productDetailsById.clear();
+                // Merge into the cache instead of clearing it. The billing screen loads
+                // several plan cards in parallel, and clearing here made whichever query
+                // completed last the only plan that could still be purchased.
                 List<Map<String, Object>> mapped = new ArrayList<>();
                 for (ProductDetails details : productDetailsList) {
                     productDetailsById.put(details.getProductId(), details);
@@ -128,28 +130,47 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
     public void launchPurchase(Activity activity, String productId, Consumer<String> onError) {
         ensureReady(() -> {
             ProductDetails details = productDetailsById.get(productId);
-            if (details == null) {
-                onError.accept("Product not loaded");
+            if (details != null) {
+                launchLoadedPurchase(activity, details, onError);
                 return;
             }
-            List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-            if (offers == null || offers.isEmpty()) {
-                onError.accept("No offer available");
-                return;
-            }
-            BillingFlowParams.ProductDetailsParams productDetailsParams =
-                    BillingFlowParams.ProductDetailsParams.newBuilder()
-                            .setProductDetails(details)
-                            .setOfferToken(offers.get(0).getOfferToken())
-                            .build();
-            BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
-                    .build();
-            BillingResult result = billingClient.launchBillingFlow(activity, flowParams);
-            if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                onError.accept(result.getDebugMessage());
-            }
+
+            // A user can tap before the price-loading request finishes. Load the exact
+            // subscription on demand instead of failing with "Product not loaded".
+            queryProducts(
+                    Collections.singletonList(productId),
+                    ignored -> {
+                        ProductDetails loaded = productDetailsById.get(productId);
+                        if (loaded == null) {
+                            onError.accept("Product unavailable");
+                            return;
+                        }
+                        launchLoadedPurchase(activity, loaded, onError);
+                    },
+                    onError
+            );
         }, onError);
+    }
+
+    private void launchLoadedPurchase(Activity activity, ProductDetails details, Consumer<String> onError) {
+        List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+        if (offers == null || offers.isEmpty()) {
+            onError.accept("No offer available");
+            return;
+        }
+
+        BillingFlowParams.ProductDetailsParams productDetailsParams =
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                        .setProductDetails(details)
+                        .setOfferToken(offers.get(0).getOfferToken())
+                        .build();
+        BillingFlowParams flowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
+                .build();
+        BillingResult result = billingClient.launchBillingFlow(activity, flowParams);
+        if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+            onError.accept(result.getDebugMessage());
+        }
     }
 
     public void queryExistingPurchases(Consumer<List<PlayBillingModels.PurchasePayload>> onSuccess, Consumer<String> onError) {
