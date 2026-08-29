@@ -1,0 +1,24 @@
+/* One navigation surface at a time. Does not change routes or page flow. */
+@media (min-width: 1280px) {
+  .dashboard-shell > .sidebar {
+    display: flex !important;
+  }
+
+  .dashboard-shell-header,
+  .mobile-nav,
+  .mobile-nav-bar,
+  .mobile-nav-menu-btn,
+  .mobile-nav-overlay,
+  .mobile-nav-overlay-portal,
+  .mobile-nav-drawer {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell > .sidebar {
+    display: none !important;
+  }
+}
