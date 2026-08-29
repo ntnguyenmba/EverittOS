@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canAccessNavHref } from '@/lib/nav-access';
-import { isAdminRole, isClientRole, isContractorRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { formatLocalDate, localDateFromIso, localTimeFromIso } from '@/lib/schedule-times';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
@@ -65,21 +65,13 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     setLoading(true); setLoadError(false);
-
-    /* The protected route has already passed the server auth boundary. Never
-       convert a slow browser Supabase handoff into a forced logout. */
     const auth = await withTimeout<{ data: { user: { id: string } | null }; error: Error | null }>(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') });
     let userId = auth.data.user?.id || null;
     if (!userId) {
       const session = await withTimeout(supabase.auth.getSession(), { data: { session: null }, error: new Error('Session timed out') });
       userId = session.data.session?.user?.id || null;
     }
-
-    if (!userId) {
-      setLoadError(true);
-      setLoading(false);
-      return;
-    }
+    if (!userId) { setLoadError(true); setLoading(false); return; }
 
     type ProfileRow = { plan?: string | null; role?: string | null };
     const [profileResult, organization] = await Promise.all([
@@ -101,11 +93,12 @@ export default function DashboardPage() {
     const needsAttention = activeJobs.filter((job) => { const status = String(job.status || '').toLowerCase(); const due = (job.due_date || '').slice(0, 10); return !job.assigned_to || status === 'new' || Boolean(due && due < today); }).length;
     const openLeadRows = ((leadsResult.data || []) as Array<{ id: string; pipeline_stage: string | null }>).filter((row) => !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open'));
     const nextJobRow = activeJobs.filter((job) => { const date = jobDateKey(job); return date && date >= today; }).sort((a, b) => jobSortKey(a).localeCompare(jobSortKey(b)))[0] || null;
-    setOps({ todayJobs: todayJobs.length, needsAttention, openLeads: openLeadRows.length, singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null, nextJob: nextJobRow ? { id: nextJobRow.id, title: String(nextJobRow.title || nextJobRow.customer_name || c.nextJob), detail: formatNextJobDetail(nextJobRow, locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US') } : null });
+    const dateLocale = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
+    setOps({ todayJobs: todayJobs.length, needsAttention, openLeads: openLeadRows.length, singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null, nextJob: nextJobRow ? { id: nextJobRow.id, title: String(nextJobRow.title || nextJobRow.customer_name || c.nextJob), detail: formatNextJobDetail(nextJobRow, dateLocale) } : null });
     setLoadError(Boolean(auth.error || profileResult.error || jobsResult.error || leadsResult.error)); setLoading(false);
   }
 
-  useEffect(() => { void loadDashboard(); }, []);
+  useEffect(() => { void loadDashboard(); }, [locale]);
   const staffView = isStaffRole(role); const ownerView = isAdminRole(role); const managerView = isManagerRole(role) && !ownerView; const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan); const showOperations = (ownerView || managerView) && !staffView; const openLeadsHref = ops.singleOpenLeadId ? `/leads/${ops.singleOpenLeadId}` : '/leads';
   return <AppShell plan={plan} role={role} showBackButton={false}><Suspense><DashboardAccessNotice /></Suspense><div className="today-page dashboard-home">
     {ownerView ? <section className="owner-home-sheet" aria-label={c.nextJob}><PageHeader title={todayTitle(locale)} /><div className="owner-home-primary"><span className="owner-home-kicker">{c.nextJob}</span><h2>{ops.nextJob?.title || c.noUpcomingJob}</h2>{ops.nextJob?.detail ? <p>{ops.nextJob.detail}</p> : null}<div className="owner-home-actions"><Link className="btn btn-primary" href={ops.nextJob ? `/jobs/${ops.nextJob.id}` : '/schedule'}>{ops.nextJob ? c.openJob : c.schedule}</Link>{canLink('/jobs') ? <Link className="btn" href="/jobs/create">{c.newJob}</Link> : null}</div></div>{loadError ? <div role="status" className="owner-load-note"><p className="muted">{c.loadError}</p><button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>{loading ? c.loading : c.retry}</button></div> : null}</section> : <PageHeader title={staffView ? t('dashboard.myWork') : c.todaysWork} />}
