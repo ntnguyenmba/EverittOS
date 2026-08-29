@@ -20,6 +20,11 @@
   -webkit-backdrop-filter: none !important;
 }
 
+/* Cached/offline diagnostics are internal fallback behavior, not worker-facing UI. */
+.contractor-main .contractor-dashboard > [role='status'] {
+  display: none !important;
+}
+
 /* The Worker hero itself must stay open, not become the tall white box seen in the screenshot. */
 .contractor-main .contractor-portal-hero.card,
 .contractor-main header.contractor-portal-hero.card {
