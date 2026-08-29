@@ -66,7 +66,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
           overflow-x: clip;
-          background: #5b6b78;
+          background: #e9eef2;
         }
         .dashboard-shell-background {
           position: fixed;
@@ -77,9 +77,9 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          opacity: 1;
-          filter: none;
-          transform: none;
+          opacity: 0.62;
+          filter: saturate(0.82) contrast(1.02) brightness(0.92);
+          transform: scale(1.015);
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { grid-area: side; display: flex; }
