@@ -1,27 +1,19 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense } from 'react';
-import { AppShell } from '@/components/app-shell';
-import { JobCreator } from '@/components/job-creator';
-import styles from '../new/job-form-simplify.module.css';
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export default function CreateJobPage() {
-  return (
-    <AppShell plan="free" role="owner">
-      <header className="page-header job-create-page-header">
-        <div>
-          <h1>Create job</h1>
-          <p className="page-subtitle">
-            Choose an existing customer or add a new one, then save the job.
-          </p>
-        </div>
-      </header>
+export default async function CreateJobPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const next = new URLSearchParams();
 
-      <div className={styles.formWrap}>
-        <Suspense fallback={<p className="loading-state">Loading form…</p>}>
-          <JobCreator onJobCreated={(jobId) => window.location.assign(`/jobs/${jobId}`)} />
-        </Suspense>
-      </div>
-    </AppShell>
-  );
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) next.append(key, item);
+    } else if (typeof value === 'string') {
+      next.set(key, value);
+    }
+  }
+
+  const query = next.toString();
+  redirect(query ? `/jobs/new?${query}` : '/jobs/new');
 }
