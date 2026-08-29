@@ -1,0 +1,23 @@
+/* Visual only: never glue status against pay or empty-state copy. */
+.status-badge + .portal-finance-empty::before,
+.status-badge + .portal-finance-amount::before,
+.portal-status-completed + strong::before,
+.portal-status-new + span::before {
+  content: '\00a0\00b7\00a0';
+}
+
+.dashboard-shell .status-badge,
+.contractor-dashboard .status-badge,
+.portal-job-finance .status-badge {
+  text-transform: capitalize !important;
+  letter-spacing: 0 !important;
+}
+
+.portal-job-finance,
+.job-card-meta,
+.client-job-card-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 12px !important;
+}
