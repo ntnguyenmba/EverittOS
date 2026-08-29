@@ -3,7 +3,7 @@
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell {
-  background: #6a7680 !important;
+  background: #5b6b78 !important;
   background-image: none !important;
 }
 
@@ -30,6 +30,7 @@
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
+  display: none !important;
   background: none !important;
   opacity: 0 !important;
   filter: none !important;
