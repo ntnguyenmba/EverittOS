@@ -1,8 +1,7 @@
-/* Final signed-in readability and mobile chrome guard.
-   Keeps the Everitt hero visible and crisp, makes text readable everywhere,
-   removes nested card wrappers, and prevents legal/footer chrome from covering content. */
+/* Hero-only compatibility layer.
+   Layout, stages, empty states, spacing, and footer chrome are owned by the
+   canonical shared files and must not be overridden here. */
 
-/* Universal hero treatment: preserve the actual photo instead of washing it in beige/milk. */
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
@@ -40,109 +39,12 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Structural wrappers around real cards/empty states must stay invisible. */
-.dashboard-shell .card:has(> .empty-state),
-.dashboard-shell .card:has(> .customer-card-row),
-.dashboard-shell .card:has(> .job-card),
-.dashboard-shell .card:has(> .record-card),
-.dashboard-shell .card:has(> .quote-card),
-.dashboard-shell .card:has(> .saved-quote-card),
-.role-portal-shell .card:has(> .empty-state),
-.contractor-main .card:has(> .empty-state),
-.client-main .card:has(> .empty-state) {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  padding: 0 !important;
-  overflow: visible !important;
-}
-
-/* The real empty-state card is the only visible surface. Give text breathing room. */
-.dashboard-shell .empty-state.card,
-.role-portal-shell .empty-state.card,
-.contractor-main .empty-state.card,
-.client-main .empty-state.card {
-  width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  padding: 26px 28px !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid #d5dee5 !important;
-  border-radius: 18px !important;
-  box-shadow: 0 14px 34px rgba(9, 24, 35, 0.11) !important;
-  color: #132433 !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-}
-
-.dashboard-shell .empty-state h3,
-.dashboard-shell .empty-state p,
-.role-portal-shell .empty-state h3,
-.role-portal-shell .empty-state p,
-.contractor-main .empty-state h3,
-.contractor-main .empty-state p,
-.client-main .empty-state h3,
-.client-main .empty-state p {
-  color: #132433 !important;
-  opacity: 1 !important;
-  text-shadow: none !important;
-  max-width: 100% !important;
-}
-
-.dashboard-shell .empty-state p,
-.role-portal-shell .empty-state p,
-.contractor-main .empty-state p,
-.client-main .empty-state p {
-  color: #405668 !important;
-}
-
-.dashboard-shell .empty-state-actions,
-.role-portal-shell .empty-state-actions,
-.contractor-main .empty-state-actions,
-.client-main .empty-state-actions {
-  width: 100% !important;
-  margin-top: 6px !important;
-}
-
-/* Do not let the legal strip become a second fixed bar. It belongs at the end
-   of page content, while the primary mobile nav is the only fixed bottom UI. */
 @media (max-width: 1279px) {
   .dashboard-shell,
   .contractor-dashboard-shell,
   .client-dashboard-shell,
   .role-portal-shell {
     background-attachment: scroll !important;
-  }
-
-  .app-footer,
-  .dashboard-shell .app-footer {
-    position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    z-index: 3 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 44px !important;
-    height: auto !important;
-    margin: 20px auto calc(92px + env(safe-area-inset-bottom, 0px)) !important;
-    padding: 10px 16px !important;
-    border: 1px solid rgba(36, 63, 83, 0.11) !important;
-    border-radius: 16px !important;
-    background: rgba(248, 250, 251, 0.97) !important;
-    box-shadow: 0 8px 24px rgba(9, 24, 35, 0.08) !important;
-  }
-
-  .dashboard-shell > .main {
-    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .dashboard-shell .app-page-content {
-    padding-bottom: 20px !important;
   }
 }
 
@@ -157,38 +59,5 @@
   .contractor-dashboard-shell .contractor-background,
   .client-dashboard-shell .contractor-background {
     background-position: 56% center !important;
-  }
-}
-
-@media (max-width: 560px) {
-  .dashboard-shell .empty-state.card,
-  .role-portal-shell .empty-state.card,
-  .contractor-main .empty-state.card,
-  .client-main .empty-state.card {
-    padding: 22px 20px !important;
-  }
-
-  .app-footer,
-  .dashboard-shell .app-footer {
-    width: 100% !important;
-    margin-top: 18px !important;
-    margin-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
-    padding: 10px 12px !important;
-  }
-
-  .app-footer-links,
-  .dashboard-shell .app-footer-links {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    width: 100% !important;
-  }
-
-  .app-footer-links a,
-  .dashboard-shell .app-footer-links a {
-    min-height: 30px !important;
-    font-size: 13px !important;
-    line-height: 1.2 !important;
   }
 }
