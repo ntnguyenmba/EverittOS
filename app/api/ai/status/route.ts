@@ -51,7 +51,18 @@ export async function GET() {
 
   if (admin && org) {
     const role = normalizeRole(org.role);
-    const everittteamApplies = await isEverittteamAccount(admin, user.id, org.ownerUserId);
+    let everittteamApplies = false;
+    try {
+      everittteamApplies = await isEverittteamAccount(admin, user.id, org.ownerUserId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const optionalPromoColumnMissing =
+        message.includes('stripe_promotion_code') &&
+        (message.includes('does not exist') || message.includes('42703'));
+      if (!optionalPromoColumnMissing) {
+        console.warn('[ai-status] optional EVERITTTEAM lookup failed', message);
+      }
+    }
 
     if (everittteamApplies) {
       const pool = await getEverittteamPoolUsage(admin);
