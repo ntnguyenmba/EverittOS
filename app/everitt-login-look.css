@@ -1,68 +1,29 @@
-/* Last visual file. Login photo + Everitt type/color. No flow changes. */
+/* Keep login type/color. Backdrop is owned by hero-last + AppShell overlay. */
 html,
 body,
-html body,
 .dashboard-shell,
 .dashboard-shell *,
 .role-portal-shell,
 .role-portal-shell *,
-.contractor-dashboard-shell,
-.client-dashboard-shell,
 .mobile-nav,
 .sidebar,
 .app-footer {
   font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
 }
 
-html body .dashboard-shell,
-html body .dashboard-shell.role-portal-shell,
-html body .contractor-dashboard-shell,
-html body .client-dashboard-shell {
-  background: #243f53 !important;
-  background-image: none !important;
-}
-
-html body .dashboard-shell-background,
-html body .role-portal-shell .dashboard-shell-background,
-html body .contractor-background,
-html body .contractor-dashboard-shell .contractor-background,
-html body .client-dashboard-shell .contractor-background {
-  background-color: #243f53 !important;
-  background-image: url('/hero.jpg') !important;
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
-  opacity: 1 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  mix-blend-mode: normal !important;
-  transform: none !important;
-}
-
-html body .dashboard-shell-background::after,
-html body .contractor-background::after,
-html body .dashboard-shell-overlay,
-html body .contractor-overlay {
-  content: none !important;
-  display: none !important;
-  background: none !important;
-  opacity: 0 !important;
-  backdrop-filter: none !important;
-}
-
-html body .dashboard-shell .card,
-html body .dashboard-shell .panel,
-html body .dashboard-shell .settings-card,
-html body .dashboard-shell .app-page-stage,
-html body .dashboard-shell .bookkeeping-metric-card,
-html body .dashboard-shell .bookkeeping-ledger {
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .app-page-stage,
+.dashboard-shell .bookkeeping-metric-card,
+.dashboard-shell .bookkeeping-ledger {
   background: #ffffff !important;
   color: #132433 !important;
 }
 
-html body .dashboard-shell .btn-primary,
-html body .dashboard-shell button[type='submit'],
-html body .dashboard-shell .bookkeeping-range.is-active {
+.dashboard-shell .btn-primary,
+.dashboard-shell button[type='submit'],
+.dashboard-shell .bookkeeping-range.is-active {
   background: #243f53 !important;
   border-color: #243f53 !important;
   color: #ffffff !important;

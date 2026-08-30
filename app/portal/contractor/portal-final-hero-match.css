@@ -1,41 +1,5 @@
-/* Worker and Client use the same login desk photo. No cream wash. */
-.contractor-dashboard-shell,
-.client-dashboard-shell {
-  background: #243f53 !important;
-}
-
+/* Worker/Client share login hero treatment from hero-last.css. */
 .contractor-main,
 .client-main {
   background: transparent !important;
-}
-
-.contractor-dashboard-shell .contractor-background,
-.client-dashboard-shell .contractor-background {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-  background-color: #243f53 !important;
-  background-image: url('/hero.jpg') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  opacity: 1 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  transform: none !important;
-}
-
-.contractor-dashboard-shell .contractor-overlay,
-.client-dashboard-shell .contractor-overlay {
-  display: none !important;
-  background: none !important;
-  opacity: 0 !important;
-}
-
-.contractor-sidebar,
-.contractor-main,
-.contractor-mobile-header {
-  position: relative !important;
-  z-index: 2 !important;
 }
