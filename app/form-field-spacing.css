@@ -1,0 +1,47 @@
+/* Universal: labels never sit on top of their boxes. */
+.dashboard-shell label,
+.role-portal-shell label,
+.contractor-main label,
+.client-main label,
+.quote-workspace label,
+.quote-compose label {
+  display: grid !important;
+  gap: var(--everitt-label-gap, 8px) !important;
+  align-content: start !important;
+}
+
+.dashboard-shell label > :is(input, select, textarea, .input),
+.role-portal-shell label > :is(input, select, textarea, .input),
+.quote-workspace label > :is(input, select, textarea, .input),
+.quote-compose label > :is(input, select, textarea, .input) {
+  margin-top: 0 !important;
+  width: 100% !important;
+}
+
+.dashboard-shell .form-grid,
+.quote-workspace .form-grid,
+.quote-compose .form-grid,
+.quote-pricing-settings .form-grid {
+  display: grid !important;
+  gap: var(--everitt-heading-gap, 16px) !important;
+}
+
+.quote-workspace,
+.quote-compose {
+  display: grid !important;
+  gap: var(--everitt-heading-gap, 16px) !important;
+}
+
+.quote-pricing-settings {
+  display: grid !important;
+  gap: var(--everitt-control-gap, 12px) !important;
+  padding: 16px 0 !important;
+}
+
+.quote-pricing-settings summary {
+  margin-bottom: var(--everitt-control-gap, 12px) !important;
+}
+
+.quote-pricing-settings .muted {
+  margin: 0 0 var(--everitt-control-gap, 12px) !important;
+}
