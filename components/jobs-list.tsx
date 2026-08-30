@@ -8,10 +8,12 @@ import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
+import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { formatMoneyUsd } from '@/lib/i18n/locale-format';
 import { displayPersonName } from '@/lib/exports/format';
-import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { clientPortalJobsPath } from '@/lib/portal-access';
+import { isClientRole, isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
@@ -57,6 +59,12 @@ function formatDate(job: Job, locale: string) {
     year: 'numeric',
     ...(job.scheduled_start && job.timezone ? { timeZone: job.timezone } : {})
   }).format(date);
+}
+
+function jobDetailHref(role: UserRole, jobId: string) {
+  if (isContractorRole(role)) return contractorJobDetailPath(jobId);
+  if (isClientRole(role)) return clientPortalJobsPath(jobId);
+  return `/jobs/${jobId}`;
 }
 
 export function JobsList() {
@@ -160,21 +168,42 @@ export function JobsList() {
                     <th>Assigned to</th>
                     {isOwner ? <th>Customer Pay</th> : null}
                     <th>Status</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((job) => {
                     const assigned = job.assigned_to ? workerNames[job.assigned_to] : displayPersonName(null, job.assigned_email);
+                    const href = jobDetailHref(role, job.id);
                     return (
-                      <tr key={job.id} className="jobs-operations-row">
+                      <tr
+                        key={job.id}
+                        className="jobs-operations-row"
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => router.push(href)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            router.push(href);
+                          }
+                        }}
+                      >
                         <td>{formatDate(job, localeCode)}</td>
                         <td>
-                          <Link href={`/jobs/${job.id}`}>{jobLabel(job)}</Link>
+                          <Link href={href} className="jobs-property-link" onClick={(event) => event.stopPropagation()}>
+                            {jobLabel(job)}
+                          </Link>
                           {isOwner && job.customer_name ? <div className="jobs-secondary">{job.customer_name}</div> : null}
                         </td>
                         <td>{assigned || (jobNeedsWorker(job) ? 'Unassigned' : '-')}</td>
                         {isOwner ? <td>{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '-'}</td> : null}
                         <td><StatusPill status={job.status} /></td>
+                        <td>
+                          <Link className="btn btn-sm" href={href} onClick={(event) => event.stopPropagation()}>
+                            Open
+                          </Link>
+                        </td>
                       </tr>
                     );
                   })}

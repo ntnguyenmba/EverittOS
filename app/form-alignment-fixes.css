@@ -120,13 +120,14 @@ a.btn {
 .auth-message,
 code { overflow-wrap: anywhere; }
 
-.contractor-job-card a[href*='/portal/contractor/jobs/'] { display: none; }
-
-#earnings a[href*='/portal/contractor/jobs/'] {
-  color: inherit;
-  cursor: default;
-  pointer-events: none;
-  text-decoration: none;
+.worker-job-link,
+.jobs-property-link,
+.client-job-card,
+a[href*="/jobs/"],
+a[href*="/portal/contractor/jobs/"],
+a[href*="/portal/client/jobs/"] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 /* Never expose internal overlay helper wording such as “Open … in a new tab” in the UI. */
@@ -329,16 +330,14 @@ code { overflow-wrap: anywhere; }
   .jobs-operations-table td { display: block; width: 100%; }
   .jobs-operations-row {
     position: relative;
-    padding: 14px 76px 14px 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid rgba(48,61,70,.12);
   }
   .jobs-operations-table td { padding: 4px 0; border: 0; }
   .jobs-col-actions {
-    position: absolute;
-    right: 12px;
-    top: 12px;
-    width: 48px !important;
-    text-align: right;
+    position: static;
+    width: auto !important;
+    text-align: left;
     z-index: 4;
   }
   .jobs-col-date,
