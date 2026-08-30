@@ -1,67 +1,47 @@
-/* Final shared navigation guard. Keep this stylesheet last in app/layout.tsx. */
-@media (min-width: 1280px) {
-  .dashboard-shell > .sidebar {
-    display: flex !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
-
-  .dashboard-shell-header,
-  .mobile-nav,
-  .mobile-nav-bar,
-  .mobile-nav-menu-btn,
-  .mobile-nav-overlay,
-  .mobile-nav-overlay-portal,
-  .mobile-nav-drawer {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
+/* Shared navigation: hamburger + drawer for owner, worker, and client. */
+.dashboard-shell > .sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
-@media (max-width: 1279px) {
-  .dashboard-shell > .sidebar {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
+.dashboard-shell-header {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: sticky;
+  top: 0;
+  z-index: 100 !important;
+}
 
-  .dashboard-shell-header {
-    display: block !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar,
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-language,
+.dashboard-shell-header .mobile-nav-language select,
+.dashboard-shell-header .mobile-nav-language button {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
 
-  .dashboard-shell-header .mobile-nav,
-  .dashboard-shell-header .mobile-nav-bar,
-  .dashboard-shell-header .mobile-nav-menu-btn,
-  .dashboard-shell-header .mobile-nav-language,
-  .dashboard-shell-header .mobile-nav-language select,
-  .dashboard-shell-header .mobile-nav-language button {
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  position: relative;
+  z-index: 100 !important;
+}
 
-  .dashboard-shell-header,
-  .dashboard-shell-header .mobile-nav,
-  .dashboard-shell-header .mobile-nav-bar {
-    position: relative;
-    z-index: 100 !important;
-  }
+.dashboard-shell-header .mobile-nav-menu-btn {
+  position: relative;
+  z-index: 101 !important;
+  min-width: 44px;
+  min-height: 44px;
+}
 
-  .dashboard-shell-header .mobile-nav-menu-btn {
-    position: relative;
-    z-index: 101 !important;
-    min-width: 44px;
-    min-height: 44px;
-  }
+.mobile-nav-overlay-portal {
+  pointer-events: auto !important;
+}
 
-  .mobile-nav-overlay-portal {
-    pointer-events: auto !important;
-  }
-
-  .mobile-nav-drawer,
-  .mobile-nav-drawer * {
-    pointer-events: auto;
-  }
+.mobile-nav-drawer,
+.mobile-nav-drawer * {
+  pointer-events: auto;
 }

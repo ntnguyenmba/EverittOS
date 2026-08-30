@@ -34,7 +34,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
     : isClientPortal
       ? ' role-portal-shell role-portal-client'
       : '';
-  const shellClass = ['dashboard-shell', rolePortalClass.trim(), className].filter(Boolean).join(' ');
+  const shellClass = ['dashboard-shell', 'shared-hamburger-shell', rolePortalClass.trim(), className].filter(Boolean).join(' ');
 
   return (
     <div className={shellClass}>
@@ -61,9 +61,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           min-height: 100svh;
           width: 100%;
           max-width: 100vw;
-          display: grid;
-          grid-template-columns: 300px minmax(0, 1fr);
-          grid-template-areas: 'side main';
+          display: block;
           overflow-x: clip;
           background: #e9eef2;
         }
@@ -90,9 +88,17 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
             linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3));
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
-        .dashboard-shell > .sidebar { grid-area: side; display: flex; }
-        .dashboard-shell-header { display: none; }
-        .dashboard-shell > .main { grid-area: main; width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 28px clamp(20px,3vw,48px) 40px!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
+        .dashboard-shell > .sidebar { display: none; }
+        .dashboard-shell-header {
+          position: sticky;
+          top: 0;
+          z-index: 42;
+          display: block;
+          width: 100%;
+          padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+          box-sizing: border-box;
+        }
+        .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 14px max(20px,env(safe-area-inset-right)) 40px max(20px,env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
@@ -111,9 +117,6 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--everitt-section-gap)!important; }
         .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
         .role-portal-shell .metric-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
-        @media(max-width:1279px){
-          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell-background{background-position:56% center!important}
-        }
         @media(max-width:640px){
           .dashboard-shell-overlay{background:linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48))!important}
         }
