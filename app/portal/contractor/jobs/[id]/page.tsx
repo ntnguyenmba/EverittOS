@@ -39,24 +39,22 @@ export default function ContractorJobDetailPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const uid = sessionData.session?.user?.id || '';
     setUserId(uid);
-    if (uid) {
-      const cached = await readContractorJob(uid, jobId);
-      if (cached) { setView(cached); setLoading(false); }
-    }
+    const cached = uid ? await readContractorJob(uid, jobId) : null;
+    if (cached) { setView(cached); setLoading(false); }
     try {
       void drainContractorOutbox();
       const response = await fetch(`/api/portal/contractor/jobs/${encodeURIComponent(jobId)}`, { method:'GET', cache:'no-store' });
-      if (response.status === 401) { if (!view) router.replace(`/login?next=${encodeURIComponent(contractorJobDetailPath(jobId))}`); return; }
-      if (response.status === 403) { if (!view) router.replace(CONTRACTOR_HOME_PATH); return; }
-      if (response.status === 404) { if (!view) { setNotFound(true); setLoading(false); } return; }
+      if (response.status === 401) { if (!cached) router.replace(`/login?next=${encodeURIComponent(contractorJobDetailPath(jobId))}`); return; }
+      if (response.status === 403) { if (!cached) router.replace(CONTRACTOR_HOME_PATH); return; }
+      if (response.status === 404) { if (!cached) { setNotFound(true); setLoading(false); } return; }
       const payload = (await response.json().catch(() => ({}))) as { job?: ContractorSafeJobView; error?: string };
-      if (!response.ok || !payload.job) { if (!view) { setNotFound(true); setLoading(false); } return; }
+      if (!response.ok || !payload.job) { if (!cached) { setNotFound(true); setLoading(false); } return; }
       setView(payload.job); setLoading(false);
       if (uid) await saveContractorJob(uid, payload.job);
     } catch {
-      if (!view) { setNotFound(true); setLoading(false); }
+      if (!cached) { setNotFound(true); setLoading(false); }
     }
-  }, [jobId, router, view]);
+  }, [jobId, router]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
