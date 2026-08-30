@@ -1,5 +1,6 @@
 /* Shared primitives. Pages opt in with these classes.
-   Do not target frozen page selectors here until harvest PRs say so. */
+   Values copied from winning Jobs sheets. No !important.
+   Do not target frozen page selectors here. */
 
 .eo-chrome {
   width: min(100%, var(--eo-view-max));
@@ -8,6 +9,10 @@
 
 .eo-card {
   padding: var(--job-card-pad);
+}
+
+.eo-card .eo-btn {
+  min-height: var(--eo-tap);
 }
 
 .eo-list-row {
@@ -29,8 +34,75 @@
 .eo-status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: var(--eo-filter-tab);
   padding: 0 13px;
   border-radius: var(--eo-radius-pill);
   white-space: nowrap;
+}
+
+.eo-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--eo-space-3);
+}
+
+.eo-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .eo-action-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: var(--eo-control) var(--eo-control);
+    gap: var(--eo-space-3);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .eo-action-grid > * {
+    width: 100%;
+    min-width: 0;
+    height: var(--eo-control);
+    min-height: var(--eo-control);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .eo-action-grid > :last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .eo-action-grid > :first-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .eo-action-grid > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 350px) {
+  .eo-action-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, var(--eo-control));
+  }
+
+  .eo-action-grid > :last-child,
+  .eo-action-grid > :first-child,
+  .eo-action-grid > :nth-child(2) {
+    grid-column: 1;
+    grid-row: auto;
+  }
 }

@@ -5,6 +5,19 @@ Guard SHA: `6d9918c`
 Surface: owner Jobs list (`app/jobs/page.tsx`)
 Do not delete overlays in this step. Do not shrink `app/globals.css` in this step.
 
+## Status
+
+- [x] 1. Harvest map
+- [x] 2. Empty-safe tokens/primitives imported after globals (look unchanged)
+- [x] 3. Winning Jobs numbers in `app/design/tokens.css`
+- [x] 4. Winning Jobs geometry in `app/design/primitives.css` (`.eo-*` only)
+- [x] 5. Jobs markup opts into primitive classes *in addition to* frozen selectors
+- [ ] 6. Job-flow tests stay green for a week (New Job / Export / Cleanup / filters / row menu)
+- [ ] 7. Delete dead overlay files listed below
+- [ ] 8. Stop importing `jobs-filter-mobile-alignment.css` and `jobs-mobile-layout-hotfix.css`
+
+Dashboard cards are surface two. Do not start them until step 6 is green.
+
 ## What actually wins today
 
 `app/layout.tsx` loads 31 global sheets. Later files beat earlier ones.
@@ -52,37 +65,18 @@ Harvest is failed if any of these move off-screen, drop below 44px, or get `disp
 - Clear filters
 - Row menu / Start / Finish on a job row
 
-## Copy these rules into primitives (not new overlays)
+## Primitive map (Jobs markup)
 
-From `jobs-filter-mobile-alignment.css` (mobile ≤760px):
+| Frozen selector | Primitive class added |
+| --- | --- |
+| `.jobs-list-page` | `.eo-chrome` |
+| `.jobs-header-actions` | `.eo-action-grid` |
+| `.btn` on header / clear / show-more | `.eo-btn` |
+| `.jobs-filter-tab` | `.eo-status` |
+| filter `<select>` | `.eo-field` |
+| filter labels (`span`) | `.eo-visually-hidden` on mobile is already overlay-owned; keep the span in the DOM |
+| `.card.jobs-table-card` | `.eo-card` |
+| `.jobs-operations-row` | `.eo-list-row` |
+| `.jobs-menu-trigger` | `.eo-btn` |
 
-- header is a column; title full width left
-- `.jobs-header-actions` is a 2-col × 2-row 48px grid; primary action on row 1 full width
-- ≤350px: stack all three header actions
-- filter tabs are pills, height 36px, wrap
-- filter grid is one column; selects 48px high
-- filter labels are visually hidden, not removed from the DOM
-
-From `job-card-spacing.css`:
-
-- `--job-label-gap: 4px`
-- `--job-block-gap: 16px`
-- `--job-action-gap: 22px` (20px under 700px)
-- `--job-button-gap: 12px` (10px under 700px)
-- `--job-card-pad: 22px` (20px under 700px)
-- buttons inside job cards: `min-height: 44px`
-
-Land those values in `app/design/tokens.css`.
-Land the structure classes in `app/design/primitives.css` as `.eo-card`, `.eo-btn`, `.eo-list-row`, `.eo-field`, `.eo-status`.
-Do not add `!important` in primitives unless a frozen overlay still fights them. Prefer switching the Jobs page to primitive classes, then drop the overlay import.
-
-## PR sequence (one surface only)
-
-1. Tag `8492e688` as `everitt-visual-freeze-2026-08-30` if not already tagged.
-2. This commit: harvest map + empty-safe tokens/primitives. Look must not change.
-3. Next PR: copy winning Jobs values into tokens/primitives. Still do not delete files.
-4. Next PR: point Jobs markup at primitive classes. Run job-flow tests.
-5. If New Job / filters / Start still work for a week, delete the dead overlay files listed above.
-6. Only then stop importing `jobs-filter-mobile-alignment.css` and `jobs-mobile-layout-hotfix.css`.
-
-Dashboard cards are surface two. Do not start them until Jobs step 4 is green.
+Overlays still win on the frozen selectors. Primitive classes are additive so dropping an overlay later does not leave the surface unstyled.
