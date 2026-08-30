@@ -11,7 +11,8 @@ export function JobCreateI18nBind() {
   const copy = getJobCreateCopy(locale);
 
   useEffect(() => {
-    if (pathname !== '/jobs/new' || locale === 'en') return;
+    if (!pathname?.includes('/jobs/new')) return;
+    if (copy.jobDetailsHeading === '3. Job details') return;
 
     const exact: Record<string, string> = {
       '3. Job details': copy.jobDetailsHeading,
@@ -61,7 +62,7 @@ export function JobCreateI18nBind() {
         const raw = node.textContent || '';
         const trimmed = raw.trim();
         if (!trimmed) return;
-        if (exact[trimmed]) {
+        if (exact[trimmed] && exact[trimmed] !== trimmed) {
           node.textContent = raw.replace(trimmed, exact[trimmed]);
           return;
         }
@@ -72,10 +73,10 @@ export function JobCreateI18nBind() {
         if (trimmed.startsWith('Per visit:')) {
           node.textContent = raw
             .replace('Per visit:', `${copy.perVisit}:`)
-            .replace('customer price', copy.customerPrice.toLowerCase())
-            .replace('worker price', copy.workerPrice.toLowerCase())
-            .replace('expenses', copy.additionalExpenses.toLowerCase())
-            .replace('expected profit', copy.expectedProfit.toLowerCase());
+            .replace('customer price', copy.customerPrice)
+            .replace('worker price', copy.workerPrice)
+            .replace('expenses', copy.additionalExpenses)
+            .replace('expected profit', copy.expectedProfit);
         }
         return;
       }
@@ -87,17 +88,18 @@ export function JobCreateI18nBind() {
     };
 
     const apply = () => {
-      const root = document.querySelector('.unified-job-form, .job-create-page-header, .formWrap');
-      if (root) applyNode(root);
+      const roots = document.querySelectorAll('.unified-job-form, .job-create-page-header, .formWrap, .card');
+      if (roots.length) roots.forEach((root) => applyNode(root));
+      else applyNode(document.body);
     };
 
     apply();
+    const interval = window.setInterval(apply, 200);
     const observer = new MutationObserver(apply);
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    const timers = [window.setTimeout(apply, 50), window.setTimeout(apply, 250), window.setTimeout(apply, 800)];
     return () => {
+      window.clearInterval(interval);
       observer.disconnect();
-      timers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [copy, locale, pathname]);
 
