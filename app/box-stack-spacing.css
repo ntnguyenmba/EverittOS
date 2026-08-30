@@ -21,6 +21,7 @@
 .dashboard-shell .portal-job-finance,
 .dashboard-shell .filter-row,
 .dashboard-shell .status-tabs,
+.dashboard-shell .segmented-control,
 .dashboard-shell .jobs-header-actions,
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-filter-grid,
@@ -29,7 +30,8 @@
 .role-portal-shell .inline-actions,
 .role-portal-shell .button-row,
 .role-portal-shell .filter-row,
-.role-portal-shell .status-tabs {
+.role-portal-shell .status-tabs,
+.role-portal-shell .segmented-control {
   gap: var(--everitt-control-gap) !important;
 }
 
@@ -44,19 +46,26 @@
   margin-top: var(--everitt-label-gap) !important;
 }
 
-.dashboard-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.dashboard-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.dashboard-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.dashboard-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.role-portal-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.role-portal-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.role-portal-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs),
-.role-portal-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs) {
+.dashboard-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control) {
   margin-top: var(--everitt-heading-gap) !important;
 }
 
-.dashboard-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions) + label,
-.role-portal-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions) + label {
+/* A label following an action starts a new section. */
+.dashboard-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label,
+.role-portal-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+/* A status/action group following a field also starts a new section. */
+.dashboard-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions),
+.role-portal-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions) {
   margin-top: var(--everitt-section-gap) !important;
 }
 
@@ -66,6 +75,7 @@
 .dashboard-shell .button-row + *,
 .dashboard-shell .filter-row + *,
 .dashboard-shell .status-tabs + *,
+.dashboard-shell .segmented-control + *,
 .dashboard-shell .jobs-header-actions + *,
 .dashboard-shell .jobs-filter-tabs + *,
 .dashboard-shell .jobs-filter-grid + *,
@@ -74,7 +84,8 @@
 .role-portal-shell .inline-actions + *,
 .role-portal-shell .button-row + *,
 .role-portal-shell .filter-row + *,
-.role-portal-shell .status-tabs + * {
+.role-portal-shell .status-tabs + *,
+.role-portal-shell .segmented-control + * {
   margin-top: var(--everitt-section-gap) !important;
 }
 
@@ -99,6 +110,7 @@
 .dashboard-shell .owner-home-actions > * + *,
 .dashboard-shell .filter-row > * + *,
 .dashboard-shell .status-tabs > * + *,
+.dashboard-shell .segmented-control > * + *,
 .dashboard-shell .jobs-header-actions > * + *,
 .dashboard-shell .jobs-filter-tabs > * + *,
 .dashboard-shell .jobs-filter-grid > * + *,
@@ -106,7 +118,8 @@
 .role-portal-shell .inline-actions > * + *,
 .role-portal-shell .button-row > * + *,
 .role-portal-shell .filter-row > * + *,
-.role-portal-shell .status-tabs > * + * {
+.role-portal-shell .status-tabs > * + *,
+.role-portal-shell .segmented-control > * + * {
   margin-top: 0 !important;
 }
 
@@ -159,8 +172,8 @@
   margin-top: var(--everitt-section-gap) !important;
 }
 
-.dashboard-shell :is(.page-actions, .page-header-action, .inline-actions, .button-row, .filter-row, .status-tabs, .jobs-filter-grid, form, .form, fieldset),
-.role-portal-shell :is(.page-actions, .inline-actions, .button-row, .filter-row, .status-tabs, form, .form, fieldset) {
+.dashboard-shell :is(.page-actions, .page-header-action, .inline-actions, .button-row, .filter-row, .status-tabs, .segmented-control, .jobs-filter-grid, form, .form, fieldset),
+.role-portal-shell :is(.page-actions, .inline-actions, .button-row, .filter-row, .status-tabs, .segmented-control, form, .form, fieldset) {
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
@@ -187,6 +200,12 @@
 .dashboard-shell :is(.card, .panel, .settings-card) > :last-child,
 .role-portal-shell :is(.card, .panel, .settings-card) > :last-child {
   margin-bottom: 0 !important;
+}
+
+/* Any stacked action siblings inside a signed-in card keep a visible gutter. */
+.dashboard-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn),
+.role-portal-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn) {
+  margin-top: var(--everitt-control-gap) !important;
 }
 
 /* Accordion/panel content uses title -> section gap, then control -> control gap. */
