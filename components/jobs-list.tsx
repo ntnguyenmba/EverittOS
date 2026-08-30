@@ -172,8 +172,8 @@ export function JobsList() {
                           <Link href={`/jobs/${job.id}`}>{jobLabel(job)}</Link>
                           {isOwner && job.customer_name ? <div className="jobs-secondary">{job.customer_name}</div> : null}
                         </td>
-                        <td>{assigned || (jobNeedsWorker(job) ? 'Unassigned' : '\u2014')}</td>
-                        {isOwner ? <td>{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '\u2014'}</td> : null}
+                        <td>{assigned || (jobNeedsWorker(job) ? 'Unassigned' : '-')}</td>
+                        {isOwner ? <td>{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '-'}</td> : null}
                         <td><StatusPill status={job.status} /></td>
                       </tr>
                     );
