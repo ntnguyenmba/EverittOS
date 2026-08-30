@@ -34,6 +34,8 @@ type GuidanceState = {
   directPaymentTotal: number;
 };
 
+const JOB_GUIDANCE_REFRESH_EVENT = 'everittos:job-guidance-refresh';
+
 const copy = {
   en: {
     nextAction: 'Next action', clientPay: 'Client pay', worker: 'Worker', workerPay: 'Worker pay', schedule: 'Schedule', invoice: 'Invoice', payment: 'Payment', set: 'Set', missing: 'Missing', assigned: 'Assigned', scheduled: 'Scheduled', created: 'Created', notCreated: 'Not created', paid: 'Paid', unpaid: 'Unpaid', partial: 'Partial', setClientPay: 'Set client pay', assignWorker: 'Assign worker', setWorkerPay: 'Set worker pay', setSchedule: 'Set schedule', startJob: 'Start job', createInvoice: 'Create invoice', recordPayment: 'Record payment', markComplete: 'Mark job complete', complete: 'Job is complete', review: 'Review job', hint: 'Suggested from the current job status. You can still jump to any section below.'
@@ -122,10 +124,12 @@ export function JobGuidancePanel() {
     void load();
     const refresh = () => void load();
     window.addEventListener('focus', refresh);
+    window.addEventListener(JOB_GUIDANCE_REFRESH_EVENT, refresh);
     const timer = window.setInterval(refresh, 10000);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', refresh);
+      window.removeEventListener(JOB_GUIDANCE_REFRESH_EVENT, refresh);
       window.clearInterval(timer);
     };
   }, [jobId]);
@@ -140,13 +144,16 @@ export function JobGuidancePanel() {
   const invoiceLedgerPaid = Number(state.invoice?.amount_paid || 0);
   const amountPaid = Math.max(invoiceLedgerPaid, state.directPaymentTotal);
   const invoiceStatus = String(state.invoice?.status || '').toLowerCase();
-  const hasAnyPayment = amountPaid > 0;
-  const paymentState = invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount)
-    ? c.paid
-    : hasAnyPayment
-      ? (invoiceAmount > 0 ? c.partial : c.paid)
-      : c.unpaid;
+  const hasAnyPayment = invoiceExists && amountPaid > 0;
+  const paymentState = !invoiceExists
+    ? null
+    : invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount)
+      ? c.paid
+      : hasAnyPayment
+        ? (invoiceAmount > 0 ? c.partial : c.paid)
+        : c.unpaid;
   const status = String(state.job.status || '').toLowerCase();
+  const billable = clientPaySet || ['completed', 'ready_to_invoice', 'ready-to-invoice'].includes(status);
   const scheduledAt = state.job.scheduled_start ? new Date(state.job.scheduled_start) : null;
   const pastDue = Boolean(scheduledAt && !Number.isNaN(scheduledAt.getTime()) && scheduledAt.getTime() < Date.now() && !['active', 'in_progress', 'completed', 'cancelled'].includes(status));
 
@@ -185,8 +192,8 @@ export function JobGuidancePanel() {
     { label: c.worker, value: state.assigned ? c.assigned : c.missing, bad: !state.assigned, terms: ['assigned', 'worker', 'contractor'], href: '' },
     { label: c.workerPay, value: workerPaySet ? c.set : c.missing, bad: !workerPaySet, terms: ['money', 'labor'], href: '' },
     { label: c.schedule, value: scheduleSet ? c.scheduled : c.missing, bad: !scheduleSet, terms: ['schedule'], href: '' },
-    { label: c.invoice, value: invoiceExists ? c.created : c.notCreated, bad: !invoiceExists, terms: [], href: invoiceExists ? `/invoices?jobId=${jobId}` : `/invoices?jobId=${jobId}&action=new` },
-    { label: c.payment, value: paymentState, bad: paymentState !== c.paid, terms: [], href: `/invoices?jobId=${jobId}&payment=unpaid` }
+    ...(billable ? [{ label: c.invoice, value: invoiceExists ? c.created : c.notCreated, bad: !invoiceExists, terms: [] as string[], href: invoiceExists ? `/invoices?jobId=${jobId}` : `/invoices?jobId=${jobId}&action=new` }] : []),
+    ...(invoiceExists && paymentState ? [{ label: c.payment, value: paymentState, bad: paymentState !== c.paid, terms: [] as string[], href: `/invoices?jobId=${jobId}&payment=unpaid` }] : [])
   ];
 
   return (
@@ -214,7 +221,7 @@ export function JobGuidancePanel() {
         .job-guidance-next strong { display: block; max-width: 100%; font-size: clamp(20px, 3vw, 28px); line-height: 1.15; overflow-wrap: anywhere; }
         .job-guidance-next p { margin: 6px 0 0; color: #66727c; font-size: 14px; line-height: 1.45; }
         .job-guidance-next .btn { flex: 0 0 auto; min-height: 48px; touch-action: manipulation; }
-        .job-guidance-status { min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; }
+        .job-guidance-status { min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
         .job-guidance-status button { min-width: 0; min-height: 64px; padding: 10px 12px; border: 1px solid rgba(37,54,74,.12); border-radius: 12px; background: rgba(255,255,255,.92); color: inherit; text-align: left; cursor: pointer; touch-action: manipulation; box-sizing: border-box; }
         .job-guidance-status button span { display: block; color: #66727c; font-size: 12px; line-height: 1.2; margin-bottom: 4px; overflow-wrap: anywhere; }
         .job-guidance-status button strong { display: block; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
