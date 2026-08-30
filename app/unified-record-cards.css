@@ -113,10 +113,12 @@
 }
 
 .team-member-card {
-  display: flex !important;
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
+  justify-content: stretch !important;
+  column-gap: 16px !important;
   width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
@@ -128,6 +130,49 @@
   color: var(--eo-record-text) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+.team-member-card > .record-card-overlay-link {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+}
+
+.team-member-card .record-card-overlay-label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  border: 0 !important;
+}
+
+.team-member-card > .team-member-copy,
+.team-member-card > div:not(.team-member-actions):not(.inline-actions) {
+  grid-column: 1 !important;
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.team-member-card > .team-member-actions,
+.team-member-card > .inline-actions {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  margin: 0 !important;
 }
 
 .team-member-card p {
@@ -358,10 +403,20 @@
   }
 
   .customer-card-row,
-  .client-job-card,
-  .team-member-card {
+  .client-job-card {
     flex-direction: column !important;
     gap: 12px !important;
+  }
+
+  .team-member-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .team-member-card > .team-member-actions,
+  .team-member-card > .inline-actions {
+    grid-column: 1 !important;
+    justify-self: start !important;
+    flex-wrap: wrap !important;
   }
 
   .client-job-schedule {
