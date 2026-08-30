@@ -1,5 +1,5 @@
 /* Final responsive layout guard.
-   This file must remain the final global stylesheet import so authenticated pages
+   This file must remain a late global stylesheet import so authenticated pages
    cannot inherit stale desktop offsets when the sidebar is replaced by mobile navigation. */
 
 .dashboard-shell,
@@ -24,6 +24,7 @@
    sliding after hydration, workspace loading, or native-platform detection. */
 .dashboard-shell,
 .dashboard-shell > .main,
+.dashboard-shell-header,
 .dashboard-shell-mobile,
 .sidebar,
 .app-page-content,
@@ -33,10 +34,8 @@
   animation-name: none !important;
 }
 
-/* The mobile/tablet header can become active well above classic phone widths.
-   Collapse the desktop sidebar at the same breakpoint so no 300px ghost column
-   remains after client hydration. */
-@media (max-width: 1440px) {
+/* Collapse the desktop sidebar only when the hamburger header is active. */
+@media (max-width: 1279px) {
   .dashboard-shell {
     display: block !important;
     width: 100% !important;
@@ -63,16 +62,40 @@
     pointer-events: none !important;
   }
 
+  .dashboard-shell-header,
   .dashboard-shell-mobile {
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
     position: sticky !important;
     top: 0;
-    z-index: 42;
+    z-index: 100;
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 10px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)) !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-shell-header .mobile-nav,
+  .dashboard-shell-header .mobile-nav-bar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-menu-btn,
+  .dashboard-shell-header .mobile-nav-top-logo {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .dashboard-shell > .main,
@@ -132,10 +155,37 @@
   }
 }
 
-@media (min-width: 1441px) {
+@media (min-width: 1280px) {
   .dashboard-shell {
-    width: 100%;
-    max-width: none;
+    display: grid !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    grid-template-areas: 'side main' !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+    position: sticky !important;
+    top: 0 !important;
+  }
+
+  .dashboard-shell-header,
+  .dashboard-shell-mobile {
+    display: none !important;
   }
 
   .dashboard-shell > .main {
