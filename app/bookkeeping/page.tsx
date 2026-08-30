@@ -65,3 +65,166 @@ function TransactionSection({ title, rows, empty, total }: { title: string; rows
     </details>
   );
 }
+
+export default function BookkeepingPage() {
+  const router = useRouter();
+  const { locale } = useTranslation();
+  const c = copy[locale];
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
+  const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
+  const [range, setRange] = useState<DashboardDateRange>('month');
+  const [rangeReady, setRangeReady] = useState(false);
+  const [collected, setCollected] = useState<DashboardDetailResult | null>(null);
+  const [netCash, setNetCash] = useState<DashboardDetailResult | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(BOOKKEEPING_RANGE_STORAGE_KEY) as DashboardDateRange | null;
+    if (saved && BOOKKEEPING_RANGES.includes(saved)) setRange(saved);
+    setRangeReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!rangeReady) return;
+    window.localStorage.setItem(BOOKKEEPING_RANGE_STORAGE_KEY, range);
+  }, [range, rangeReady]);
+
+  useEffect(() => {
+    if (!rangeReady) return;
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth.user;
+      if (!user) { router.replace('/login?next=/bookkeeping'); return; }
+      const [{ data: profile }, org] = await Promise.all([
+        supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+        fetchOrganizationContext(user.id)
+      ]);
+      const nextPlan = normalizePlan(profile?.plan);
+      const nextRole = normalizeRole(org?.role || profile?.role);
+      if (!isAdminRole(nextRole) || !canAccessFinancials(nextRole, nextPlan) || !org?.organizationId) {
+        router.replace('/dashboard?reason=financial_access_required');
+        return;
+      }
+      if (!cancelled) { setPlan(nextPlan); setRole(nextRole); }
+      const [incomeResult, netCashResult] = await Promise.all([
+        fetchDashboardMetricDetails(supabase, org.organizationId, 'collected', range, locale),
+        fetchDashboardMetricDetails(supabase, org.organizationId, 'net-cash', range, locale)
+      ]);
+      if (!cancelled) { setCollected(incomeResult); setNetCash(netCashResult); setLoading(false); }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [locale, range, rangeReady, router]);
+
+  const incomeRows = useMemo(() => collected?.sections.flatMap((section) => section.rows) || [], [collected]);
+  const contractorSection = netCash?.sections.find((section) => section.id === 'contractor-paid');
+  const expenseSection = netCash?.sections.find((section) => section.id === 'expenses');
+  const netSection = netCash?.sections.find((section) => section.id === 'net');
+  const incomeTotal = collected?.total || 0;
+  const contractorTotal = contractorSection?.total || 0;
+  const expenseTotal = expenseSection?.total || 0;
+  const netTotal = netSection?.total ?? netCash?.total ?? incomeTotal - contractorTotal - expenseTotal;
+
+  const metrics = [
+    [c.income, incomeTotal],
+    [c.expenses, expenseTotal],
+    [c.contractorPay, contractorTotal],
+    [c.net, netTotal]
+  ] as const;
+
+  const rangeOptions: Array<{ id: DashboardDateRange; label: string }> = [
+    { id: 'today', label: c.today },
+    { id: 'week', label: c.thisWeek },
+    { id: 'month', label: c.thisMonth },
+    { id: 'ytd', label: c.ytd },
+    { id: 'year', label: c.thisYear },
+    { id: 'all_time', label: c.allTime }
+  ];
+
+  return (
+    <AppShell plan={plan} role={role}>
+      <main className="bookkeeping-page">
+        <div style={{ marginBottom: 14 }}>
+          <PageHeader
+            title={c.title}
+            subtitle={c.subtitle}
+            action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />}
+          />
+        </div>
+
+        <div className="bookkeeping-range-bar" role="group" aria-label="Bookkeeping period">
+          {rangeOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={range === option.id ? 'bookkeeping-range is-active' : 'bookkeeping-range'}
+              aria-pressed={range === option.id}
+              disabled={loading && range === option.id}
+              onClick={() => setRange(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? <p className="muted" style={{ padding: '10px 2px 30px' }}>{c.loading}</p> : (
+          <div style={{ width: '100%', minWidth: 0 }}>
+            <section className="bookkeeping-metrics" aria-label="Bookkeeping totals">
+              {metrics.map(([label, value]) => (
+                <div key={label} className="bookkeeping-metric-card">
+                  <span className="bookkeeping-metric-label">{label}</span>
+                  <strong className="bookkeeping-metric-value">{formatCurrency(value)}</strong>
+                </div>
+              ))}
+            </section>
+
+            <div className="bookkeeping-ledgers">
+              <TransactionSection title={c.incomeReceived} rows={incomeRows} empty={c.empty} total={incomeTotal} />
+              <TransactionSection title={c.contractorsPaid} rows={contractorSection?.rows || []} empty={c.empty} total={contractorTotal} />
+              <TransactionSection title={c.expensesPaid} rows={expenseSection?.rows || []} empty={c.empty} total={expenseTotal} />
+            </div>
+
+            <div className="bookkeeping-disclaimer">
+              <p className="muted">{c.disclaimer}</p>
+            </div>
+          </div>
+        )}
+
+        <style jsx>{`
+          .bookkeeping-page { width: 100%; max-width: 1180px; margin: 0 auto; display: block; min-width: 0; padding: 6px 0 18px; }
+          .bookkeeping-range-bar { display: flex; gap: 8px; width: 100%; margin: 8px 0 18px; padding: 2px 0 6px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+          .bookkeeping-range-bar::-webkit-scrollbar { display: none; }
+          .bookkeeping-range { flex: 0 0 auto; min-height: 42px; padding: 9px 14px; border: 1px solid rgba(38, 72, 93, .24); border-radius: 999px; background: rgba(255, 255, 255, .92); color: #183247; font: inherit; font-weight: 650; white-space: nowrap; cursor: pointer; }
+          .bookkeeping-range.is-active { background: #243f53; border-color: #243f53; color: #fff; }
+          .bookkeeping-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%; margin-bottom: 20px; }
+          .bookkeeping-metric-card { min-width: 0; min-height: 106px; padding: 17px 18px; border: 1px solid rgba(38, 72, 93, .42); border-top: 3px solid #243f53; border-radius: 14px; background: #fff; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+          .bookkeeping-metric-label { color: #34566b; font-size: 13px; font-weight: 700; line-height: 1.25; }
+          .bookkeeping-metric-value { display: block; color: #102b3d; font-size: clamp(24px, 3vw, 34px); line-height: 1; font-variant-numeric: tabular-nums; }
+          .bookkeeping-ledgers { display: grid; gap: 12px; width: 100%; min-width: 0; }
+          .bookkeeping-ledger { width: 100%; min-width: 0; border: 1px solid rgba(38, 72, 93, .2); border-radius: 14px; background: #fff; overflow: hidden; }
+          .bookkeeping-ledger-summary { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 17px 18px; cursor: pointer; }
+          .bookkeeping-ledger-summary::-webkit-details-marker { display: none; }
+          .bookkeeping-ledger-summary > span { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+          .bookkeeping-ledger-summary > span > strong { color: #102b3d; font-size: 18px; line-height: 1.2; }
+          .bookkeeping-ledger-summary > span > small { font-size: 13px; color: #31495b; }
+          .bookkeeping-ledger-summary::after { content: '+'; grid-column: 3; color: #243f53; font-size: 24px; font-weight: 400; line-height: 1; }
+          .bookkeeping-ledger[open] .bookkeeping-ledger-summary::after { content: '\2212'; }
+          .bookkeeping-ledger-total { color: #102b3d; white-space: nowrap; font-variant-numeric: tabular-nums; }
+          .bookkeeping-ledger-body { padding: 0 18px 8px; border-top: 1px solid rgba(38, 72, 93, .12); }
+          .bookkeeping-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 2px; text-decoration: none; color: inherit; }
+          .bookkeeping-row-amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
+          .bookkeeping-disclaimer { width: 100%; margin-top: 24px; padding: 18px 0 0; border-top: 1px solid var(--border, rgba(0,0,0,.08)); }
+          .bookkeeping-disclaimer p { font-size: 11px; line-height: 1.6; margin: 0 auto; max-width: 720px; width: 100%; text-align: center; }
+          @media (max-width: 760px) {
+            .bookkeeping-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            .bookkeeping-ledger-summary { padding: 15px; }
+          }
+        `}</style>
+      </main>
+    </AppShell>
+  );
+}
