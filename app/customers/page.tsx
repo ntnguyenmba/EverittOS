@@ -33,9 +33,9 @@ function CustomersPageContent() {
   const stageFilter = searchParams.get('stage') || searchParams.get('status');
   const { t, locale } = useTranslation();
   const copy = {
-    en: { edit: 'Edit', openJobs: 'Open jobs', showMore: 'Show 10 more', showing: 'Showing' },
-    es: { edit: 'Editar', openJobs: 'Trabajos abiertos', showMore: 'Mostrar 10 más', showing: 'Mostrando' },
-    vi: { edit: 'Sửa', openJobs: 'Công việc đang mở', showMore: 'Hiển thị thêm 10', showing: 'Đang hiển thị' }
+    en: { edit: 'Edit', openJobs: 'Open jobs', showMore: 'Show 10 more', showing: 'Showing', importCsv: 'Import CSV', addCustomer: 'Add customer' },
+    es: { edit: 'Editar', openJobs: 'Trabajos abiertos', showMore: 'Mostrar 10 más', showing: 'Mostrando', importCsv: 'Importar CSV', addCustomer: 'Agregar cliente' },
+    vi: { edit: 'Sửa', openJobs: 'Công việc đang mở', showMore: 'Hiển thị thêm 10', showing: 'Đang hiển thị', importCsv: 'Nhập CSV', addCustomer: 'Thêm khách hàng' }
   }[locale];
   const lifecycle = getCustomerLifecycleCopy(locale);
   const exportCopy = getExportCopy(locale);
@@ -89,9 +89,9 @@ function CustomersPageContent() {
     <AppShell plan={plan} role={role}>
       <PageHeader title={t('nav.crm')} subtitle={t('ux.pageTitles.customers')} action={
         <div className="customers-header-actions" style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-          {isManagerRole(role) ? <Link className="btn" href="/customers/import">Import CSV</Link> : null}
+          {isManagerRole(role) ? <Link className="btn" href="/customers/import">{copy.importCsv}</Link> : null}
           {isManagerRole(role) ? <ExportMenu endpoint="/api/exports/customers" query={{ period:periodFilter, stage:stageFilter }} locale={locale} disabled={loading} onError={(message)=>appFeedback.error(message||exportCopy.exportFailed)} onSuccess={(format)=>{if(format==='share')appFeedback.success(exportCopy.shareSent);}} /> : null}
-          {canManage ? <Link className="btn btn-primary" href="/customers/new">Add customer</Link> : null}
+          {canManage ? <Link className="btn btn-primary" href="/customers/new">{copy.addCustomer}</Link> : null}
         </div>
       } />
       <div className="job-detail-actions" style={{ marginBottom:16, flexWrap:'wrap', gap:8 }}>
