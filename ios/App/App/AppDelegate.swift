@@ -6,6 +6,7 @@ class MainViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(EverittBillingPlugin())
         bridge?.registerPluginInstance(EverittFieldStorePlugin())
+        bridge?.registerPluginInstance(EverittSecureStorePlugin())
     }
 }
 
