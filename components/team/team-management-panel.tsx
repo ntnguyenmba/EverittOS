@@ -2,9 +2,11 @@
 
 import { EmptyState } from '@/components/empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
+import { getTeamManageCopy } from '@/lib/i18n/team-manage-copy';
 import { formatLastSeenAt } from '@/lib/last-seen';
 import { canManageTeam, canModifyTeamMember, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -138,7 +140,7 @@ function SettingsAccordion({ id, title, open, onToggle, children }: { id: Accord
   const panelId = `${id}-panel`;
   const headerId = `${id}-header`;
   return (
-    <section className="settings-card">
+    <section className="settings-card" id={id}>
       <button id={headerId} type="button" aria-expanded={open} aria-controls={panelId} onClick={() => onToggle(id)} style={{ alignItems: 'center', background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', display: 'flex', gap: '1rem', justifyContent: 'space-between', padding: 0, textAlign: 'left', width: '100%' }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
         <span aria-hidden="true" style={{ display: 'inline-flex', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 220ms ease' }}>v</span>
@@ -155,6 +157,8 @@ type TeamManagementPanelProps = { showPermissionMatrix?: boolean; showAuditHisto
 export function TeamManagementPanel({ showAuditHistory = false }: TeamManagementPanelProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = getTeamManageCopy(locale);
   const { busy, run, runResponse, buttonLabel } = useAsyncAction({ successMessage: 'invited' });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -178,6 +182,20 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
       try { window.localStorage.setItem(TEAM_ACCORDION_STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
+  }
+
+  function openInviteFromHash() {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash !== '#invite-by-email') return;
+    setAccordionState((current) => {
+      const next = { ...current, 'invite-by-email': true };
+      try { window.localStorage.setItem(TEAM_ACCORDION_STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    window.setTimeout(() => {
+      document.getElementById('invite-by-email')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('invite-email')?.focus();
+    }, 80);
   }
 
   async function load() {
@@ -241,6 +259,12 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
     void load();
   }, []);
 
+  useEffect(() => {
+    openInviteFromHash();
+    window.addEventListener('hashchange', openInviteFromHash);
+    return () => window.removeEventListener('hashchange', openInviteFromHash);
+  }, []);
+
   async function sendInvite() {
     if (!canManage || !email.trim() || busy) return;
     setInviteUrl('');
@@ -302,40 +326,50 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
 
   return (
     <>
-      {!teamEnabled ? <div className="settings-card plan-gate-card"><p>Team management requires Business, Growth, or Enterprise.</p><a className="btn btn-primary" href="/settings/billing?upgrade=business">Upgrade to Business</a></div> : null}
+      {!teamEnabled ? <div className="settings-card plan-gate-card"><p>{c.planGate}</p><a className="btn btn-primary" href="/settings/billing?upgrade=business">{c.upgrade}</a></div> : null}
 
       {teamEnabled && canManage ? (
-        <SettingsAccordion id="invite-by-email" title="Invite by email" open={accordionState['invite-by-email']} onToggle={toggleAccordion}>
-          <label htmlFor="invite-email">Email</label>
-          <input id="invite-email" className="input" type="email" placeholder="you@company.com" value={email} onChange={(event) => setEmail(event.target.value)} />
-          <label htmlFor="invite-role">Role</label>
+        <SettingsAccordion id="invite-by-email" title={c.inviteTitle} open={accordionState['invite-by-email']} onToggle={toggleAccordion}>
+          <label htmlFor="invite-email">{c.email}</label>
+          <input id="invite-email" className="input" type="email" placeholder={c.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} />
+          <label htmlFor="invite-role">{c.role}</label>
           <select id="invite-role" className="input" value={inviteRole} onChange={(event) => setInviteRole(event.target.value)}>
-            <option value="manager">Manager</option><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="client">Client</option>{isOwner(role) ? <option value="admin">Admin</option> : null}<option value="viewer">Viewer</option>
+            <option value="manager">{c.manager}</option>
+            <option value="employee">{c.employee}</option>
+            <option value="contractor">{c.contractor}</option>
+            <option value="client">{c.client}</option>
+            {isOwner(role) ? <option value="admin">{c.admin}</option> : null}
+            <option value="viewer">{c.viewer}</option>
           </select>
-          <label htmlFor="invite-note">Note (optional)</label>
-          <textarea id="invite-note" className="input" rows={2} placeholder="Optional message" value={inviteNote} onChange={(event) => setInviteNote(event.target.value)} />
-          <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={() => void sendInvite()}>{buttonLabel('Send invitation', FEEDBACK.loading)}</button>
-          {inviteUrl ? <div className="invite-link-row"><code className="invite-link-code">{inviteUrl}</code><button type="button" className="btn btn-sm" onClick={() => void copyInviteLink()}>Copy link</button></div> : null}
+          <label htmlFor="invite-note">{c.note}</label>
+          <textarea id="invite-note" className="input" rows={2} placeholder={c.notePlaceholder} value={inviteNote} onChange={(event) => setInviteNote(event.target.value)} />
+          <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={() => void sendInvite()}>{buttonLabel(c.sendInvite, FEEDBACK.loading)}</button>
+          {inviteUrl ? <div className="invite-link-row"><code className="invite-link-code">{inviteUrl}</code><button type="button" className="btn btn-sm" onClick={() => void copyInviteLink()}>{c.copyLink}</button></div> : null}
         </SettingsAccordion>
       ) : null}
 
-      <SettingsAccordion id="active-users" title={`Manage access (${activeMembers.length} active)`} open={accordionState['active-users']} onToggle={toggleAccordion}>
-        {loading ? <p className="loading-state">Loading team...</p> : null}
-        {!loading && members.length === 0 ? <EmptyState title="No members yet" description="Invite someone to share access." /> : null}
+      <SettingsAccordion id="active-users" title={`${c.manageAccess} (${activeMembers.length} ${c.active})`} open={accordionState['active-users']} onToggle={toggleAccordion}>
+        {loading ? <p className="loading-state">{c.loading}</p> : null}
+        {!loading && members.length === 0 ? <EmptyState title={c.noMembersTitle} description={c.noMembersBody} /> : null}
         {members.map((member) => (
           <div key={member.user_id} className="list-row">
             <div>
               <strong>{memberDisplayName(member)}</strong>
-              <p className="muted">{normalizeRole(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
-              <p className="muted">Joined {formatDate(member.created_at)} · Last active {memberLastActive(member)}</p>
+              <p className="muted">{normalizeRole(member.role)} · {member.active ? c.active : 'inactive'}</p>
+              <p className="muted">{c.joined} {formatDate(member.created_at)} · {c.lastActive} {memberLastActive(member)}</p>
             </div>
             {canModifyTeamMember(role, normalizeRole(member.role)) ? (
               <div className="inline-actions">
                 <select className="input" value={normalizeRole(member.role)} onChange={(event) => void updateMember(member.user_id, { role: event.target.value })} disabled={busy}>
-                  {isOwner(role) ? <option value="admin">Admin</option> : null}<option value="manager">Manager</option><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="viewer">Viewer</option><option value="client">Client</option>
+                  {isOwner(role) ? <option value="admin">{c.admin}</option> : null}
+                  <option value="manager">{c.manager}</option>
+                  <option value="employee">{c.employee}</option>
+                  <option value="contractor">{c.contractor}</option>
+                  <option value="viewer">{c.viewer}</option>
+                  <option value="client">{c.client}</option>
                 </select>
-                <button type="button" className="btn" disabled={busy} onClick={() => void updateMember(member.user_id, { active: !member.active })}>{member.active ? 'Deactivate' : 'Reactivate'}</button>
-                <button type="button" className="btn" disabled={busy} onClick={() => void removeMember(member.user_id)}>Remove</button>
+                <button type="button" className="btn" disabled={busy} onClick={() => void updateMember(member.user_id, { active: !member.active })}>{member.active ? c.deactivate : c.reactivate}</button>
+                <button type="button" className="btn" disabled={busy} onClick={() => void removeMember(member.user_id)}>{c.remove}</button>
               </div>
             ) : null}
           </div>
@@ -343,25 +377,25 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
       </SettingsAccordion>
 
       {teamEnabled && canManage ? (
-        <SettingsAccordion id="pending-invitations" title={`Pending invitations (${pendingInvites.length})`} open={accordionState['pending-invitations']} onToggle={toggleAccordion}>
-          {pendingInvites.length === 0 ? <p className="muted">No pending invitations.</p> : null}
-          {pendingInvites.map((invitation) => <div key={invitation.id} className="list-row"><div><strong>{invitation.email}</strong><p className="muted">{normalizeRole(invitation.role)} · Sent {formatDate(invitation.created_at)}{invitation.expires_at ? ` · Expires ${formatDate(invitation.expires_at)}` : ''}</p></div><div className="inline-actions"><button type="button" className="btn" disabled={busy} onClick={() => void resendInvite(invitation.id)}>Resend</button><button type="button" className="btn" disabled={busy} onClick={() => void revokeInvite(invitation.id)}>Revoke</button></div></div>)}
+        <SettingsAccordion id="pending-invitations" title={`${c.pendingTitle} (${pendingInvites.length})`} open={accordionState['pending-invitations']} onToggle={toggleAccordion}>
+          {pendingInvites.length === 0 ? <p className="muted">{c.noPending}</p> : null}
+          {pendingInvites.map((invitation) => <div key={invitation.id} className="list-row"><div><strong>{invitation.email}</strong><p className="muted">{normalizeRole(invitation.role)} · {c.sent} {formatDate(invitation.created_at)}{invitation.expires_at ? ` · ${c.expires} ${formatDate(invitation.expires_at)}` : ''}</p></div><div className="inline-actions"><button type="button" className="btn" disabled={busy} onClick={() => void resendInvite(invitation.id)}>{c.resend}</button><button type="button" className="btn" disabled={busy} onClick={() => void revokeInvite(invitation.id)}>{c.revoke}</button></div></div>)}
         </SettingsAccordion>
       ) : null}
 
       {teamEnabled && canManage && revokedInvites.length > 0 ? (
-        <SettingsAccordion id="revoked-invitations" title={`Invitation history (${revokedInvites.length})`} open={accordionState['revoked-invitations']} onToggle={toggleAccordion}>
-          {revokedInvites.map((invitation) => <div key={invitation.id} className="list-row"><div><strong>{invitation.email}</strong><p className="muted">{normalizeRole(invitation.role)} · {invitation.status} · Sent {formatDate(invitation.created_at)}</p></div></div>)}
+        <SettingsAccordion id="revoked-invitations" title={`${c.historyTitle} (${revokedInvites.length})`} open={accordionState['revoked-invitations']} onToggle={toggleAccordion}>
+          {revokedInvites.map((invitation) => <div key={invitation.id} className="list-row"><div><strong>{invitation.email}</strong><p className="muted">{normalizeRole(invitation.role)} · {invitation.status} · {c.sent} {formatDate(invitation.created_at)}</p></div></div>)}
         </SettingsAccordion>
       ) : null}
 
       {teamEnabled && isOwner(role) && members.some((member) => member.role !== 'owner' && member.active) ? (
-        <SettingsAccordion id="transfer-ownership" title="Transfer ownership" open={accordionState['transfer-ownership']} onToggle={toggleAccordion}>
+        <SettingsAccordion id="transfer-ownership" title={c.transferTitle} open={accordionState['transfer-ownership']} onToggle={toggleAccordion}>
           <select className="input" value={transferTarget} onChange={(event) => setTransferTarget(event.target.value)}>
-            <option value="">Select member...</option>
+            <option value="">{c.selectMember}</option>
             {members.filter((member) => member.role !== 'owner' && member.active).map((member) => <option key={member.user_id} value={member.user_id}>{memberDisplayName(member)}</option>)}
           </select>
-          <button type="button" className="btn" disabled={busy || !transferTarget} onClick={() => void transferOwnership()}>{buttonLabel('Transfer ownership', FEEDBACK.loading)}</button>
+          <button type="button" className="btn" disabled={busy || !transferTarget} onClick={() => void transferOwnership()}>{buttonLabel(c.transferButton, FEEDBACK.loading)}</button>
         </SettingsAccordion>
       ) : null}
 
