@@ -1,13 +1,21 @@
-/* Shared spacing rule for every signed-in surface.
-   One spacing scale for Owner, Worker, Client, mobile, desktop, and native app.
-   Spacing only: no colors, routes, filters, roles, or control behavior. */
+/* Canonical signed-in spacing system.
+   Use these four relationship tokens on every Owner, Worker, Client, desktop,
+   mobile, and native-web surface. Do not add page-specific spacing scales. */
 
 :root {
-  --everitt-space-in: 20px;
   --everitt-label-gap: 8px;
   --everitt-control-gap: 12px;
-  --everitt-section-gap: 22px;
   --everitt-heading-gap: 16px;
+  --everitt-section-gap: 22px;
+  --everitt-space-in: 20px;
+
+  /* Legacy aliases point to the same scale so older components cannot drift. */
+  --eo-space-xs: var(--everitt-label-gap);
+  --eo-space-sm: var(--everitt-control-gap);
+  --eo-space-md: var(--everitt-heading-gap);
+  --eo-space-lg: var(--everitt-section-gap);
+  --section-gap: var(--everitt-section-gap);
+  --card-pad: var(--everitt-space-in);
 }
 
 .dashboard-shell .page-actions,
@@ -35,6 +43,19 @@
   gap: var(--everitt-control-gap) !important;
 }
 
+/* Labels own the small relationship to their field. */
+.dashboard-shell label,
+.role-portal-shell label {
+  min-width: 0;
+}
+
+.dashboard-shell label > :is(input, select, textarea, .input),
+.role-portal-shell label > :is(input, select, textarea, .input) {
+  display: block;
+  width: 100%;
+  margin-top: var(--everitt-label-gap) !important;
+}
+
 .dashboard-shell label + input,
 .dashboard-shell label + select,
 .dashboard-shell label + textarea,
@@ -57,13 +78,8 @@
   margin-top: var(--everitt-heading-gap) !important;
 }
 
-/* A label following an action starts a new section. */
 .dashboard-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label,
-.role-portal-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label {
-  margin-top: var(--everitt-section-gap) !important;
-}
-
-/* A status/action group following a field also starts a new section. */
+.role-portal-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label,
 .dashboard-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions),
 .role-portal-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions) {
   margin-top: var(--everitt-section-gap) !important;
@@ -89,10 +105,7 @@
   margin-top: var(--everitt-section-gap) !important;
 }
 
-.dashboard-shell .jobs-filter-tabs {
-  margin-bottom: var(--everitt-section-gap) !important;
-}
-
+.dashboard-shell .jobs-filter-tabs { margin-bottom: var(--everitt-section-gap) !important; }
 .dashboard-shell .jobs-advanced-filters,
 .dashboard-shell .jobs-filter-tabs + .jobs-filter-grid,
 .dashboard-shell .jobs-filter-tabs + .jobs-filter-control,
@@ -125,9 +138,7 @@
 
 .dashboard-shell .jobs-filter-control,
 .dashboard-shell .jobs-filter-control select,
-.dashboard-shell .jobs-filter-tab {
-  margin-bottom: 0 !important;
-}
+.dashboard-shell .jobs-filter-tab { margin-bottom: 0 !important; }
 
 .dashboard-shell .app-page-stage form,
 .dashboard-shell .app-page-stage .form,
@@ -185,7 +196,6 @@
   box-sizing: border-box;
 }
 
-/* Shared card rhythm: same inner spacing on every signed-in card/panel. */
 .dashboard-shell :is(.card, .panel, .settings-card),
 .role-portal-shell :is(.card, .panel, .settings-card) {
   padding: var(--everitt-space-in) !important;
@@ -193,22 +203,15 @@
 }
 
 .dashboard-shell :is(.card, .panel, .settings-card) > :first-child,
-.role-portal-shell :is(.card, .panel, .settings-card) > :first-child {
-  margin-top: 0 !important;
-}
-
+.role-portal-shell :is(.card, .panel, .settings-card) > :first-child { margin-top: 0 !important; }
 .dashboard-shell :is(.card, .panel, .settings-card) > :last-child,
-.role-portal-shell :is(.card, .panel, .settings-card) > :last-child {
-  margin-bottom: 0 !important;
-}
+.role-portal-shell :is(.card, .panel, .settings-card) > :last-child { margin-bottom: 0 !important; }
 
-/* Any stacked action siblings inside a signed-in card keep a visible gutter. */
 .dashboard-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn),
 .role-portal-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn) {
   margin-top: var(--everitt-control-gap) !important;
 }
 
-/* Accordion/panel content uses title -> section gap, then control -> control gap. */
 .dashboard-shell .settings-card [role='region'] > div > div,
 .role-portal-shell .settings-card [role='region'] > div > div {
   display: grid;
@@ -227,8 +230,44 @@
   margin-top: 0 !important;
 }
 
-@media (max-width: 430px) {
-  :root {
-    --everitt-space-in: 16px;
-  }
+/* People is made of four groups, not one accidental stack. */
+.dashboard-shell .team-directory-card { display: grid; gap: 0 !important; }
+.dashboard-shell .team-directory-header { margin-bottom: var(--everitt-section-gap) !important; }
+.dashboard-shell .team-directory-header .team-directory-actions { margin-top: var(--everitt-heading-gap) !important; }
+.dashboard-shell .team-directory-filters {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--everitt-control-gap) !important;
+  margin: 0 0 var(--everitt-section-gap) !important;
+}
+.dashboard-shell .team-directory-filters label { margin: 0 !important; }
+.dashboard-shell .team-directory-card > .segmented-control {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  gap: var(--everitt-control-gap) !important;
+  margin: 0 0 var(--everitt-section-gap) !important;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.86);
+}
+.dashboard-shell .team-directory-card > .segmented-control .btn {
+  width: auto !important;
+  min-width: 88px;
+  margin: 0 !important;
+  box-shadow: none;
+}
+.dashboard-shell .team-directory-state { margin: 0 0 var(--everitt-section-gap) !important; }
+.dashboard-shell .team-member-list { display: grid; gap: var(--everitt-control-gap) !important; }
+.dashboard-shell .team-directory-list-toggle { margin-top: var(--everitt-heading-gap) !important; }
+
+@media (max-width: 640px) {
+  :root { --everitt-space-in: 16px; }
+  .dashboard-shell .team-directory-filters { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-shell .team-directory-header .team-directory-actions { display: grid !important; grid-template-columns: minmax(0,1fr); }
+  .dashboard-shell .team-directory-header .team-directory-actions .btn { width: 100%; }
+  .dashboard-shell .team-directory-card > .segmented-control { width: 100%; display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .dashboard-shell .team-directory-card > .segmented-control .btn { min-width: 0; width: 100% !important; }
 }
