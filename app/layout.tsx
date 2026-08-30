@@ -47,14 +47,10 @@ import './contractor-portal.css';
 import './quote-workspace.css';
 import './role-home-structure.css';
 
-/* Canonical signed-in visual system. Keep this order stable. */
+/* Signed-in shell: one canvas, one nav rule, one spacing system. */
 import './signed-in-canvas.css';
-import './hero-last.css';
-import './app-wide-editorial-final.css';
 import './jobs-filter-mobile-alignment.css';
 import './jobs-mobile-layout-hotfix.css';
-import './mobile-readability-and-footer-final.css';
-import './login-match-visual.css';
 import './word-spacing-fix.css';
 import './top-chrome-align.css';
 import './ask-everitt-overlay-fix.css';
