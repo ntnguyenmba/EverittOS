@@ -28,6 +28,24 @@ test('fully paid invoice = $0 outstanding', () => {
   assert.equal(breakdown.rows.length, 0);
 });
 
+test('mixed ledger data falls back to amount_paid for invoices without ledger rows', () => {
+  const invoices: InvoiceMetricRow[] = [
+    { id: 'legacy-paid', amount: 500, amount_paid: 500, payment_status: 'paid', status: 'paid', job_id: 'job-legacy' },
+    { id: 'ledger-partial', amount: 800, amount_paid: 0, payment_status: 'partial', status: 'sent', job_id: 'job-ledger' }
+  ];
+  const breakdown = calculateOutstandingBreakdown({
+    invoices,
+    jobs: [],
+    jobPayments: [],
+    invoicePayments: [{ invoice_id: 'ledger-partial', amount: 300, paid_at: '2026-07-10' }]
+  });
+  assert.equal(breakdown.total, 500);
+  assert.equal(breakdown.rows.length, 1);
+  assert.equal(breakdown.rows[0].id, 'ledger-partial');
+  assert.equal(breakdown.rows[0].amountPaid, 300);
+  assert.equal(breakdown.rows[0].amountOwed, 500);
+});
+
 test('partially paid invoice = remaining balance only', () => {
   const invoices: InvoiceMetricRow[] = [
     { id: 'inv-1', amount: 1000, amount_paid: 400, payment_status: 'partial', status: 'sent', job_id: 'job-1' }

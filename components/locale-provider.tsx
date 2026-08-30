@@ -95,11 +95,13 @@ export function LocaleProvider({
     }
 
     window.addEventListener('everittos:locale-change', handleLocaleChange);
+    window.addEventListener('everittos:locale-changed', handleLocaleChange);
     window.addEventListener('storage', handleStorage);
     window.addEventListener('pageshow', handlePageShow);
 
     return () => {
       window.removeEventListener('everittos:locale-change', handleLocaleChange);
+      window.removeEventListener('everittos:locale-changed', handleLocaleChange);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('pageshow', handlePageShow);
     };
@@ -115,7 +117,9 @@ export function LocaleProvider({
       /* ignore */
     }
     writeLocaleCookie(next);
-    window.dispatchEvent(new CustomEvent('everittos:locale-change', { detail: { locale: next } }));
+    const detail = { locale: next };
+    window.dispatchEvent(new CustomEvent('everittos:locale-change', { detail }));
+    window.dispatchEvent(new CustomEvent('everittos:locale-changed', { detail }));
     void persistLocale(next);
   }, []);
 

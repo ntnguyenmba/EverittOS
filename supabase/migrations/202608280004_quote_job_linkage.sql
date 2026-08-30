@@ -1,0 +1,12 @@
+alter table public.jobs add column if not exists quote_id uuid references public.quotes(id) on delete set null;
+alter table public.jobs add column if not exists quote_service_type text;
+alter table public.jobs add column if not exists quote_size_value numeric;
+alter table public.jobs add column if not exists quote_size_unit text;
+alter table public.jobs add column if not exists quote_primary_units numeric;
+alter table public.jobs add column if not exists quote_extra_units numeric;
+alter table public.jobs add column if not exists quote_condition text;
+alter table public.jobs add column if not exists quote_frequency text;
+alter table public.jobs add column if not exists quote_add_ons jsonb not null default '[]'::jsonb;
+alter table public.jobs add column if not exists quote_labor_hours numeric;
+alter table public.jobs add column if not exists quote_source_request text;
+create index if not exists jobs_quote_id_idx on public.jobs(quote_id) where quote_id is not null;

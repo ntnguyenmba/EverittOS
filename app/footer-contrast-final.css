@@ -1,0 +1,82 @@
+/* Shared footer contrast for every EverittOS view. Visual only. */
+
+footer,
+.site-footer,
+.app-footer,
+.dashboard-footer,
+[role='contentinfo'] {
+  color: #132433 !important;
+  background: rgba(255,255,255,.94) !important;
+  border-top: 1px solid rgba(19,36,51,.12) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+footer a,
+.site-footer a,
+.app-footer a,
+.dashboard-footer a,
+[role='contentinfo'] a {
+  color: #17364a !important;
+  -webkit-text-fill-color: #17364a !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  text-decoration-color: rgba(23,54,74,.28) !important;
+}
+
+footer a:hover,
+.site-footer a:hover,
+.app-footer a:hover,
+.dashboard-footer a:hover,
+[role='contentinfo'] a:hover {
+  color: #285d78 !important;
+  -webkit-text-fill-color: #285d78 !important;
+}
+
+footer p,
+footer span,
+.site-footer p,
+.site-footer span,
+.app-footer p,
+.app-footer span,
+.dashboard-footer p,
+.dashboard-footer span,
+[role='contentinfo'] p,
+[role='contentinfo'] span {
+  color: #334b5b !important;
+  -webkit-text-fill-color: #334b5b !important;
+  opacity: 1 !important;
+}
+
+/* Catch existing legal/footer rows that may not use a semantic footer element. */
+.footer-links,
+.legal-links,
+.app-legal-links,
+.footer-legal,
+.footer-meta,
+.copyright-row {
+  color: #132433 !important;
+  background: rgba(255,255,255,.94) !important;
+}
+
+.footer-links a,
+.legal-links a,
+.app-legal-links a,
+.footer-legal a,
+.footer-meta a,
+.copyright-row a {
+  color: #17364a !important;
+  -webkit-text-fill-color: #17364a !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+@media (max-width: 900px) {
+  footer,
+  .site-footer,
+  .app-footer,
+  .dashboard-footer,
+  [role='contentinfo'] {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+}

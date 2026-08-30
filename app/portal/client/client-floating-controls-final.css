@@ -1,0 +1,165 @@
+/* Final client-only polish for mobile/tablet/desktop. */
+#main-content.client-main .client-portal-jobs {
+  position: relative !important;
+  gap: 12px !important;
+}
+
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 102px 0 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+}
+
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar::before,
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar::after {
+  display: none !important;
+  content: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .client-period-select {
+  flex: 0 0 auto !important;
+  width: 160px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .client-period-select select {
+  width: 160px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 38px 0 14px !important;
+  border: 1px solid rgba(36,63,83,.15) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  color: #172433 !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.07) !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child button,
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child .btn {
+  width: auto !important;
+  min-width: 148px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 15px !important;
+  border: 1px solid rgba(36,63,83,.15) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  color: #172433 !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.07) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+/* Place Sign out on the same control row instead of a separate floating line. */
+#main-content.client-main .client-portal-jobs .portal-client-nav {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  z-index: 3 !important;
+  display: flex !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .portal-client-nav .contractor-signout {
+  width: auto !important;
+  min-width: 92px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(36,63,83,.12) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.90) !important;
+  color: #526979 !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.05) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+}
+
+#main-content.client-main .client-portal-jobs .client-empty-state {
+  margin: 4px 0 0 !important;
+  padding: 18px 20px !important;
+  min-height: 0 !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
+}
+
+#main-content.client-main .client-portal-jobs .client-empty-state p {
+  margin: 0 !important;
+  font-size: 15px !important;
+}
+
+@media (max-width: 760px) {
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar {
+    gap: 8px !important;
+    padding-right: 96px !important;
+  }
+
+  #main-content.client-main .client-portal-jobs .client-period-select,
+  #main-content.client-main .client-portal-jobs .client-period-select select {
+    width: 148px !important;
+  }
+
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child button,
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child .btn {
+    min-width: 0 !important;
+    padding: 0 12px !important;
+  }
+
+  #main-content.client-main .client-portal-jobs .portal-client-nav .contractor-signout {
+    min-width: 88px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar {
+    flex-wrap: wrap !important;
+    padding-right: 0 !important;
+  }
+
+  #main-content.client-main .client-portal-jobs .portal-client-nav {
+    position: static !important;
+    justify-content: flex-start !important;
+    margin-top: -2px !important;
+  }
+}

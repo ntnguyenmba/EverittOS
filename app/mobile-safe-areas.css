@@ -18,8 +18,18 @@
   }
 
   html[data-native-app='true'] .app-shell-header,
+  html[data-native-app='true'] .mobile-nav-top {
+    padding-top: 0 !important;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* Installed PWA: browser chrome does not reserve the safe area for us. */
+  html[data-standalone='true'] .dashboard-shell-header {
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+  }
+
   html[data-standalone='true'] .app-shell-header,
-  html[data-native-app='true'] .mobile-nav-top,
   html[data-standalone='true'] .mobile-nav-top {
     padding-top: env(safe-area-inset-top);
     padding-left: max(16px, env(safe-area-inset-left));

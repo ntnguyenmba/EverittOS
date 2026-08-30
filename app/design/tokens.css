@@ -1,0 +1,35 @@
+/* Harvest target. Values copied from winning Jobs / signed-in sheets.
+   Do not invent a new palette here. Do not add !important. */
+
+:root {
+  --eo-ink: #243f53;
+  --eo-muted: #526777;
+  --eo-canvas: #f4f1ea;
+  --eo-view-max: 1120px;
+
+  --eo-space-1: 4px;
+  --eo-space-2: 8px;
+  --eo-space-3: 12px;
+  --eo-space-4: 16px;
+  --eo-space-5: 22px;
+  --eo-space-6: 48px;
+
+  --eo-radius-pill: 999px;
+  --eo-tap: 44px;
+  --eo-control: 48px;
+  --eo-filter-tab: 36px;
+
+  --job-label-gap: 4px;
+  --job-block-gap: 16px;
+  --job-action-gap: 22px;
+  --job-button-gap: 12px;
+  --job-card-pad: 22px;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --job-action-gap: 20px;
+    --job-button-gap: 10px;
+    --job-card-pad: 20px;
+  }
+}

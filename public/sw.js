@@ -1,4 +1,4 @@
-const SW_VERSION = 'everittos-mobile-v1';
+const SW_VERSION = 'everittos-mobile-v2';
 const STATIC_CACHE = `${SW_VERSION}-static`;
 
 const STATIC_ASSETS = ['/offline.html', '/manifest.webmanifest', '/favicon.ico'];
@@ -72,17 +72,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.includes('/_next/static/')) {
-    event.respondWith(
-      caches.open(STATIC_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        if (cached) return cached;
-        const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      })
-    );
-  }
+  /* Next build assets are immutable and uniquely hashed. Let the browser/CDN own
+     them so a service-worker cache can never pin a signed-in UI to an old deploy. */
+  if (url.includes('/_next/static/')) return;
 });
 
 self.addEventListener('message', (event) => {

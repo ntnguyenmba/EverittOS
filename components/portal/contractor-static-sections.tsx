@@ -63,6 +63,33 @@ function formatSectionSummary(
   return true;
 }
 
+function spaceStatusAndPay() {
+  document.querySelectorAll('.portal-job-finance').forEach((row) => {
+    if (!(row instanceof HTMLElement)) return;
+    if (row.querySelector('.portal-finance-sep')) return;
+    const children = Array.from(row.children);
+    if (children.length < 2) {
+      const glued = String(row.textContent || '');
+      const spaced = glued
+        .replace(/([a-z])(Your pay)/gi, '$1 · $2')
+        .replace(/([a-z])(Pay details)/gi, '$1 · $2')
+        .replace(/([a-z])(Tu pago)/gi, '$1 · $2')
+        .replace(/([a-zà-ỹ])(Tiền công)/gi, '$1 · $2');
+      if (spaced !== glued) row.textContent = spaced;
+      return;
+    }
+    const sep = document.createElement('span');
+    sep.className = 'portal-finance-sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.textContent = ' · ';
+    row.insertBefore(sep, children[1]);
+    const status = children[0];
+    if (status && status.textContent) {
+      status.textContent = status.textContent.charAt(0).toUpperCase() + status.textContent.slice(1);
+    }
+  });
+}
+
 export function ContractorStaticSections() {
   const { locale } = useTranslation();
   const normalized = normalizeLocale(locale);
@@ -71,6 +98,7 @@ export function ContractorStaticSections() {
   useEffect(() => {
     let attempts = 0;
     let timer: number | undefined;
+    let observer: MutationObserver | undefined;
 
     const applyOnce = () => {
       attempts += 1;
@@ -80,22 +108,24 @@ export function ContractorStaticSections() {
       const clientCurrent = document.querySelector('.client-portal-jobs #current-jobs');
       const clientPast = document.querySelector('.client-portal-jobs #history');
 
-      const changed = [
-        formatSectionSummary(contractorCurrent, titles.current, 'current', normalized),
-        formatSectionSummary(contractorPast, titles.past, 'past', normalized),
-        formatSectionSummary(clientCurrent, titles.current, 'current', normalized),
-        formatSectionSummary(clientPast, titles.past, 'past', normalized)
-      ].some(Boolean);
+      formatSectionSummary(contractorCurrent, titles.current, 'current', normalized);
+      formatSectionSummary(contractorPast, titles.past, 'past', normalized);
+      formatSectionSummary(clientCurrent, titles.current, 'current', normalized);
+      formatSectionSummary(clientPast, titles.past, 'past', normalized);
+      spaceStatusAndPay();
 
-      if (!changed && attempts < 30) {
-        timer = window.setTimeout(applyOnce, 100);
+      if (attempts < 30) {
+        timer = window.setTimeout(applyOnce, 120);
       }
     };
 
     applyOnce();
+    observer = new MutationObserver(() => spaceStatusAndPay());
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       if (timer) window.clearTimeout(timer);
+      observer?.disconnect();
     };
   }, [normalized, titles.current, titles.past]);
 

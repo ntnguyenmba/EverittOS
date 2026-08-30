@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server';
 import { AI_ACTION_SYSTEM_HINT, parseProposedAction } from '@/lib/ai-actions';
 import { assertAskEverittSearchAccess, searchUsageEvent } from '@/lib/ask-everitt-access';
+import { runContextAwareAskQuery } from '@/lib/ask-everitt/context-query';
 import { detectAskEverittMode } from '@/lib/ask-everitt-intent';
 import { formatPrefetchedContextForAi, prefetchAskEverittContextForAi } from '@/lib/ask-everitt/ai-prefetch';
 import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/ask-everitt/localize';
+import { parseNaturalAskEverittQuery } from '@/lib/ask-everitt/natural-query';
 import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
+import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
+import { buildSmartAskSuggestions } from '@/lib/ask-everitt/smart-suggestions';
+import { runStructuredNaturalQuery } from '@/lib/ask-everitt/structured-query';
+import { runStructuredNaturalQueryV2 } from '@/lib/ask-everitt/structured-query-v2';
+import { runStructuredNaturalQueryV3 } from '@/lib/ask-everitt/structured-query-v3';
+import { queryUnpaidInvoices } from '@/lib/ask-everitt/unpaid-invoices';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
 import { recordAiUsage } from '@/lib/ai-usage-events';
 import { isClientRole, normalizeRole } from '@/lib/roles';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -56,52 +64,106 @@ function pageAwarePrompt(prompt: string, pageContext: string): string {
   return `${prompt}\n\n[Current app context: ${pageContext}]`;
 }
 
+function isNextJobQuestion(prompt: string): boolean {
+  return /\b(?:when(?:'|’)?s|when is|what(?:'|’)?s|what is|show|find|tell me)?\s*(?:my|our|the)?\s*next\s+(?:job|work|appointment)\b|\bnext\s+(?:job|work|appointment)\b/i.test(prompt);
+}
+
+function nextJobSummary(locale: AskEverittLocale, when: string, customer: string | null, title: string): string {
+  const subject = customer ? `${title} · ${customer}` : title;
+  if (locale === 'es') return `Su próximo trabajo es ${subject}, programado para ${when}.`;
+  if (locale === 'vi') return `Công việc tiếp theo là ${subject}, được lên lịch vào ${when}.`;
+  return `Your next job is ${subject}, scheduled for ${when}.`;
+}
+
+function noNextJobSummary(locale: AskEverittLocale): string {
+  if (locale === 'es') return 'No hay próximos trabajos programados.';
+  if (locale === 'vi') return 'Không có công việc sắp tới đã được lên lịch.';
+  return 'No upcoming jobs are scheduled.';
+}
+
+async function queryNextJob(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  organizationId: string,
+  locale: AskEverittLocale
+) {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const today = nowIso.slice(0, 10);
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('id, title, customer_name, status, start_date, due_date, scheduled_start, assigned_to')
+    .eq('organization_id', organizationId)
+    .or(`scheduled_start.gte.${nowIso},start_date.gte.${today},due_date.gte.${today}`)
+    .limit(200);
+
+  if (error) return null;
+
+  const excluded = new Set(['completed', 'complete', 'cancelled', 'canceled', 'archived']);
+  const upcoming = (data || [])
+    .filter((job) => !excluded.has(String(job.status || '').toLowerCase()))
+    .map((job) => {
+      const raw = job.scheduled_start || (job.start_date ? `${job.start_date}T00:00:00` : job.due_date ? `${job.due_date}T00:00:00` : null);
+      const timestamp = raw ? new Date(raw).getTime() : Number.POSITIVE_INFINITY;
+      return { job, raw, timestamp };
+    })
+    .filter((entry) => entry.raw && Number.isFinite(entry.timestamp) && entry.timestamp >= now.getTime() - 12 * 60 * 60 * 1000)
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  const first = upcoming[0];
+  if (!first) {
+    return response(noNextJobSummary(locale), [], {
+      sourcesUsed: ['jobs', 'schedule'],
+      noResultsHint: locale === 'es' ? 'Agregue una fecha u hora a un trabajo para que aparezca aquí.' : locale === 'vi' ? 'Thêm ngày hoặc giờ cho công việc để công việc xuất hiện ở đây.' : 'Add a date or time to a job so it appears here.'
+    });
+  }
+
+  const job = first.job;
+  const when = first.raw || job.start_date || job.due_date || '';
+  const record = buildRecord('jobs', {
+    id: job.id,
+    type: 'job',
+    title: job.title || job.customer_name || 'Job',
+    subtitle: job.customer_name || null,
+    status: job.status || null,
+    date: job.start_date || job.due_date || String(when).slice(0, 10),
+    owner: job.assigned_to ? (locale === 'es' ? 'Trabajador asignado' : locale === 'vi' ? 'Đã phân công nhân viên' : 'Worker assigned') : null,
+    href: `/jobs/${job.id}`
+  });
+
+  return response(nextJobSummary(locale, when, job.customer_name || null, job.title || 'Job'), [record], {
+    sourcesUsed: ['jobs', 'schedule']
+  });
+}
+
 const BUSINESS_DATA_RULES = `Use current workspace data as the source of truth. When the current page or its active filters are relevant, answer in that context instead of silently switching to all-time or all-workspace data. Keep these concepts separate: Money in = customer cash actually received; Still owed = customer balances not yet collected; Job revenue = money received plus customer balances for the selected period; Paid contractors = cash already paid to contractors; Contractor costs = labor cost whether paid or unpaid; Business expenses = non-contractor operating expenses; Money kept = cash received minus paid contractor cash and business expenses; Profit = job revenue minus contractor costs and business expenses. Bookkeeping is operational recordkeeping and is not tax, accounting, or legal advice. If data is insufficient, say what is missing instead of guessing. Prefer exact records and amounts from workspace data, and point the user to the relevant job, customer, invoice, expense, worker, or report when available. Never expose data the user's role is not allowed to access.`;
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
 
   const admin = createAdminSupabase();
-  if (!admin) {
-    return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
-  }
+  if (!admin) return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
 
   const body = (await request.json()) as { prompt?: string; forceMode?: 'search' | 'ai'; locale?: string };
   const prompt = body.prompt?.trim();
   const locale = normalizeAskLocale(body.locale);
-  if (!prompt) {
-    return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
-  }
+  if (!prompt) return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org) {
-    return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
-  }
-
-  if (isClientRole(org.role)) {
-    return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
-  }
+  const org = await fetchOrganizationContextForRequest(supabase, user.id);
+  if (!org) return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
+  if (isClientRole(org.role)) return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  const mode = body.forceMode || detectAskEverittMode(prompt);
+  const natural = parseNaturalAskEverittQuery(prompt);
+  const detectedMode = detectAskEverittMode(prompt);
+  const mode = body.forceMode || (natural.preferSearch ? 'search' : detectedMode);
   const pageContext = currentPageContext(request);
   const contextualPrompt = pageAwarePrompt(prompt, pageContext);
 
-  if (mode === 'search') {
-    const searchAccess = await assertAskEverittSearchAccess(
-      admin,
-      user.id,
-      org.role,
-      org.organizationId,
-      plan
-    );
+  async function runStructuredSearch() {
+    const searchAccess = await assertAskEverittSearchAccess(admin, user.id, org.role, org.organizationId, plan);
     if (!searchAccess.ok) {
       return NextResponse.json(
         { error: searchAccess.message, code: searchAccess.code, mode: 'search' },
@@ -109,97 +171,44 @@ export async function POST(request: Request) {
       );
     }
 
-    const searchResult = await runAskEverittSearchEngine(supabase, org.organizationId, contextualPrompt);
-    await recordAiUsage(admin, searchUsageEvent({
-      workspaceId: org.organizationId,
-      userId: user.id,
-      userRole: normalizeRole(org.role),
-      prompt
-    }));
+    const unpaidInvoices = natural.intent === 'unpaid_invoices'
+      ? await queryUnpaidInvoices(supabase, org.organizationId)
+      : null;
+    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(supabase, org.organizationId, prompt, locale, pageContext);
+    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(supabase, org.organizationId, user.id, prompt, locale);
+    const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(supabase, org.organizationId, locale) : null);
+    const searchResult = directResult || await runAskEverittSearchEngine(supabase, org.organizationId, natural.searchQuery || prompt);
 
+    if (searchResult.results.length === 0) {
+      searchResult.suggestions = await buildSmartAskSuggestions(supabase, org.organizationId, locale, pageContext);
+    }
+
+    await recordAiUsage(admin, searchUsageEvent({ workspaceId: org.organizationId, userId: user.id, userRole: normalizeRole(org.role), prompt }));
     return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
+  if (mode === 'search') return runStructuredSearch();
+
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
-    const status =
-      gate.code === 'plan_required' || gate.code === 'subscription_inactive'
-        ? 403
-        : gate.code === 'rate_limited' ||
-            gate.code === 'everittteam_budget_exhausted' ||
-            gate.code === 'staff_daily_limit' ||
-            gate.code === 'staff_monthly_limit'
-          ? 429
-          : 503;
-    return NextResponse.json(
-      {
-        error: gate.message,
-        code: gate.code,
-        mode: 'ai',
-        searchAvailable: true,
-        locked: gate.code === 'plan_required',
-        requiredPlan: gate.requiredPlan || 'business'
-      },
-      { status }
-    );
+    if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) return runStructuredSearch();
+    const status = gate.code === 'plan_required' || gate.code === 'subscription_inactive' ? 403 : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted' || gate.code === 'staff_daily_limit' || gate.code === 'staff_monthly_limit' ? 429 : 503;
+    return NextResponse.json({ error: gate.message, code: gate.code, mode: 'ai', searchAvailable: true, locked: gate.code === 'plan_required', requiredPlan: gate.requiredPlan || 'business' }, { status });
   }
 
   const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, contextualPrompt);
   const dataContext = formatPrefetchedContextForAi(prefetched);
-
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
-  const messages: AiChatMessage[] = [
-    {
-      role: 'user',
-      content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
-    }
-  ];
-  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, {
-    feature: 'ask_everitt'
-  });
+  const messages: AiChatMessage[] = [{ role: 'user', content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}` }];
+  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, { feature: 'ask_everitt' });
 
-  if (!result.ok) {
-    return NextResponse.json(
-      { error: result.message, code: result.code, mode: 'ai', searchAvailable: true },
-      { status: result.code === 'rate_limited' ? 429 : 503 }
-    );
-  }
+  if (!result.ok) return NextResponse.json({ error: result.message, code: result.code, mode: 'ai', searchAvailable: true }, { status: result.code === 'rate_limited' ? 429 : 503 });
 
   const { cleanReply, action } = parseProposedAction(result.reply);
+  await logAiGeneration(admin, { organizationId: gate.org.organizationId, userId: user.id, prompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
+  await recordAiUsage(admin, { workspaceId: gate.org.organizationId, userId: user.id, userRole: normalizeRole(gate.org.role), feature: 'ask_everitt', mode: 'ai', prompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
 
-  await logAiGeneration(admin, {
-    organizationId: gate.org.organizationId,
-    userId: user.id,
-    prompt,
-    response: cleanReply,
-    model: result.model,
-    feature: 'ask_everitt',
-    usage: result.usage
-  });
-
-  await recordAiUsage(admin, {
-    workspaceId: gate.org.organizationId,
-    userId: user.id,
-    userRole: normalizeRole(gate.org.role),
-    feature: 'ask_everitt',
-    mode: 'ai',
-    prompt,
-    inputTokens: result.usage.promptTokens,
-    outputTokens: result.usage.completionTokens,
-    estimatedCost: result.usage.estimatedCostUsd
-  });
-
-  return NextResponse.json({
-    mode: 'ai',
-    reply: cleanReply,
-    model: result.model,
-    provider: result.provider,
-    action,
-    prefetchedSummary: prefetched.summary,
-    usage: {
-      monthlyUsed: gate.monthlyUsed + 1,
-      monthlyCap: gate.monthlyCap,
-      unlimited: gate.unlimited
-    }
-  });
+  return NextResponse.json({ mode: 'ai', reply: cleanReply, model: result.model, provider: result.provider, action, prefetchedSummary: prefetched.summary, usage: { monthlyUsed: gate.monthlyUsed + 1, monthlyCap: gate.monthlyCap, unlimited: gate.unlimited } });
 }

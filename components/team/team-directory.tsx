@@ -55,6 +55,8 @@ type JobSummary = {
   lastJobAt: string | null;
 };
 
+const PAGE_SIZE = 8;
+
 function roleLabel(role: string) {
   const normalized = normalizeRole(role);
   if (normalized === 'employee') return 'Staff';
@@ -66,9 +68,9 @@ function emptySummary(): JobSummary {
 }
 
 const copy = {
-  en: { noJobsYet: 'No jobs yet' },
-  es: { noJobsYet: 'Aún no hay trabajos' },
-  vi: { noJobsYet: 'Chưa có công việc' }
+  en: { noJobsYet: 'No jobs yet', showMore: 'Show 8 more', showLess: 'Show less', inactive: 'Inactive' },
+  es: { noJobsYet: 'Aún no hay trabajos', showMore: 'Mostrar 8 más', showLess: 'Mostrar menos', inactive: 'Inactivos' },
+  vi: { noJobsYet: 'Chưa có công việc', showMore: 'Hiển thị thêm 8', showLess: 'Thu gọn', inactive: 'Không hoạt động' }
 } as const;
 
 function formatLastJob(value: string | null, noJobsYet: string) {
@@ -86,6 +88,9 @@ export function TeamDirectory() {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const [activeVisibleCount, setActiveVisibleCount] = useState(PAGE_SIZE);
+  const [inactiveVisibleCount, setInactiveVisibleCount] = useState(PAGE_SIZE);
+  const [inactiveExpanded, setInactiveExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -135,18 +140,9 @@ export function TeamDirectory() {
         ids.length
           ? supabase.from('profiles').select('id, full_name, email').in('id', ids)
           : Promise.resolve({ data: [] as ProfileRow[] }),
-        supabase
-          .from('workers')
-          .select('id, auth_user_id, email')
-          .eq('organization_id', workspace.organizationId),
-        supabase
-          .from('jobs')
-          .select('id, assigned_to, assigned_email, status, scheduled_start, start_date, completed_at')
-          .eq('organization_id', workspace.organizationId),
-        supabase
-          .from('job_assignments')
-          .select('job_id, worker_id')
-          .eq('organization_id', workspace.organizationId)
+        supabase.from('workers').select('id, auth_user_id, email').eq('organization_id', workspace.organizationId),
+        supabase.from('jobs').select('id, assigned_to, assigned_email, status, scheduled_start, start_date, completed_at').eq('organization_id', workspace.organizationId),
+        supabase.from('job_assignments').select('job_id, worker_id').eq('organization_id', workspace.organizationId)
       ]);
 
       const profiles = new Map<string, ProfileRow>();
@@ -157,13 +153,7 @@ export function TeamDirectory() {
           const profile = profiles.get(row.user_id);
           const email = profile?.email?.trim() || '';
           const name = profile?.full_name?.trim() || email || 'Team member';
-          return {
-            userId: row.user_id,
-            name,
-            email,
-            role: normalizeRole(row.role),
-            active: row.active
-          };
+          return { userId: row.user_id, name, email, role: normalizeRole(row.role), active: row.active };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -198,17 +188,13 @@ export function TeamDirectory() {
         const directAssignment = String(job.assigned_to || '');
         const directUserId = userIdByWorkerId.get(directAssignment) || (ids.includes(directAssignment) ? directAssignment : undefined);
         addJob(directUserId, job.id);
-
-        if (job.assigned_email) {
-          addJob(userIdByEmail.get(job.assigned_email.trim().toLowerCase()), job.id);
-        }
+        if (job.assigned_email) addJob(userIdByEmail.get(job.assigned_email.trim().toLowerCase()), job.id);
       }
 
-      for (const assignment of assignments) {
-        addJob(userIdByWorkerId.get(assignment.worker_id), assignment.job_id);
-      }
+      for (const assignment of assignments) addJob(userIdByWorkerId.get(assignment.worker_id), assignment.job_id);
 
       const summaries: Record<string, JobSummary> = {};
+      const now = Date.now();
       for (const id of ids) {
         const summary = emptySummary();
         for (const jobId of jobIdsByUserId.get(id) || []) {
@@ -218,8 +204,13 @@ export function TeamDirectory() {
           if (status === 'completed') summary.completed += 1;
           else if (status === 'active' || status === 'unknown') summary.active += 1;
 
-          const value = job.completed_at || job.scheduled_start || job.start_date;
-          if (value && (!summary.lastJobAt || value > summary.lastJobAt)) summary.lastJobAt = value;
+          const candidates = [job.completed_at, job.scheduled_start, job.start_date]
+            .filter((value): value is string => Boolean(value))
+            .map((value) => ({ value, time: new Date(value).getTime() }))
+            .filter(({ time }) => Number.isFinite(time) && time <= now)
+            .sort((a, b) => b.time - a.time);
+          const latestPastJob = candidates[0]?.value || null;
+          if (latestPastJob && (!summary.lastJobAt || new Date(latestPastJob).getTime() > new Date(summary.lastJobAt).getTime())) summary.lastJobAt = latestPastJob;
         }
         summaries[id] = summary;
       }
@@ -235,18 +226,64 @@ export function TeamDirectory() {
     return () => { cancelled = true; };
   }, []);
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
+    setActiveVisibleCount(PAGE_SIZE);
+    setInactiveVisibleCount(PAGE_SIZE);
+    setInactiveExpanded(false);
+  }, [query, roleFilter, statusFilter]);
+
+  const roleAndSearchMatches = useMemo(() => {
     const text = query.trim().toLowerCase();
     return members.filter((member) => {
       if (roleFilter !== 'all' && member.role !== roleFilter) return false;
-      if (statusFilter === 'active' && !member.active) return false;
-      if (statusFilter === 'inactive' && member.active) return false;
       if (!text) return true;
       return [member.name, member.email, roleLabel(member.role)].some((value) => value.toLowerCase().includes(text));
     });
-  }, [members, query, roleFilter, statusFilter]);
+  }, [members, query, roleFilter]);
 
+  const activeMatches = roleAndSearchMatches.filter((member) => member.active);
+  const inactiveMatches = roleAndSearchMatches.filter((member) => !member.active);
+  const filtered = statusFilter === 'active' ? activeMatches : statusFilter === 'inactive' ? inactiveMatches : roleAndSearchMatches;
   const activeCount = members.filter((member) => member.active).length;
+
+  function renderMember(member: DirectoryMember) {
+    const summary = jobSummaries[member.userId] || emptySummary();
+    return (
+      <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
+        <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${member.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {member.name} in a new tab</span></Link>
+        <div className="team-member-copy">
+          <strong>{member.name}</strong>
+          <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
+          {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
+          <p className="muted team-member-summary">{summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt, c.noJobsYet)}</p>
+        </div>
+        {member.active ? (
+          <div className="inline-actions team-member-actions">
+            <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">View jobs</Link>
+            <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderPagedList(list: DirectoryMember[], visibleCount: number, setVisibleCount: (value: number) => void) {
+    const visible = list.slice(0, visibleCount);
+    return (
+      <>
+        <div className="customer-list team-member-list">{visible.map(renderMember)}</div>
+        {list.length > PAGE_SIZE ? (
+          <div className="team-directory-list-toggle" style={{ marginTop: 16 }}>
+            {visibleCount < list.length ? (
+              <button type="button" className="btn" onClick={() => setVisibleCount(Math.min(visibleCount + PAGE_SIZE, list.length))}>{c.showMore}</button>
+            ) : (
+              <button type="button" className="btn" onClick={() => setVisibleCount(PAGE_SIZE)}>{c.showLess}</button>
+            )}
+          </div>
+        ) : null}
+      </>
+    );
+  }
 
   return (
     <section className="card team-directory-card">
@@ -289,30 +326,22 @@ export function TeamDirectory() {
       {error ? <p className="auth-message auth-message-error team-directory-state">{error}</p> : null}
       {!loading && !error && filtered.length === 0 ? <p className="muted team-directory-state">No matching team members.</p> : null}
 
-      <div className="customer-list team-member-list">
-        {filtered.map((member) => {
-          const summary = jobSummaries[member.userId] || emptySummary();
-          return (
-            <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
-              <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${member.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {member.name} in a new tab</span></Link>
-              <div className="team-member-copy">
-                <strong>{member.name}</strong>
-                <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
-                {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
-                <p className="muted team-member-summary">
-                  {summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt, c.noJobsYet)}
-                </p>
-              </div>
-              {member.active ? (
-                <div className="inline-actions team-member-actions">
-                  <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">View jobs</Link>
-                  <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
+      {!loading && !error && statusFilter === 'active' && activeMatches.length > 0 ? renderPagedList(activeMatches, activeVisibleCount, setActiveVisibleCount) : null}
+      {!loading && !error && statusFilter === 'inactive' && inactiveMatches.length > 0 ? renderPagedList(inactiveMatches, inactiveVisibleCount, setInactiveVisibleCount) : null}
+
+      {!loading && !error && statusFilter === 'all' ? (
+        <>
+          {activeMatches.length > 0 ? renderPagedList(activeMatches, activeVisibleCount, setActiveVisibleCount) : null}
+          {inactiveMatches.length > 0 ? (
+            <div style={{ marginTop: 20 }}>
+              <button type="button" className="btn" onClick={() => setInactiveExpanded((value) => !value)} aria-expanded={inactiveExpanded} style={{ width: '100%', justifyContent: 'space-between' }}>
+                <span>{c.inactive} ({inactiveMatches.length})</span><span aria-hidden="true">{inactiveExpanded ? '⌃' : '⌄'}</span>
+              </button>
+              {inactiveExpanded ? <div style={{ marginTop: 12 }}>{renderPagedList(inactiveMatches, inactiveVisibleCount, setInactiveVisibleCount)}</div> : null}
+            </div>
+          ) : null}
+        </>
+      ) : null}
     </section>
   );
 }

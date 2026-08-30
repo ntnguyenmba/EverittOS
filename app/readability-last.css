@@ -1,0 +1,101 @@
+/* Final signed-in readability guardrail.
+   Applies after visual-unify.css. No feature, route, role, or workflow changes. */
+
+:root {
+  --everitt-readable-ink: #102b3d;
+  --everitt-readable-muted: #31495b;
+  --everitt-readable-surface: #ffffff;
+  --everitt-readable-accent: #243f53;
+  --everitt-readable-on-accent: #ffffff;
+  --everitt-inline-gap: 8px;
+  --everitt-control-gap: 12px;
+}
+
+/* Preserve real word/element separation in compact summary rows. */
+.dashboard-shell :is(.bookkeeping-ledger-summary, .summary-row, .metric-summary, .record-summary, .status-summary),
+.role-portal-shell :is(.bookkeeping-ledger-summary, .summary-row, .metric-summary, .record-summary, .status-summary) {
+  column-gap: var(--everitt-inline-gap) !important;
+  row-gap: var(--everitt-inline-gap) !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span,
+.role-portal-shell .bookkeeping-ledger-summary > span {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: var(--everitt-inline-gap) !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary,
+.role-portal-shell .bookkeeping-ledger-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  gap: var(--everitt-control-gap) !important;
+  align-items: center !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-total,
+.role-portal-shell .bookkeeping-ledger-total {
+  margin-left: var(--everitt-inline-gap) !important;
+}
+
+/* Light cards/panels always use dark readable ink. */
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card),
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) {
+  color: var(--everitt-readable-ink) !important;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) :is(h1, h2, h3, h4, strong, label, summary),
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) :is(h1, h2, h3, h4, strong, label, summary) {
+  color: var(--everitt-readable-ink) !important;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) .muted,
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) .muted {
+  color: var(--everitt-readable-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Filled Everitt actions always use a light foreground. */
+.dashboard-shell :is(.btn-primary, .is-active, [aria-pressed='true']),
+.role-portal-shell :is(.btn-primary, .is-active, [aria-pressed='true']) {
+  background-color: var(--everitt-readable-accent) !important;
+  border-color: var(--everitt-readable-accent) !important;
+  color: var(--everitt-readable-on-accent) !important;
+}
+
+.dashboard-shell :is(.btn-primary, .is-active, [aria-pressed='true']) *,
+.role-portal-shell :is(.btn-primary, .is-active, [aria-pressed='true']) * {
+  color: var(--everitt-readable-on-accent) !important;
+}
+
+/* Unfilled controls remain dark on light surfaces. */
+.dashboard-shell :is(button, .btn, input, select, textarea):not(.btn-primary):not(.is-active):not([aria-pressed='true']),
+.role-portal-shell :is(button, .btn, input, select, textarea):not(.btn-primary):not(.is-active):not([aria-pressed='true']) {
+  color: var(--everitt-readable-ink);
+}
+
+/* Common adjacent inline pieces must never visually concatenate. */
+.dashboard-shell :is(summary, .summary-row, .metric-summary, .record-summary, .status-summary) > * + *,
+.role-portal-shell :is(summary, .summary-row, .metric-summary, .record-summary, .status-summary) > * + * {
+  margin-left: var(--everitt-inline-gap);
+}
+
+/* On narrow screens, wrapping is preferred over crushed text. */
+@media (max-width: 640px) {
+  .dashboard-shell .bookkeeping-ledger-summary,
+  .role-portal-shell .bookkeeping-ledger-summary {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .dashboard-shell .bookkeeping-ledger-summary::after,
+  .role-portal-shell .bookkeeping-ledger-summary::after {
+    grid-column: 2 !important;
+  }
+
+  .dashboard-shell .bookkeeping-ledger-total,
+  .role-portal-shell .bookkeeping-ledger-total {
+    grid-column: 1 !important;
+    margin-left: 0 !important;
+  }
+}

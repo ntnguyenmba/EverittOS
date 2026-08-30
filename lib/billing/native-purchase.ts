@@ -14,6 +14,11 @@ function customerStoreError(error: unknown, fallback: string): string {
   return technical ? fallback : message || fallback;
 }
 
+function notifyWorkspacePlanRefresh(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event('everittos:workspace-plan-refresh'));
+}
+
 export async function loadNativeStoreProducts(productIds: string[]): Promise<StoreProductInfo[]> {
   if (!isStoreBillingAvailable()) return [];
   try {
@@ -66,6 +71,7 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
       if (!res.ok || !json.ok) {
         return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
+      notifyWorkspacePlanRefresh();
       return {
         ok: true,
         plan: json.plan || 'free',
@@ -102,6 +108,7 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
       if (!res.ok || !json.ok) {
         return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
+      notifyWorkspacePlanRefresh();
       return {
         ok: true,
         plan: json.plan || 'free',
@@ -172,6 +179,7 @@ export async function restoreNativePurchases(): Promise<{
     if (!lastPlan) {
       return { restored: false, message: 'We could not restore purchases. Please try again.' };
     }
+    notifyWorkspacePlanRefresh();
     return { restored: true, message: 'Purchases restored', plan: lastPlan };
   } catch (error) {
     return { restored: false, message: customerStoreError(error, 'We could not restore purchases. Please try again.') };

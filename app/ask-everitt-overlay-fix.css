@@ -1,0 +1,103 @@
+/* Keep Ask Everitt above every app shell/header layer and make its input reachable. */
+.everitt-cmd-trigger {
+  position: relative !important;
+  z-index: 8 !important;
+  pointer-events: auto !important;
+}
+
+.everitt-cmd-overlay {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  min-height: 100dvh;
+  height: 100dvh;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  align-items: flex-start;
+  overflow: hidden;
+  pointer-events: auto !important;
+  background: rgba(18, 37, 50, 0.42) !important;
+}
+
+body:has(.everitt-cmd-overlay) .dashboard-shell > .main,
+body:has(.everitt-cmd-overlay) .main {
+  z-index: 2147482999 !important;
+}
+
+body:has(.everitt-cmd-overlay) .dashboard-shell-mobile,
+body:has(.everitt-cmd-overlay) .mobile-nav,
+body:has(.everitt-cmd-overlay) .mobile-nav-bar {
+  z-index: 1 !important;
+}
+
+body:has(.everitt-cmd-overlay) {
+  overflow: hidden !important;
+}
+
+.everitt-cmd-palette {
+  position: relative !important;
+  z-index: 2147483001 !important;
+  width: min(680px, 100%);
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 32px));
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+  pointer-events: auto !important;
+  background: #fff !important;
+}
+
+.everitt-cmd-bar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--surface, #fff);
+  padding-top: 2px;
+}
+
+.everitt-cmd-input {
+  min-width: 0;
+  min-height: 52px;
+  font-size: 16px;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.everitt-cmd-close {
+  z-index: 8;
+  pointer-events: auto !important;
+}
+
+.everitt-cmd-footer {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .everitt-cmd-overlay {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: 10px;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100dvh - max(20px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 20px));
+    border-radius: 18px;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .everitt-cmd-overlay {
+    min-height: 100vh;
+    height: 100vh;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100vh - 32px);
+  }
+}

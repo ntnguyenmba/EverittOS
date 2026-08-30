@@ -1,0 +1,183 @@
+/* Shared Worker and Client header treatment matched to the Owner mobile/tablet shell. */
+@media (max-width: 1279px) {
+  /* Outer portal header is layout-only. The logo row itself is the single visible header surface. */
+  .contractor-dashboard-shell > .contractor-mobile-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)) !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    outline: 0 !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-mobile-header::before,
+  .contractor-dashboard-shell > .contractor-mobile-header::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo,
+  .client-dashboard-shell .contractor-mobile-brand-logo {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: min(1240px, 100%) !important;
+    max-width: 100% !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    margin: 0 auto !important;
+    padding: 9px 14px !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(37,54,74,.13) !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.94) !important;
+    color: #173044 !important;
+    box-shadow: 0 8px 24px rgba(37,54,74,.08) !important;
+    text-decoration: none !important;
+    outline: 0 !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo::before,
+  .contractor-mobile-header .contractor-mobile-brand-logo::after,
+  .client-dashboard-shell .contractor-mobile-brand-logo::before,
+  .client-dashboard-shell .contractor-mobile-brand-logo::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-image,
+  .client-dashboard-shell .contractor-mobile-brand-logo .brand-logo-image,
+  .client-dashboard-shell .brand-logo .brand-logo-image {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    flex: 0 0 34px !important;
+    border-radius: 9px !important;
+    object-fit: cover !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-name,
+  .client-dashboard-shell .contractor-mobile-brand-logo .brand-logo-name,
+  .client-dashboard-shell .brand-logo-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    color: #173044 !important;
+    font-family: var(--font-manrope), Manrope, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    font-style: normal !important;
+    letter-spacing: -.02em !important;
+    text-transform: none !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-main {
+    padding-top: 14px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .contractor-dashboard-shell > .contractor-mobile-header {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-main {
+    padding: 14px 18px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .contractor-dashboard-shell .contractor-portal-hero > .contractor-role-label,
+  .contractor-dashboard-shell .contractor-portal-hero > h1,
+  .contractor-dashboard-shell .contractor-portal-hero > .contractor-worker-name {
+    display: none !important;
+  }
+
+  .contractor-main .contractor-portal-hero {
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .contractor-dashboard-shell .contractor-next-job {
+    margin: 0 !important;
+    padding: 18px !important;
+    border: 1px solid rgba(36,63,83,.10) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 10px 24px rgba(18,40,56,.075) !important;
+  }
+
+  .contractor-dashboard-shell .contractor-content-card:has(.job-visits-list),
+  .contractor-dashboard-shell section:has(> .job-visits-list) {
+    margin: 0 0 18px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .contractor-dashboard-shell .job-visits-list {
+    display: grid !important;
+    gap: 16px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .contractor-dashboard-shell .job-visits-list > .portal-job-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    border: 1px solid rgba(36,63,83,.10) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 10px 24px rgba(18,40,56,.075) !important;
+  }
+
+  .client-dashboard-shell .client-portal-jobs {
+    display: grid !important;
+    gap: 16px !important;
+    color: #1f3443 !important;
+    font-family: inherit !important;
+  }
+
+  .client-dashboard-shell .role-summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 12px !important;
+    margin: 0 !important;
+  }
+
+  .client-dashboard-shell .portal-dashboard-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}

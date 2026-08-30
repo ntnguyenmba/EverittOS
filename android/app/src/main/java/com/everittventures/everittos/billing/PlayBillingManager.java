@@ -31,6 +31,8 @@ import java.util.function.Consumer;
  * Pending purchases never unlock paid access on the client.
  */
 public final class PlayBillingManager implements PurchasesUpdatedListener {
+    private static final String MONTHLY_BASE_PLAN_ID = "monthly";
+
     public interface ProductInfo {
         String getProductId();
         String getTitle();
@@ -99,15 +101,17 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                     onError.accept(billingResult.getDebugMessage());
                     return;
                 }
-                productDetailsById.clear();
+                // Merge into the cache instead of clearing it. The billing screen loads
+                // several plan cards in parallel, and clearing here made whichever query
+                // completed last the only plan that could still be purchased.
                 List<Map<String, Object>> mapped = new ArrayList<>();
                 for (ProductDetails details : productDetailsList) {
                     productDetailsById.put(details.getProductId(), details);
                     String price = "";
-                    List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-                    if (offers != null && !offers.isEmpty()) {
+                    ProductDetails.SubscriptionOfferDetails monthlyOffer = findMonthlyOffer(details);
+                    if (monthlyOffer != null) {
                         List<ProductDetails.PricingPhase> phases =
-                                offers.get(0).getPricingPhases().getPricingPhaseList();
+                                monthlyOffer.getPricingPhases().getPricingPhaseList();
                         if (!phases.isEmpty()) {
                             price = phases.get(0).getFormattedPrice();
                         }
@@ -128,28 +132,47 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
     public void launchPurchase(Activity activity, String productId, Consumer<String> onError) {
         ensureReady(() -> {
             ProductDetails details = productDetailsById.get(productId);
-            if (details == null) {
-                onError.accept("Product not loaded");
+            if (details != null) {
+                launchLoadedPurchase(activity, details, onError);
                 return;
             }
-            List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-            if (offers == null || offers.isEmpty()) {
-                onError.accept("No offer available");
-                return;
-            }
-            BillingFlowParams.ProductDetailsParams productDetailsParams =
-                    BillingFlowParams.ProductDetailsParams.newBuilder()
-                            .setProductDetails(details)
-                            .setOfferToken(offers.get(0).getOfferToken())
-                            .build();
-            BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
-                    .build();
-            BillingResult result = billingClient.launchBillingFlow(activity, flowParams);
-            if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                onError.accept(result.getDebugMessage());
-            }
+
+            // A user can tap before the price-loading request finishes. Load the exact
+            // subscription on demand instead of failing with "Product not loaded".
+            queryProducts(
+                    Collections.singletonList(productId),
+                    ignored -> {
+                        ProductDetails loaded = productDetailsById.get(productId);
+                        if (loaded == null) {
+                            onError.accept("Product unavailable");
+                            return;
+                        }
+                        launchLoadedPurchase(activity, loaded, onError);
+                    },
+                    onError
+            );
         }, onError);
+    }
+
+    private void launchLoadedPurchase(Activity activity, ProductDetails details, Consumer<String> onError) {
+        ProductDetails.SubscriptionOfferDetails monthlyOffer = findMonthlyOffer(details);
+        if (monthlyOffer == null) {
+            onError.accept("Monthly base plan is unavailable");
+            return;
+        }
+
+        BillingFlowParams.ProductDetailsParams productDetailsParams =
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                        .setProductDetails(details)
+                        .setOfferToken(monthlyOffer.getOfferToken())
+                        .build();
+        BillingFlowParams flowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
+                .build();
+        BillingResult result = billingClient.launchBillingFlow(activity, flowParams);
+        if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+            onError.accept(result.getDebugMessage());
+        }
     }
 
     public void queryExistingPurchases(Consumer<List<PlayBillingModels.PurchasePayload>> onSuccess, Consumer<String> onError) {
@@ -210,6 +233,19 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                 listener.accept(payload);
             }
         }
+    }
+
+    @Nullable
+    private ProductDetails.SubscriptionOfferDetails findMonthlyOffer(ProductDetails details) {
+        List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+        if (offers == null || offers.isEmpty()) return null;
+
+        for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+            if (MONTHLY_BASE_PLAN_ID.equals(offer.getBasePlanId())) {
+                return offer;
+            }
+        }
+        return null;
     }
 
     private void ensureReady(Runnable ready, Consumer<String> onError) {

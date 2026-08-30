@@ -27,6 +27,7 @@ type LocalizedEmptyStateProps = {
   compact?: boolean;
   icon?: 'default' | 'none';
   onPrimaryClick?: () => void;
+  showAction?: boolean;
 };
 
 const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
@@ -44,7 +45,7 @@ const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
   photos: '/jobs'
 };
 
-export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }: LocalizedEmptyStateProps) {
+export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick, showAction = true }: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
   const actionLabel = t(`empty.${emptyKey}.action`);
   const description = t(`empty.${emptyKey}.description`);
@@ -52,7 +53,7 @@ export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }:
   const hasActionLabel = Boolean(actionLabel) && !isMissingTranslationKey(actionLabel);
   const hasDescription = Boolean(description) && !isMissingTranslationKey(description);
 
-  const primaryAction = onPrimaryClick && hasActionLabel ? (
+  const primaryAction = !showAction ? undefined : onPrimaryClick && hasActionLabel ? (
     <button type="button" className="btn btn-primary" onClick={onPrimaryClick}>
       {actionLabel}
     </button>

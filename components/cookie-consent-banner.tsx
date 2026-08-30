@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   defaultConsent,
@@ -12,16 +13,25 @@ import {
 import { useTranslation } from '@/components/locale-provider';
 import { isNativePlatform } from '@/lib/platform/detect';
 
+const AUTH_FIRST_SCREEN_PATHS = new Set([
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/confirm-email'
+]);
+
 export function CookieConsentBanner() {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [prefs, setPrefs] = useState<CookieConsent>(defaultConsent());
 
   useEffect(() => {
-    // Native iOS and Android apps do not show the web cookie-consent banner.
-    // Optional analytics/tracking permissions are handled separately from web cookie consent.
-    if (isNativePlatform()) {
+    // Keep native apps and the first authentication screen free of consent overlays.
+    // Web consent appears after the user reaches the app or another non-auth page.
+    if (isNativePlatform() || AUTH_FIRST_SCREEN_PATHS.has(pathname)) {
       setVisible(false);
       setManageOpen(false);
       return;
@@ -31,8 +41,10 @@ export function CookieConsentBanner() {
       setVisible(true);
       return;
     }
+
     setPrefs(readCookieConsent() || defaultConsent());
-  }, []);
+    setVisible(false);
+  }, [pathname]);
 
   function save(consent: CookieConsent) {
     writeCookieConsent(consent);

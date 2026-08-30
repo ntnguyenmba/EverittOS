@@ -16,7 +16,7 @@ export function EmptyState({
   icon = 'default'
 }: EmptyStateProps) {
   return (
-    <div className={compact ? 'empty-state empty-state-compact' : 'empty-state card'} role="status">
+    <div className={compact ? 'empty-state empty-state-compact card' : 'empty-state card'} role="status">
       {icon === 'default' ? <div className="empty-state-visual" aria-hidden="true" /> : null}
       <h3>{title}</h3>
       {description ? <p className="muted">{description}</p> : null}
