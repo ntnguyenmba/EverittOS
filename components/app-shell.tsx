@@ -64,20 +64,21 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
           overflow-x: clip;
-          background: #e9eef2;
+          background: #243f53;
         }
         .dashboard-shell-background {
           position: fixed;
           inset: 0;
           z-index: 0;
           pointer-events: none;
+          background-color: #243f53;
           background-image: url('/hero.jpg');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          opacity: 0.78;
-          filter: saturate(0.96) contrast(1.04) brightness(0.98);
-          transform: scale(1.01);
+          opacity: 1;
+          filter: none;
+          transform: none;
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { grid-area: side; display: flex; }
@@ -96,7 +97,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell .owner-home-primary p { line-height:1.55!important; overflow-wrap:anywhere; }
         .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:var(--everitt-control-gap)!important; padding-top:4px; }
         .role-portal-shell .btn,.role-portal-shell button,.role-portal-shell select { min-height: 44px; }
-        .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#3f586a!important; border-color:#3f586a!important; color:#fff!important; }
+        .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#243f53!important; border-color:#243f53!important; color:#fff!important; }
         .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--everitt-control-gap)!important; width:100%; }
         .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--everitt-section-gap)!important; }
         .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
