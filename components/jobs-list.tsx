@@ -39,19 +39,25 @@ type Job = {
 const JOB_SELECT = 'id, title, customer_name, address, status, assigned_to, assigned_email, start_date, due_date, scheduled_start, scheduled_end, timezone, created_at, revenue_amount';
 const LOAD_TIMEOUT_MS = 8000;
 
+const jobsCopy = {
+  en: { newJob:'New job', all:'All', today:'Today', active:'Active', finished:'Finished', loading:'Loading…', tryAgain:'Try again', date:'Date', address:'Address', assignedTo:'Assigned to', customerPay:'Customer Pay', status:'Status', details:'Details', open:'Open', unassigned:'Unassigned', unscheduled:'Unscheduled', job:'Job' },
+  es: { newJob:'Nuevo trabajo', all:'Todos', today:'Hoy', active:'Activos', finished:'Terminados', loading:'Cargando…', tryAgain:'Intentar de nuevo', date:'Fecha', address:'Dirección', assignedTo:'Asignado a', customerPay:'Pago del cliente', status:'Estado', details:'Detalles', open:'Abrir', unassigned:'Sin asignar', unscheduled:'Sin programar', job:'Trabajo' },
+  vi: { newJob:'Công việc mới', all:'Tất cả', today:'Hôm nay', active:'Đang làm', finished:'Đã xong', loading:'Đang tải…', tryAgain:'Thử lại', date:'Ngày', address:'Địa chỉ', assignedTo:'Giao cho', customerPay:'Khách trả', status:'Trạng thái', details:'Chi tiết', open:'Mở', unassigned:'Chưa giao', unscheduled:'Chưa lịch', job:'Công việc' }
+} as const;
+
 function jobNeedsWorker(job: Job) {
   const status = normalizeJobStatus(job.status);
   if (status === 'completed' || status === 'cancelled') return false;
   return !job.assigned_to && !job.assigned_email;
 }
 
-function jobLabel(job: Job) {
-  return String(job.address || job.title || '').trim() || 'Job';
+function jobLabel(job: Job, fallback: string) {
+  return String(job.address || job.title || '').trim() || fallback;
 }
 
-function formatDate(job: Job, locale: string) {
+function formatDate(job: Job, locale: string, unscheduled: string) {
   const value = job.scheduled_start || job.start_date || job.due_date;
-  if (!value) return 'Unscheduled';
+  if (!value) return unscheduled;
   const date = job.scheduled_start ? new Date(value) : new Date(`${value.slice(0, 10)}T12:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, {
@@ -86,6 +92,7 @@ async function withTimeout<T>(task: Promise<T>, ms: number): Promise<T> {
 export function JobsList() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const c = jobsCopy[locale] || jobsCopy.en;
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
@@ -192,21 +199,21 @@ export function JobsList() {
       <div className="jobs-list-page">
         <PageHeader
           title={t('nav.jobs')}
-          action={managerView ? <Link className="btn btn-primary" href="/jobs/new">New job</Link> : null}
+          action={managerView ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
         />
-        <div className="jobs-filter-tabs" aria-label="Job status filters">
-          <Link href="/jobs" className="jobs-filter-tab">All</Link>
-          <Link href="/jobs?period=today" className="jobs-filter-tab">Today</Link>
-          <Link href="/jobs?status=active" className="jobs-filter-tab">Active</Link>
-          <Link href="/jobs?status=finished" className="jobs-filter-tab">Finished</Link>
+        <div className="jobs-filter-tabs" aria-label={t('nav.jobs')}>
+          <Link href="/jobs" className="jobs-filter-tab">{c.all}</Link>
+          <Link href="/jobs?period=today" className="jobs-filter-tab">{c.today}</Link>
+          <Link href="/jobs?status=active" className="jobs-filter-tab">{c.active}</Link>
+          <Link href="/jobs?status=finished" className="jobs-filter-tab">{c.finished}</Link>
         </div>
         {loadError ? (
           <div className="card">
             <p className="auth-message auth-message-error">{loadError}</p>
-            <button type="button" className="btn" onClick={() => void load()}>Try again</button>
+            <button type="button" className="btn" onClick={() => void load()}>{c.tryAgain}</button>
           </div>
         ) : null}
-        {loading ? <p className="loading-state" role="status">Loading…</p> : null}
+        {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
         {!loading && rows.length === 0 && !loadError ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
           <div className="card jobs-table-card">
@@ -214,12 +221,12 @@ export function JobsList() {
               <table className="jobs-operations-table jobs-mobile-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Address</th>
-                    <th>Assigned to</th>
-                    {isOwner ? <th>Customer Pay</th> : null}
-                    <th>Status</th>
-                    <th>Details</th>
+                    <th>{c.date}</th>
+                    <th>{c.address}</th>
+                    <th>{c.assignedTo}</th>
+                    {isOwner ? <th>{c.customerPay}</th> : null}
+                    <th>{c.status}</th>
+                    <th>{c.details}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -240,19 +247,19 @@ export function JobsList() {
                           }
                         }}
                       >
-                        <td>{formatDate(job, localeCode)}</td>
+                        <td>{formatDate(job, localeCode, c.unscheduled)}</td>
                         <td>
                           <Link href={href} className="jobs-property-link" onClick={(event) => event.stopPropagation()}>
-                            {jobLabel(job)}
+                            {jobLabel(job, c.job)}
                           </Link>
                           {isOwner && job.customer_name ? <div className="jobs-secondary">{job.customer_name}</div> : null}
                         </td>
-                        <td>{assigned || (jobNeedsWorker(job) ? 'Unassigned' : '-')}</td>
+                        <td>{assigned || (jobNeedsWorker(job) ? c.unassigned : '-')}</td>
                         {isOwner ? <td>{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '-'}</td> : null}
                         <td><StatusPill status={job.status} /></td>
                         <td>
                           <Link className="btn btn-sm" href={href} onClick={(event) => event.stopPropagation()}>
-                            Open
+                            {c.open}
                           </Link>
                         </td>
                       </tr>
