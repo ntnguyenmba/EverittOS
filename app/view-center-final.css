@@ -1,0 +1,187 @@
+/* Last-loaded alignment lock.
+   One centered column. Equal left/right inset. Cards, search, and footer share width. */
+
+:root {
+  --eo-view-inset: clamp(14px, 4.2vw, 28px);
+  --eo-view-max: 760px;
+}
+
+@media (min-width: 900px) {
+  :root { --eo-view-max: 920px; }
+}
+
+@media (min-width: 1200px) {
+  :root { --eo-view-max: 1080px; }
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.contractor-main,
+.client-main {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+@media (max-width: 1440px) {
+  .dashboard-shell,
+  .dashboard-shell.dashboard-shell-desktop {
+    display: block !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell > .main,
+  .dashboard-shell .main,
+  .main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    left: auto !important;
+    inset: auto !important;
+  }
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.role-portal-shell .main,
+.contractor-main,
+.client-main,
+.app-page-content,
+.app-page-stage,
+.page-content,
+.dashboard-content,
+.today-page,
+.dashboard-home,
+.owner-home-sheet,
+.contractor-dashboard,
+.client-upcoming-simple {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-stage,
+.role-portal-shell .app-page-content,
+.contractor-main .app-page-content,
+.client-main .app-page-content,
+.today-page,
+.dashboard-home {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+}
+
+.dashboard-shell .app-page-content > *,
+.dashboard-shell .app-page-stage > *,
+.role-portal-shell .app-page-content > *,
+.contractor-main > *,
+.client-main > *,
+.today-page > *,
+.dashboard-home > *,
+.owner-home-sheet,
+.owner-home-sheet > *,
+.dashboard-shell .everitt-cmd-trigger,
+.role-portal-shell .everitt-cmd-trigger,
+.contractor-main .everitt-cmd-trigger,
+.dashboard-shell .app-footer,
+.role-portal-shell .app-footer,
+.app-footer,
+.dashboard-shell .page-header,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .role-summary-card,
+.dashboard-shell .client-job-card,
+.dashboard-shell .quote-workspace,
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-shell-minimal {
+  width: min(100%, var(--eo-view-max)) !important;
+  max-width: var(--eo-view-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-authenticated-header,
+.dashboard-shell .dashboard-shell-mobile,
+.dashboard-shell .app-page-top {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.dashboard-shell .app-authenticated-header > *,
+.dashboard-shell .dashboard-shell-mobile > *,
+.dashboard-shell .app-page-top > *:not(.sidebar) {
+  width: min(100%, calc(var(--eo-view-max) + (var(--eo-view-inset) * 2))) !important;
+  max-width: calc(var(--eo-view-max) + (var(--eo-view-inset) * 2)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .everitt-cmd-trigger {
+  display: block !important;
+}
+
+.dashboard-shell .app-footer,
+.app-footer {
+  width: min(100%, var(--eo-view-max)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 640px) {
+  :root { --eo-view-inset: 16px; --eo-view-max: 100%; }
+
+  .dashboard-shell .app-page-content,
+  .dashboard-shell .app-page-stage,
+  .today-page,
+  .dashboard-home {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .dashboard-shell .app-page-content > *,
+  .dashboard-shell .app-page-stage > *,
+  .today-page > *,
+  .dashboard-home > *,
+  .dashboard-shell .everitt-cmd-trigger,
+  .dashboard-shell .app-footer,
+  .app-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
