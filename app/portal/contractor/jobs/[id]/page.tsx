@@ -72,7 +72,6 @@ export default function ContractorJobDetailPage() {
   const isInProgress = normalizedStatus === 'active' || normalizedStatus === 'in_progress';
 
   return <div className="contractor-dashboard contractor-job-packet">
-    <div className="contractor-job-back"><Link href={CONTRACTOR_HOME_PATH} className="btn">{t('portal.contractor.back')}</Link></div>
     {loading ? <div className="card">{t('portal.contractor.loading')}</div> : null}
     {!loading && notFound ? <div className="card" role="alert"><p>{t('portal.contractor.jobNotFound')}</p><Link href={CONTRACTOR_HOME_PATH} className="btn">{t('portal.contractor.myJobs')}</Link></div> : null}
     {!loading && view ? <section className="card contractor-job-packet-card">
