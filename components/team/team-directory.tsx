@@ -55,6 +55,8 @@ type JobSummary = {
   lastJobAt: string | null;
 };
 
+const DEFAULT_VISIBLE_MEMBERS = 8;
+
 function roleLabel(role: string) {
   const normalized = normalizeRole(role);
   if (normalized === 'employee') return 'Staff';
@@ -66,9 +68,9 @@ function emptySummary(): JobSummary {
 }
 
 const copy = {
-  en: { noJobsYet: 'No jobs yet' },
-  es: { noJobsYet: 'Aún no hay trabajos' },
-  vi: { noJobsYet: 'Chưa có công việc' }
+  en: { noJobsYet: 'No jobs yet', showAll: 'Show all people', showLess: 'Show less' },
+  es: { noJobsYet: 'Aún no hay trabajos', showAll: 'Mostrar todas las personas', showLess: 'Mostrar menos' },
+  vi: { noJobsYet: 'Chưa có công việc', showAll: 'Hiển thị tất cả mọi người', showLess: 'Thu gọn' }
 } as const;
 
 function formatLastJob(value: string | null, noJobsYet: string) {
@@ -86,6 +88,7 @@ export function TeamDirectory() {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const [showAllMembers, setShowAllMembers] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -243,6 +246,10 @@ export function TeamDirectory() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    setShowAllMembers(false);
+  }, [query, roleFilter, statusFilter]);
+
   const filtered = useMemo(() => {
     const text = query.trim().toLowerCase();
     return members.filter((member) => {
@@ -254,6 +261,7 @@ export function TeamDirectory() {
     });
   }, [members, query, roleFilter, statusFilter]);
 
+  const visibleMembers = showAllMembers ? filtered : filtered.slice(0, DEFAULT_VISIBLE_MEMBERS);
   const activeCount = members.filter((member) => member.active).length;
 
   return (
@@ -298,7 +306,7 @@ export function TeamDirectory() {
       {!loading && !error && filtered.length === 0 ? <p className="muted team-directory-state">No matching team members.</p> : null}
 
       <div className="customer-list team-member-list">
-        {filtered.map((member) => {
+        {visibleMembers.map((member) => {
           const summary = jobSummaries[member.userId] || emptySummary();
           return (
             <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
@@ -321,6 +329,14 @@ export function TeamDirectory() {
           );
         })}
       </div>
+
+      {!loading && !error && filtered.length > DEFAULT_VISIBLE_MEMBERS ? (
+        <div className="team-directory-list-toggle" style={{ marginTop: 16 }}>
+          <button type="button" className="btn" onClick={() => setShowAllMembers((value) => !value)} aria-expanded={showAllMembers}>
+            {showAllMembers ? c.showLess : `${c.showAll} (${filtered.length})`}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
