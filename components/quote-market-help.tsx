@@ -1,7 +1,9 @@
 'use client';
 
+import { useTranslation } from '@/components/locale-provider';
 import { MARKET_COUNTRY_OPTIONS, QUOTE_PROFESSIONS, type MarketSource } from '@/lib/market-context';
 import type { PricingHelperSettings } from '@/lib/pricing-helper';
+import { getQuoteFieldCopy } from '@/lib/quote-field-copy';
 
 type QuoteMarketHelpProps = {
   settings: PricingHelperSettings;
@@ -22,20 +24,18 @@ export function QuoteMarketHelp({
   onServiceTypeChange,
   onSettingsChange
 }: QuoteMarketHelpProps) {
+  const { locale } = useTranslation();
+  const c = getQuoteFieldCopy(locale);
   const knownProfession = QUOTE_PROFESSIONS.includes(serviceType);
   const selectedProfession = !serviceType ? '' : knownProfession ? serviceType : OTHER_VALUE;
 
   return (
     <details className="quote-pricing-settings" open>
-      <summary>Country, region, and profession</summary>
-      <p className="muted">
-        {paidIntelligence
-          ? 'Public wage and price sources follow the country you set. Profession shapes the quote helper.'
-          : 'Basic quote help is available on this plan. Pro unlocks country sources, region, and similar-job history.'}
-      </p>
+      <summary>{c.countryTitle}</summary>
+      <p className="muted">{paidIntelligence ? c.paidHelp : c.freeHelp}</p>
       <div className="form-grid">
         <label>
-          Profession / service
+          {c.profession}
           <select
             className="input"
             value={selectedProfession}
@@ -48,28 +48,28 @@ export function QuoteMarketHelp({
               onServiceTypeChange(value);
             }}
           >
-            <option value="">Select profession</option>
+            <option value="">{c.selectProfession}</option>
             {QUOTE_PROFESSIONS.map((profession) => (
               <option key={profession} value={profession}>
                 {profession}
               </option>
             ))}
-            <option value={OTHER_VALUE}>Other</option>
+            <option value={OTHER_VALUE}>{c.other}</option>
           </select>
         </label>
         {selectedProfession === OTHER_VALUE ? (
           <label>
-            Custom profession
+            {c.customProfession}
             <input
               className="input"
               value={knownProfession ? '' : serviceType}
-              placeholder="Type your profession or service"
+              placeholder={c.customPlaceholder}
               onChange={(event) => onServiceTypeChange(event.target.value)}
             />
           </label>
         ) : null}
         <label>
-          Country
+          {c.country}
           <select
             className="input"
             value={settings.marketCountryCode || 'US'}
@@ -84,7 +84,7 @@ export function QuoteMarketHelp({
           </select>
         </label>
         <label>
-          Region
+          {c.region}
           <input
             className="input"
             value={settings.marketRegion}
@@ -93,7 +93,7 @@ export function QuoteMarketHelp({
           />
         </label>
         <label>
-          City
+          {c.city}
           <input
             className="input"
             value={settings.marketCity}
@@ -104,7 +104,7 @@ export function QuoteMarketHelp({
       </div>
       {paidIntelligence && marketSources.length > 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p className="muted">Public sources for this country</p>
+          <p className="muted">{c.publicSources}</p>
           {marketSources.slice(0, 3).map((source) => (
             <p key={`${source.countryCode}-${source.source}`} className="muted">
               {source.source}
