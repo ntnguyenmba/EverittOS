@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { JobCreateI18nBind } from '@/components/job-create-i18n-bind';
 import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
 import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
@@ -24,6 +25,7 @@ export default function NewJobPage() {
         <Suspense fallback={<p className="loading-state">Loading form…</p>}>
           <JobCreator onJobCreated={(jobId) => window.location.assign(`/jobs/${jobId}`)} />
         </Suspense>
+        <JobCreateI18nBind />
       </div>
     </AppShell>
   );
