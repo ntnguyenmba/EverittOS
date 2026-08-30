@@ -29,6 +29,28 @@ const COUNTRY_ALIASES: Record<string, MarketCountry> = {
 
 const EUROSTAT_COUNTRIES = new Set(['DE','FR','ES','IT','NL','BE','AT','IE','PT','FI','GR']);
 
+export const MARKET_COUNTRY_OPTIONS: MarketCountry[] = Array.from(
+  new Map(Object.values(COUNTRY_ALIASES).map((country) => [country.code, country])).values()
+).sort((a, b) => a.label.localeCompare(b.label));
+
+export const QUOTE_PROFESSIONS = [
+  'Residential cleaning',
+  'Deep cleaning',
+  'Move-out cleaning',
+  'Move-in cleaning',
+  'Airbnb / vacation rental cleaning',
+  'Office cleaning',
+  'Lawn mowing',
+  'Landscaping',
+  'Handyman',
+  'Painting',
+  'Plumbing',
+  'Electrical',
+  'HVAC',
+  'Junk removal',
+  'Pressure washing'
+];
+
 export const MARKET_SOURCES: MarketSource[] = [
   { country:'United States',countryCode:'US',source:'U.S. Bureau of Labor Statistics / FRED residential cleaning PPI',sourceType:'price_index',rank:1,currency:'USD',url:'https://fred.stlouisfed.org/series/PCU56172056172052',updatedAt:'2026-08-13',value:177.538,unit:'Index Jun 2003=100',note:'Official cost trend reference. It is not a local customer price range.' },
   { country:'United States',countryCode:'US',source:'BLS OEWS, Maids and Housekeeping Cleaners',sourceType:'official_wage',rank:1,currency:'USD',url:'https://www.bls.gov/oes/current/oes372012.htm',note:'Official wage foundation. Metro detail should be preferred when available.' },
