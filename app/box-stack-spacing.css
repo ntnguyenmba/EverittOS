@@ -1,5 +1,11 @@
-/* Shared rule: neighboring boxes never sit on top of each other.
-   Spacing only. Does not change routes, filters, or control behavior. */
+/* Shared spacing rule for signed-in surfaces.
+   Spacing only: no colors, sizes, routes, filters, roles, or control behavior. */
+
+:root {
+  --everitt-control-gap: 14px;
+  --everitt-stack-gap: 18px;
+  --everitt-section-gap: 20px;
+}
 
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-header-actions,
@@ -15,15 +21,34 @@
 .dashboard-shell .portal-job-finance,
 .role-portal-shell .page-actions,
 .role-portal-shell .inline-actions {
-  gap: 12px !important;
+  gap: var(--everitt-control-gap) !important;
 }
 
+/* Separate neighboring control groups clearly. */
 .dashboard-shell .jobs-filter-tabs {
-  margin-bottom: 12px !important;
+  margin-bottom: var(--everitt-stack-gap) !important;
 }
 
 .dashboard-shell .jobs-advanced-filters {
-  margin-top: 12px !important;
+  margin-top: var(--everitt-stack-gap) !important;
+}
+
+.dashboard-shell .jobs-filter-tabs + .jobs-advanced-filters,
+.dashboard-shell .jobs-filter-tabs + *,
+.dashboard-shell .jobs-header-actions + .jobs-filter-tabs,
+.dashboard-shell .jobs-header-actions + *,
+.dashboard-shell .page-actions + *,
+.dashboard-shell .inline-actions + *,
+.dashboard-shell .button-row + * {
+  margin-top: var(--everitt-stack-gap) !important;
+}
+
+/* Jobs mobile/tablet filters: the status pills and worker selector must never touch. */
+.dashboard-shell .jobs-filter-tabs + .jobs-filter-grid,
+.dashboard-shell .jobs-filter-tabs + .jobs-filter-control,
+.dashboard-shell .jobs-filter-tabs ~ .jobs-filter-grid,
+.dashboard-shell .jobs-filter-tabs ~ .jobs-advanced-filters {
+  margin-top: var(--everitt-section-gap) !important;
 }
 
 .dashboard-shell .jobs-filter-tab + .jobs-filter-tab,
@@ -38,28 +63,30 @@
   margin-top: 0 !important;
 }
 
-.dashboard-shell .jobs-filter-tabs + .jobs-advanced-filters,
-.dashboard-shell .jobs-filter-tabs + *,
-.dashboard-shell .jobs-header-actions + .jobs-filter-tabs,
-.dashboard-shell .jobs-header-actions + * {
-  margin-top: 12px !important;
-}
-
 .dashboard-shell .jobs-filter-control,
 .dashboard-shell .jobs-filter-control select,
 .dashboard-shell .jobs-filter-tab {
   margin-bottom: 0 !important;
 }
 
+/* Shared vertical rhythm for neighboring cards and blocks. */
 .dashboard-shell .app-page-stage > * + *,
-.dashboard-shell .app-page-content > .card + .card,
+.dashboard-shell .app-page-content > * + *,
 .dashboard-shell .contractor-main > * + *,
-.dashboard-shell .client-main > * + * {
-  margin-top: 16px !important;
+.dashboard-shell .client-main > * + *,
+.role-portal-shell .app-page-stage > * + * {
+  margin-top: var(--everitt-stack-gap) !important;
+}
+
+.dashboard-shell .app-page-content > .card + .card,
+.dashboard-shell .app-page-stage > .card + .card,
+.dashboard-shell .contractor-main > .card + .card,
+.dashboard-shell .client-main > .card + .card {
+  margin-top: var(--everitt-section-gap) !important;
 }
 
 .dashboard-shell .app-page-stage form > * + *,
 .dashboard-shell .app-page-stage .form > * + *,
 .dashboard-shell .app-page-stage fieldset > * + * {
-  margin-top: 14px !important;
+  margin-top: var(--everitt-control-gap) !important;
 }
