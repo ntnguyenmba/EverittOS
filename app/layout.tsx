@@ -67,6 +67,8 @@ import './readability-last.css';
 import './everitt-login-look.css';
 import './final-layout-guard.css';
 import './view-center-final.css';
+import './unified-record-cards.css';
+import './row-action-align.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
