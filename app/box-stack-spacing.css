@@ -3,6 +3,7 @@
    Spacing only: no colors, routes, filters, roles, or control behavior. */
 
 :root {
+  --everitt-space-in: 20px;
   --everitt-label-gap: 8px;
   --everitt-control-gap: 12px;
   --everitt-section-gap: 22px;
@@ -169,4 +170,46 @@
 .role-portal-shell :is(input, select, textarea, button, .btn, .input) {
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Shared card rhythm: same inner spacing on every signed-in card/panel. */
+.dashboard-shell :is(.card, .panel, .settings-card),
+.role-portal-shell :is(.card, .panel, .settings-card) {
+  padding: var(--everitt-space-in) !important;
+  box-sizing: border-box;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card) > :first-child,
+.role-portal-shell :is(.card, .panel, .settings-card) > :first-child {
+  margin-top: 0 !important;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card) > :last-child,
+.role-portal-shell :is(.card, .panel, .settings-card) > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Accordion/panel content uses title -> section gap, then control -> control gap. */
+.dashboard-shell .settings-card [role='region'] > div > div,
+.role-portal-shell .settings-card [role='region'] > div > div {
+  display: grid;
+  gap: var(--everitt-control-gap) !important;
+  padding-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .settings-card [role='region'] :is(input, select, textarea, button, .btn, .input),
+.role-portal-shell .settings-card [role='region'] :is(input, select, textarea, button, .btn, .input) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-shell .settings-card [role='region'] :is(input, select, textarea, .input) + :is(button, .btn),
+.role-portal-shell .settings-card [role='region'] :is(input, select, textarea, .input) + :is(button, .btn) {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 430px) {
+  :root {
+    --everitt-space-in: 16px;
+  }
 }
