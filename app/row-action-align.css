@@ -1,0 +1,69 @@
+/* Universal list rows: text left, actions right, same top line. */
+.dashboard-shell .list-row,
+.dashboard-shell .team-member-card,
+.dashboard-shell .customer-card-row,
+.dashboard-shell .customer-row,
+.dashboard-shell .worker-card,
+.dashboard-shell .record-card,
+.dashboard-shell .finance-list-card,
+.role-portal-shell .list-row,
+.contractor-main .list-row,
+.client-main .list-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 16px !important;
+  text-align: left !important;
+}
+
+.dashboard-shell .list-row > .inline-actions,
+.dashboard-shell .list-row > .team-member-actions,
+.dashboard-shell .list-row > .record-actions,
+.dashboard-shell .list-row > .button-row,
+.dashboard-shell .team-member-card > .inline-actions,
+.dashboard-shell .team-member-card > .team-member-actions,
+.dashboard-shell .customer-card-row > .inline-actions,
+.dashboard-shell .customer-card-row > .record-actions,
+.dashboard-shell .worker-card > .inline-actions,
+.dashboard-shell .record-card > .inline-actions,
+.dashboard-shell .finance-list-card > .inline-actions,
+.role-portal-shell .list-row > .inline-actions,
+.contractor-main .list-row > .inline-actions,
+.client-main .list-row > .inline-actions {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: start !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+}
+
+.dashboard-shell .list-row > .inline-actions .btn,
+.dashboard-shell .team-member-card > .inline-actions .btn,
+.dashboard-shell .team-member-actions .btn,
+.dashboard-shell .customer-card-row .record-actions .btn,
+.dashboard-shell .team-directory-actions .btn {
+  min-height: 42px !important;
+  height: 42px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .dashboard-shell .list-row,
+  .dashboard-shell .team-member-card,
+  .dashboard-shell .customer-card-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell .list-row > .inline-actions,
+  .dashboard-shell .team-member-card > .inline-actions,
+  .dashboard-shell .team-member-card > .team-member-actions {
+    grid-column: 1 !important;
+    justify-self: start !important;
+    flex-wrap: wrap !important;
+  }
+}
