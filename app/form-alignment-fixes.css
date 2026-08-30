@@ -80,13 +80,11 @@ a.btn {
   margin: 0;
 }
 
-/* Headings are rendered by the form itself. Do not inject duplicate numbered labels with CSS. */
 .unified-job-form > .job-create-section > h4 {
   font-size: 1rem;
   font-weight: 700;
 }
 
-/* Customer details are collected once in step 1. */
 .unified-job-form > .job-create-section:nth-of-type(3) > .grid-2 { display: none; }
 
 .address-autocomplete > p.muted { display: none; }
@@ -141,7 +139,6 @@ code { overflow-wrap: anywhere; }
   .job-detail-actions .btn { width: 100%; }
 }
 
-/* Minimal Jobs page: compact records on the same shared signed-in canvas. */
 .jobs-shell-minimal,
 .jobs-shell-minimal .main,
 .jobs-shell-minimal .app-page-content,
@@ -150,13 +147,8 @@ code { overflow-wrap: anywhere; }
   background-color: transparent !important;
 }
 
-.jobs-shell-minimal .dashboard-shell-background {
-  display: block !important;
-}
-
-.jobs-shell-minimal .dashboard-shell-overlay {
-  display: block !important;
-}
+.jobs-shell-minimal .dashboard-shell-background { display: block !important; }
+.jobs-shell-minimal .dashboard-shell-overlay { display: block !important; }
 
 .jobs-list-page {
   max-width: 1180px;
@@ -332,12 +324,43 @@ code { overflow-wrap: anywhere; }
   .jobs-operations-table td { display: block; width: 100%; }
   .jobs-operations-row {
     position: relative;
-    padding: 14px 16px;
+    padding: 14px 76px 14px 16px;
     border-bottom: 1px solid rgba(48,61,70,.12);
   }
   .jobs-operations-table td { padding: 4px 0; border: 0; }
-  .jobs-col-actions { position: absolute; right: 12px; top: 12px; width: auto !important; text-align: right; }
-  .jobs-col-property { padding-right: 56px !important; }
+  .jobs-col-actions {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 48px !important;
+    text-align: right;
+    z-index: 4;
+  }
+  .jobs-col-date,
+  .jobs-col-property,
+  .jobs-col-assigned,
+  .jobs-col-status,
+  .jobs-col-money {
+    padding-right: 0 !important;
+    max-width: 100%;
+  }
   .jobs-col-date { order: 1; }
   .jobs-col-property { order: 0; }
+  .jobs-menu-trigger {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .record-card-overlay-label {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
 }
