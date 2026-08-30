@@ -5,6 +5,7 @@
 :root {
   --eo-view-inset: clamp(14px, 4.2vw, 28px);
   --eo-view-max: 760px;
+  --eo-box-gap: 16px;
 }
 
 @media (min-width: 900px) {
@@ -212,4 +213,59 @@ body {
   border-radius: 12px !important;
   background: #fff !important;
   color: #173044 !important;
+}
+
+/* Universal: boxes, buttons, pills, and cards never touch. */
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-shell-minimal,
+.role-portal-shell .jobs-list-page {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: var(--eo-box-gap) !important;
+}
+
+.dashboard-shell .page-header,
+.role-portal-shell .page-header,
+.contractor-main .page-header,
+.client-main .page-header {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .page-header + *,
+.dashboard-shell .jobs-list-page > * + *,
+.dashboard-shell .app-page-stage > * + *,
+.dashboard-shell .app-page-content > * + *,
+.role-portal-shell .page-header + *,
+.role-portal-shell .app-page-content > * + *,
+.contractor-main > * + *,
+.client-main > * + * {
+  margin-top: var(--eo-box-gap) !important;
+}
+
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .chip-row,
+.dashboard-shell .filter-chip-row,
+.dashboard-shell .status-tabs,
+.dashboard-shell .segmented-control,
+.role-portal-shell .status-tabs,
+.role-portal-shell .segmented-control {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.dashboard-shell .card + .card,
+.dashboard-shell .panel + .panel,
+.dashboard-shell .settings-card + .settings-card,
+.role-portal-shell .card + .card,
+.contractor-main .card + .card,
+.client-main .card + .card {
+  margin-top: var(--eo-box-gap) !important;
 }
