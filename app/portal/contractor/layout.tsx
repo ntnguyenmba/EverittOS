@@ -5,7 +5,7 @@ type ContractorLayoutProps = { children: ReactNode };
 
 export default function ContractorLayout({ children }: ContractorLayoutProps) {
   return (
-    <AppShell role="contractor" showBackButton={false}>
+    <AppShell role="contractor" showBackButton>
       {children}
     </AppShell>
   );
