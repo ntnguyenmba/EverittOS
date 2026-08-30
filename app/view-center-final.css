@@ -1,5 +1,6 @@
 /* Last-loaded alignment lock.
-   One centered column. Equal left/right inset. Cards, search, and footer share width. */
+   One centered column. Equal left/right inset. Cards, search, and footer share width.
+   Navigation is not part of the centered column and must stay visible. */
 
 :root {
   --eo-view-inset: clamp(14px, 4.2vw, 28px);
@@ -29,39 +30,6 @@ body {
   margin-right: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
-}
-
-@media (max-width: 1440px) {
-  .dashboard-shell,
-  .dashboard-shell.dashboard-shell-desktop {
-    display: block !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .dashboard-shell > .sidebar,
-  .dashboard-shell .sidebar {
-    display: none !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .dashboard-shell > .main,
-  .dashboard-shell .main,
-  .main {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    transform: none !important;
-    translate: none !important;
-    left: auto !important;
-    inset: auto !important;
-  }
 }
 
 .dashboard-shell > .main,
@@ -183,5 +151,77 @@ body {
   .app-footer {
     width: 100% !important;
     max-width: 100% !important;
+  }
+}
+
+/* One nav rule for every view.
+   Desktop: left sidebar. Smaller views: top hamburger menu.
+   Content centering must never hide either control. */
+@media (min-width: 1280px) {
+  .dashboard-shell {
+    display: grid !important;
+    grid-template-columns: 300px minmax(0, 1fr) !important;
+    grid-template-areas: 'side main' !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+    pointer-events: auto !important;
+  }
+
+  .dashboard-shell-header,
+  .dashboard-shell > .dashboard-shell-header,
+  .dashboard-shell .mobile-nav,
+  .dashboard-shell .mobile-nav-bar,
+  .dashboard-shell .mobile-nav-menu-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell {
+    display: block !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    display: none !important;
+  }
+
+  .dashboard-shell-header,
+  .dashboard-shell > .dashboard-shell-header {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-shell-header .mobile-nav,
+  .dashboard-shell-header .mobile-nav-bar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-menu-btn,
+  .dashboard-shell-header .mobile-nav-top-logo {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 }
