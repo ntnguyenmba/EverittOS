@@ -21,7 +21,6 @@ export type PlanDefinition = {
   featured?: boolean;
 };
 
-/** Marketing/UI plan definitions — sourced from centralized billing config. */
 export const EVERITTOS_PLANS: PlanDefinition[] = BILLING_PLANS.map((plan) => ({
   id: plan.id,
   name: plan.name,
@@ -45,8 +44,10 @@ export function isPaidCheckoutPlan(plan: string): plan is PaidPlanKey {
   return plan !== 'free' && BILLING_PLAN_ORDER.includes(plan as EverittosPlan) && plan !== 'free';
 }
 
+const TEAM_PLANS: EverittosPlan[] = ['business', 'starter', 'growth', 'enterprise'];
+
 export function hasTeamManagement(plan: EverittosPlan): boolean {
-  return limitsForPlan(plan).teamManagement;
+  return TEAM_PLANS.includes(normalizePlan(plan));
 }
 
 export function photoUploadAllowed(plan: EverittosPlan): boolean {
@@ -57,7 +58,6 @@ export function planDisplayName(plan: EverittosPlan): string {
   return billingPlanDefinition(plan)?.name || 'Free';
 }
 
-/** Short plan label for compact nav badges. */
 export function planShortBadgeName(plan: EverittosPlan): string {
   const short: Record<EverittosPlan, string> = {
     free: 'Free',
@@ -70,7 +70,6 @@ export function planShortBadgeName(plan: EverittosPlan): string {
   return short[normalizePlan(plan)] || 'Pro';
 }
 
-/** Sidebar footer label, e.g. "Free Plan". */
 export function planFooterLabel(plan: EverittosPlan): string {
   const name = planShortBadgeName(plan);
   return name === 'Free' ? 'Free Plan' : `${name} Plan`;
