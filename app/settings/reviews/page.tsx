@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 export default function ReviewSettingsPage() {
   const router = useRouter();
@@ -17,11 +16,9 @@ export default function ReviewSettingsPage() {
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/login?next=/settings/reviews'); return; }
-      const org = await ensureOrganizationForUser(user.id);
-      if (org?.organizationId) {
-        const { data } = await supabase.from('organization_settings').select('review_url').eq('organization_id', org.organizationId).maybeSingle();
-        setReviewUrl(String(data?.review_url || ''));
-      }
+      const res = await fetch('/api/settings/reviews', { cache: 'no-store' });
+      const json = (await res.json().catch(() => ({}))) as { reviewUrl?: string };
+      if (res.ok) setReviewUrl(json.reviewUrl || '');
       setLoading(false);
     })();
   }, [router]);
@@ -29,8 +26,8 @@ export default function ReviewSettingsPage() {
   async function save() {
     if (saving) return;
     setSaving(true); setMessage('');
-    const res = await fetch('/api/settings/workspace', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewUrl }) });
-    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    const res = await fetch('/api/settings/reviews', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewUrl }) });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSaving(false);
     setMessage(res.ok ? 'Review link saved.' : json.error || 'Unable to save review link.');
   }
