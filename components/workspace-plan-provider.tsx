@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { highestPlan } from '@/lib/plan-features';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -58,9 +59,20 @@ async function requestWorkspacePlan(): Promise<Response> {
 
 function stateFromJson(json: WorkspacePlanResponse): Omit<WorkspacePlanState, 'refresh'> {
   const profilePlan = json.profilePlan ? normalizePlan(json.profilePlan) : null;
-  const billingPlan = json.billingPlan ? normalizePlan(json.billingPlan) : profilePlan;
-  const organizationPlan = json.organizationPlan ? normalizePlan(json.organizationPlan) : profilePlan;
-  return { profilePlan, subscriptionStatus:json.subscriptionStatus ?? json.rawSubscriptionStatus ?? null, billingPlan, organizationPlan, plan:organizationPlan ?? profilePlan ?? 'free', role:normalizeRole(json.role || 'employee'), rawProfilePlan:json.rawProfilePlan ?? json.profilePlan ?? null, rawSubscriptionStatus:json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null, loading:false, error:null };
+  const billingPlan = json.billingPlan ? normalizePlan(json.billingPlan) : null;
+  const organizationPlan = json.organizationPlan ? normalizePlan(json.organizationPlan) : null;
+  return {
+    profilePlan,
+    subscriptionStatus: json.subscriptionStatus ?? json.rawSubscriptionStatus ?? null,
+    billingPlan,
+    organizationPlan,
+    plan: highestPlan([billingPlan, organizationPlan, profilePlan]),
+    role: normalizeRole(json.role || 'employee'),
+    rawProfilePlan: json.rawProfilePlan ?? json.profilePlan ?? null,
+    rawSubscriptionStatus: json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null,
+    loading: false,
+    error: null
+  };
 }
 
 async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>> {
