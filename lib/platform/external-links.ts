@@ -22,11 +22,18 @@ export async function handleNavigationClick(
   const target = classifyNavigationTarget(href, origin);
 
   if (target === 'internal') {
-    if (href.startsWith('/')) {
-      navigateInternal(href);
+    try {
+      const parsed = new URL(href, origin);
+      const path = `${parsed.pathname}${parsed.search}${parsed.hash}` || '/';
+      navigateInternal(path);
       return 'handled';
+    } catch {
+      if (href.startsWith('/')) {
+        navigateInternal(href);
+        return 'handled';
+      }
+      return 'default';
     }
-    return 'default';
   }
 
   if (target === 'protocol' || target === 'external') {

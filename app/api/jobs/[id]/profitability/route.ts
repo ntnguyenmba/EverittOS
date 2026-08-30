@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
+import { withTruthfulProfit } from '@/lib/finance/profit-math';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import type { JobProfitability } from '@/lib/finance-types';
 import { isValidUuid } from '@/lib/input-validation';
@@ -35,19 +36,12 @@ function withPlannedExpenses(
   const effectiveNonLabor = actualNonLabor > 0 ? actualNonLabor : planned;
   const laborCost = Math.max(0, Number(profitability.laborCost || 0));
   const totalExpenses = Number((laborCost + effectiveNonLabor).toFixed(2));
-  const expectedAmount = Math.max(0, Number(profitability.expectedAmount || 0));
-  const collectedAmount = Math.max(0, Number(profitability.collectedAmount || 0));
-  const expectedProfit = Number((expectedAmount - totalExpenses).toFixed(2));
-  const collectedProfit = Number(Math.max(0, collectedAmount - totalExpenses).toFixed(2));
+  const adjusted = withTruthfulProfit({ ...profitability, totalExpenses });
 
   return {
-    ...profitability,
+    ...adjusted,
     materialCost: actualNonLabor > 0 ? Number(profitability.materialCost || 0) : 0,
     otherExpenses: actualNonLabor > 0 ? Number(profitability.otherExpenses || 0) : planned,
-    totalExpenses,
-    expectedProfit,
-    collectedProfit,
-    estimatedProfit: collectedAmount > 0 ? collectedProfit : expectedProfit,
     expectedAdditionalExpense: Number(planned.toFixed(2))
   };
 }
@@ -109,7 +103,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const patch: Record<string, unknown> = {};
   if (revenueAmount !== undefined) patch.revenue_amount = revenueAmount;
-  if (body.revenue_notes !== undefined) patch.revenue_notes = body.revenue_notes?.trim() || null;
+  // revenue_notes is accepted for backward compatibility, but it is not a jobs table column.
+  // Job creation already saves the amount on the job itself, so attempting to persist this
+  // unsupported field could make a successfully-created job look like it failed.
   if (body.expected_contractor_cost !== undefined) {
     const value =
       body.expected_contractor_cost === null || body.expected_contractor_cost === ''
@@ -134,14 +130,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     patch.expected_expense_description = body.expected_expense_description?.trim() || null;
   }
 
-  const { error } = await ctx.supabase
-    .from('jobs')
-    .update(patch)
-    .eq('id', jobId)
-    .eq('organization_id', ctx.organizationId);
+  if (Object.keys(patch).length > 0) {
+    const { error } = await ctx.supabase
+      .from('jobs')
+      .update(patch)
+      .eq('id', jobId)
+      .eq('organization_id', ctx.organizationId);
 
-  if (error) {
-    return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
+    if (error) {
+      return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
+    }
   }
 
   const updatedJob = await resolveJob(ctx, jobId);

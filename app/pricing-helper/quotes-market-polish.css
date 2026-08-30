@@ -1,0 +1,22 @@
+.pricing-market-body::after {
+  content: 'Market data is informational only and may vary by location. You choose the final price.';
+  display: block;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-locale='es'] .pricing-market-body::after {
+  content: 'Los datos del mercado son solo informativos y pueden variar según la ubicación. Tú eliges el precio final.';
+}
+
+html[data-locale='vi'] .pricing-market-body::after {
+  content: 'Dữ liệu thị trường chỉ mang tính tham khảo và có thể thay đổi theo địa điểm. Bạn chọn giá cuối cùng.';
+}
+
+.pricing-market-body .pricing-source {
+  margin-bottom: 0;
+}

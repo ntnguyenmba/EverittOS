@@ -40,7 +40,9 @@ export async function GET() {
     fetchOrganizationContextForUser(supabase, user.id)
   ]);
 
-  const workspaceRole = normalizeRole(orgContext?.role || profile?.role || 'owner');
+  // Authorization must fail closed. Never promote an unresolved membership to owner.
+  // The profile role is only a legacy hint; a real active organization membership wins.
+  const workspaceRole = normalizeRole(orgContext?.role || profile?.role || 'employee');
   const billingPlan: EverittosPlan = normalizePlan(orgPlan.plan);
   const organizationPlan: EverittosPlan = normalizePlan(orgPlan.plan);
   const profilePlanResolved: EverittosPlan = profilePlan;

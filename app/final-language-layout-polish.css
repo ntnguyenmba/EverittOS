@@ -10,7 +10,6 @@ main,
   min-width: 0;
 }
 
-/* Let translated labels wrap naturally instead of clipping or forcing wide pages. */
 button,
 .btn,
 a.btn,
@@ -39,7 +38,6 @@ a.btn,
   text-align: center;
 }
 
-/* Keep compact icon actions compact while text actions can grow. */
 .icon-button,
 .action-feedback-dismiss,
 .mobile-nav-toggle,
@@ -60,7 +58,6 @@ a.btn,
   min-width: 0;
 }
 
-/* Helper copy should look secondary, not disabled or washed out. */
 .muted,
 .help-text,
 .field-help,
@@ -95,7 +92,6 @@ a.btn,
   opacity: 1;
 }
 
-/* Long translated select options and inputs stay within their containers. */
 select,
 input,
 textarea,
@@ -113,7 +109,60 @@ textarea,
   text-overflow: ellipsis;
 }
 
-/* Prevent cards, tables, and dialog content from creating horizontal page scroll. */
+.language-switcher-compact {
+  flex: 0 0 auto;
+  width: auto !important;
+  max-width: min(9.5rem, 38vw);
+}
+
+.language-switcher-compact .language-switcher-select {
+  width: clamp(7.75rem, 14vw, 9.5rem) !important;
+  min-width: 7.75rem !important;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 2.25rem 0 0.9rem;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 650;
+}
+
+.auth-tech-header {
+  width: min(450px, calc(100% - 28px)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  min-height: 44px;
+  align-items: center;
+}
+
+.auth-tech-header .brand-logo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.auth-tech-header .auth-shell-language {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.auth-tech-header .language-switcher-compact .language-switcher-select {
+  height: 44px;
+  min-height: 44px;
+}
+
+.app-page-top,
+.portal-header,
+.mobile-header,
+.nav-header,
+.topbar,
+.app-header {
+  padding-left: max(4px, env(safe-area-inset-left));
+  padding-right: max(4px, env(safe-area-inset-right));
+}
+
 .card,
 .panel,
 .stat,
@@ -136,7 +185,6 @@ textarea,
   overflow-wrap: anywhere;
 }
 
-/* Reports were retired from the product. Hide the remaining legacy report card on job details. */
 .job-detail-shell > section.card:has(a[href$='/report']) {
   display: none !important;
 }
@@ -196,10 +244,34 @@ textarea,
     min-width: 0;
   }
 
-  .language-switcher,
-  .language-switcher-select {
+  .language-switcher:not(.language-switcher-compact),
+  .language-switcher:not(.language-switcher-compact) .language-switcher-select {
     width: 100% !important;
     min-width: 0 !important;
+  }
+
+  .language-switcher-compact {
+    width: auto !important;
+    max-width: min(8.75rem, 42vw);
+  }
+
+  .language-switcher-compact .language-switcher-select {
+    width: min(8.5rem, 42vw) !important;
+    min-width: 7.25rem !important;
+    height: 42px;
+    min-height: 42px;
+    padding-left: 0.8rem;
+    padding-right: 2rem;
+    font-size: 14px;
+  }
+
+  .auth-tech-header {
+    width: min(450px, calc(100% - 28px)) !important;
+  }
+
+  .auth-tech-header .language-switcher-compact .language-switcher-select {
+    height: 42px;
+    min-height: 42px;
   }
 
   th,
@@ -230,5 +302,97 @@ textarea,
   h2,
   .section-title {
     font-size: clamp(1.25rem, 7vw, 1.65rem);
+  }
+}
+
+/* Mobile and native-app auth polish. */
+@media (max-width: 760px) {
+  html body .auth-tech-page .auth-tech-shell {
+    padding-left: max(22px, env(safe-area-inset-left)) !important;
+    padding-right: max(22px, env(safe-area-inset-right)) !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .brand-logo,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .auth-shell-language {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    justify-self: auto !important;
+    margin: 0 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .auth-shell-language {
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact .language-switcher-select {
+    width: 116px !important;
+    min-width: 116px !important;
+    max-width: 116px !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact .language-switcher-select {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding-left: 12px !important;
+    padding-right: 30px !important;
+    border-radius: 11px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-card {
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+    padding: 26px 20px !important;
+    border-radius: 22px !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-title,
+  html body .auth-tech-page .auth-tech-card .auth-card-subtitle,
+  html body .auth-tech-page .auth-tech-card .auth-field label,
+  html body .auth-tech-page .auth-tech-card .password-field label {
+    color: #172433 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-card-description,
+  html body .auth-tech-page .auth-tech-card .auth-methods-note,
+  html body .auth-tech-page .auth-tech-card .auth-legal-note {
+    color: #344b5c !important;
+    opacity: 1 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .input {
+    color: #172433 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .input::placeholder {
+    color: #667785 !important;
+    opacity: 1 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-password-toggle {
+    color: #172433 !important;
   }
 }

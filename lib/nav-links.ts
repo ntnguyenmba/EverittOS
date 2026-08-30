@@ -1,50 +1,39 @@
 import { isFeatureEnabled, type FeatureFlag } from '@/lib/feature-flags';
 
-export type NavLinkDef = {
-  label: string;
-  href: string;
-  flag?: FeatureFlag;
-};
-
+export type NavLinkDef = { label: string; href: string; flag?: FeatureFlag };
 export type NavSectionId = 'primary' | 'settings';
+export type NavSectionDef = { id: NavSectionId; label: string; items: NavLinkDef[] };
 
-export type NavSectionDef = {
-  id: NavSectionId;
-  label: string;
-  items: NavLinkDef[];
-};
-
-/**
- * Keep the everyday owner navigation focused on the work service businesses
- * do most often. Advanced and secondary tools still exist and remain
- * reachable from their contextual screens and Settings, but they do not
- * compete for attention in the main menu.
- */
+// Keep the daily owner workflow short. Existing modules remain available through
+// direct routes and settings so no functionality is removed while the product
+// focuses on the request -> quote -> job -> payment loop.
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Customers', href: '/customers' },
+  { label: 'Quotes', href: '/quotes' },
   { label: 'Jobs', href: '/jobs' },
-  { label: 'Schedule', href: '/schedule' },
+  { label: 'Customers', href: '/customers' },
+  { label: 'Money', href: '/bookkeeping' },
   { label: 'Team', href: '/people' },
-  { label: 'Invoices', href: '/invoices' },
-  { label: 'Expenses', href: '/expenses' },
-  { label: 'Bookkeeping', href: '/bookkeeping' },
-  { label: 'Settings', href: '/settings' }
+  { label: 'Settings', href: '/settings' },
 ];
 
-function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
+function filterFlagged(items: NavLinkDef[]) {
   return items.filter((item) => !item.flag || isFeatureEnabled(item.flag));
 }
 
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
-  { id: 'primary', label: '', items: filterFlagged(PRIMARY_NAV) }
+  { id: 'primary', label: '', items: filterFlagged(PRIMARY_NAV) },
 ];
 
 export const APP_NAV_LINKS = APP_NAV_SECTIONS.flatMap((section) => section.items);
-
 export type AppNavHref = (typeof APP_NAV_LINKS)[number]['href'];
 
 export const SECONDARY_APP_ROUTES = [
+  '/pricing-helper',
+  '/leads',
+  '/estimates',
+  '/assistant',
+  '/schedule',
   '/operations',
   '/people',
   '/workers',
@@ -55,7 +44,6 @@ export const SECONDARY_APP_ROUTES = [
   '/workflows',
   '/notifications',
   '/proposals',
-  '/estimates',
   '/invoices',
   '/expenses',
   '/bookkeeping',
@@ -69,7 +57,6 @@ export const SECONDARY_APP_ROUTES = [
   '/inventory',
   '/routes',
   '/reports',
-  '/leads',
   '/analytics',
   '/activity',
   '/portal/client',
@@ -77,5 +64,5 @@ export const SECONDARY_APP_ROUTES = [
   '/settings/billing',
   '/settings/account',
   '/settings/integrations',
-  '/settings/job-instructions'
+  '/settings/job-instructions',
 ] as const;

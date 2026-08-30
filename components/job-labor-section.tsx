@@ -281,6 +281,27 @@ export function JobLaborSection({
     await refreshAll();
   }
 
+  async function deleteLabor(entry: JobLaborRecord) {
+    if (saving || updatingPaymentId) return;
+    const label = entry.worker_name || pageCopy.unnamed;
+    const confirmed = window.confirm(`Delete the ${formatCurrency(Number(entry.total_cost || 0))} contractor pay entry for ${label}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setUpdatingPaymentId(entry.id);
+    const res = await fetch(`/api/jobs/${jobId}/labor/${entry.id}`, { method: 'DELETE' });
+    const json = await res.json().catch(() => ({}));
+    setUpdatingPaymentId(null);
+
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to delete contractor pay.');
+      return;
+    }
+
+    if (editingEntryId === entry.id) cancelEditingEntry();
+    appFeedback.success('Contractor pay deleted.');
+    await refreshAll();
+  }
+
   async function addLabor() {
     if (saving) return;
     const parsedQuantity = paymentBasis === 'flat' ? 1 : Number.parseFloat(quantity);
@@ -508,6 +529,14 @@ export function JobLaborSection({
                       <div className="job-detail-actions">
                         <button type="button" className="btn" disabled={saving} onClick={() => startEditingEntry(entry)}>
                           Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          disabled={updatingPaymentId === entry.id}
+                          onClick={() => void deleteLabor(entry)}
+                        >
+                          {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Delete'}
                         </button>
                         {paymentStatus !== 'paid' ? (
                           <button

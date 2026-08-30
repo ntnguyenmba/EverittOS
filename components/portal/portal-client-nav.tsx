@@ -14,10 +14,7 @@ type PortalClientNavProps = {
   extraActions?: ReactNode;
 };
 
-/**
- * Client portal navigation lives in the shared slide-out menu.
- * Keep only a visible, working Sign out action on portal pages.
- */
+/** Client navigation is in the shared menu; keep only a compact sign-out action here. */
 export function PortalClientNav(_props: PortalClientNavProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -26,7 +23,6 @@ export function PortalClientNav(_props: PortalClientNavProps) {
   async function signOut() {
     if (signingOut) return;
     setSigningOut(true);
-
     try {
       await performClientLogout();
       window.location.assign('/login');
@@ -37,10 +33,10 @@ export function PortalClientNav(_props: PortalClientNavProps) {
   }
 
   return (
-    <div className="inline-actions" style={{ marginBottom: 16 }}>
+    <div className="portal-client-nav">
       <button
         type="button"
-        className="btn"
+        className="btn contractor-signout"
         onClick={() => void signOut()}
         disabled={signingOut}
         aria-busy={signingOut}

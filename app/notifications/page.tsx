@@ -104,7 +104,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      <div className="card" style={{ marginTop: 18 }}>
+      <section className="notification-feed" style={{ marginTop: 18, display: 'grid', gap: 14 }}>
         {loading ? (
           <p className="loading-state" role="status">
             Loading notifications…
@@ -116,10 +116,12 @@ export default function NotificationsPage() {
           </p>
         ) : null}
         {!loading && !error && items.length === 0 ? (
-          <EmptyState title={EMPTY_COPY.notifications.title} description={EMPTY_COPY.notifications.description} />
+          <div className="card">
+            <EmptyState title={EMPTY_COPY.notifications.title} description={EMPTY_COPY.notifications.description} />
+          </div>
         ) : null}
         {items.map((n) => (
-          <div key={n.id} className={`list-row${!n.read_at ? ' list-row-unread' : ''}`}>
+          <article key={n.id} className={`list-row record-card notification-card${!n.read_at ? ' list-row-unread' : ''}`}>
             <div>
               <strong>{n.title}</strong>
               {n.body ? <p>{n.body}</p> : null}
@@ -139,9 +141,9 @@ export default function NotificationsPage() {
                 </button>
               )}
             </div>
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
     </AppShell>
   );
 }

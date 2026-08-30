@@ -1,0 +1,117 @@
+/* Shared signed-in stability rule.
+   Prevents body-level horizontal drift without changing page visuals or behavior. */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  touch-action: pan-y;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.app-shell,
+.app-page-shell,
+.app-page-stage,
+.app-page-content,
+.contractor-main,
+.client-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.dashboard-shell *,
+.role-portal-shell *,
+.app-shell *,
+.app-page-shell * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.dashboard-shell img,
+.role-portal-shell img,
+.app-shell img,
+.app-page-shell img,
+.dashboard-shell video,
+.role-portal-shell video,
+.app-shell video,
+.app-page-shell video,
+.dashboard-shell canvas,
+.role-portal-shell canvas,
+.app-shell canvas,
+.app-page-shell canvas,
+.dashboard-shell svg,
+.role-portal-shell svg,
+.app-shell svg,
+.app-page-shell svg {
+  max-width: 100%;
+}
+
+.dashboard-shell .card,
+.dashboard-shell form,
+.dashboard-shell fieldset,
+.dashboard-shell input,
+.dashboard-shell textarea,
+.dashboard-shell select,
+.dashboard-shell button,
+.dashboard-shell table,
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-mobile-table-wrap,
+.dashboard-shell .jobs-filter-control,
+.dashboard-shell .jobs-advanced-filters,
+.role-portal-shell .card,
+.role-portal-shell form,
+.role-portal-shell fieldset,
+.role-portal-shell input,
+.role-portal-shell textarea,
+.role-portal-shell select,
+.role-portal-shell button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell .hero,
+.dashboard-shell .signed-in-hero,
+.dashboard-shell .app-hero,
+.dashboard-shell .hero-background,
+.role-portal-shell .hero,
+.role-portal-shell .signed-in-hero,
+.role-portal-shell .app-hero,
+.role-portal-shell .hero-background {
+  pointer-events: none;
+}
+
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .chip-row,
+.dashboard-shell .filter-chip-row,
+.dashboard-shell .jobs-mobile-table-wrap {
+  max-width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .role-portal-shell,
+  .app-shell,
+  .app-page-shell {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .dashboard-shell .app-page-stage,
+  .dashboard-shell .app-page-content,
+  .role-portal-shell .app-page-stage,
+  .role-portal-shell .app-page-content,
+  .dashboard-shell .contractor-main,
+  .dashboard-shell .client-main {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

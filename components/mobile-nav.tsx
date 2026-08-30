@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { AppNavItems } from '@/components/app-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { OrgSwitcher } from '@/components/org-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -13,10 +14,7 @@ import { dashboardPathForRole } from '@/lib/dashboard-nav';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
-type MobileNavProps = {
-  plan?: EverittosPlan | string | null;
-  role?: UserRole | string | null;
-};
+type MobileNavProps = { plan?: EverittosPlan | string | null; role?: UserRole | string | null };
 
 export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const pathname = usePathname() || '/';
@@ -25,45 +23,18 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const normalized = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
-  const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
+  const normalized = normalizePlan(workspacePlan?.plan ?? plan);
+  const resolvedRole = roleProp != null ? normalizeRole(roleProp) : normalizeRole(workspacePlan?.role);
   const [role, setRole] = useState<UserRole>(resolvedRole);
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    setRole(resolvedRole);
-  }, [resolvedRole]);
-
-  useEffect(() => {
-    if (roleProp) setRole(normalizeRole(roleProp));
-  }, [roleProp]);
-
-  useEffect(() => {
-    async function load() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      if (!roleProp && !workspacePlan?.role) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-        setRole(normalizeRole(profile?.role));
-      }
-      const { count } = await supabase
-        .from('notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .is('read_at', null);
-      setUnread(count || 0);
-    }
-    load();
-  }, [roleProp, workspacePlan?.role]);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => setRole(resolvedRole), [resolvedRole]);
+  useEffect(() => { if (roleProp) setRole(normalizeRole(roleProp)); }, [roleProp]);
 
   useEffect(() => {
     setOpen(false);
+    document.body.classList.remove('mobile-nav-open');
   }, [pathname]);
 
   useEffect(() => {
@@ -72,15 +43,27 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
       return;
     }
     document.body.classList.add('mobile-nav-open');
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => {
       document.body.classList.remove('mobile-nav-open');
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      if (!roleProp && !workspacePlan?.role) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+        setRole(normalizeRole(profile?.role));
+      }
+      const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null);
+      setUnread(count || 0);
+    }
+    void load();
+  }, [roleProp, workspacePlan?.role]);
 
   async function logout() {
     setOpen(false);
@@ -89,250 +72,42 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   }
 
   const isFocusedPortal = isClientRole(role) || isContractorRole(role);
-
-  if (isFocusedPortal) {
-    return (
-      <header className="mobile-nav mobile-nav-focused-portal" aria-label={t('ux.mobileNavLabel')}>
-        <div className="mobile-nav-bar">
-          <BrandLogo href={dashboardPathForRole(role)} size={28} showName className="mobile-nav-brand-logo" />
-        </div>
-        <style>{`
-          .mobile-nav-focused-portal {
-            border-bottom: 1px solid #b9c7d0;
-            background: rgba(247, 250, 251, 0.96);
-            box-shadow: 0 8px 24px rgba(24, 44, 59, 0.08);
-            backdrop-filter: blur(18px);
-          }
-
-          .mobile-nav-focused-portal .mobile-nav-bar {
-            min-height: 68px;
-            padding: 10px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            box-sizing: border-box;
-          }
-
-          .mobile-nav-focused-portal .mobile-nav-brand-logo {
-            color: #173044;
-          }
-
-          @media (max-width: 480px) {
-            .mobile-nav-focused-portal .mobile-nav-bar {
-              min-height: 64px;
-              padding: 9px 20px;
-            }
-          }
-        `}</style>
-      </header>
-    );
-  }
-
+  const homeHref = dashboardPathForRole(role);
   const drawer = open ? (
     <div className="mobile-nav-overlay mobile-nav-overlay-portal" role="presentation" onClick={() => setOpen(false)}>
-      <nav
-        id="mobile-nav-panel"
-        className="mobile-nav-drawer"
-        aria-label={t('ux.mobileNavLabel')}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <nav id="mobile-nav-panel" className="mobile-nav-drawer" aria-label={t('ux.mobileNavLabel')} onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-nav-drawer-handle" aria-hidden="true" />
         <div className="mobile-nav-drawer-head">
-          <BrandLogo href={dashboardPathForRole(role)} size={30} showName className="mobile-nav-brand-logo" />
-          <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
-            {t('common.close')}
-          </button>
+          <BrandLogo href={homeHref} size={28} showName className="mobile-nav-brand-logo" />
+          <button type="button" className="mobile-nav-close-btn" aria-label={t('common.close')} onClick={() => setOpen(false)}>×</button>
         </div>
-
         <div className="mobile-nav-panel">
-          {normalized ? (
-            <AppNavItems
-              plan={normalized}
-              role={role}
-              unread={unread}
-              linkClassName="mobile-nav-drawer-link"
-              onNavigate={() => setOpen(false)}
-            />
-          ) : null}
+          <AppNavItems plan={normalized} role={role} unread={unread} linkClassName="mobile-nav-drawer-link" onNavigate={() => setOpen(false)} />
         </div>
-
         <div className="mobile-nav-drawer-footer">
+          <OrgSwitcher />
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
-          <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
-            {t('ux.logOut')}
-          </button>
+          <button className="mobile-nav-logout" type="button" onClick={() => void logout()}>{t('ux.logOut')}</button>
         </div>
       </nav>
     </div>
   ) : null;
 
   return (
-    <header className={`mobile-nav${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
+    <header className={`mobile-nav${isFocusedPortal ? ' mobile-nav-focused-portal' : ''}${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
       <div className="mobile-nav-bar">
-        <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
-        <div className="mobile-nav-bar-actions">
-          <LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" />
-          <button
-            type="button"
-            className="mobile-nav-menu-btn"
-            aria-label={open ? t('common.close') : 'Open menu'}
-            aria-expanded={open}
-            aria-controls="mobile-nav-panel"
-            onClick={() => setOpen((value) => !value)}
-          >
-            <span className="mobile-nav-menu-icon" aria-hidden="true" />
-            <span className="sr-only">{open ? t('common.close') : 'Open menu'}</span>
-          </button>
-        </div>
+        <BrandLogo href={homeHref} size={32} showName={false} className="mobile-nav-top-logo" />
+        <button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : t('ux.mobileNavLabel')} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}>
+          <span className="mobile-nav-menu-icon" aria-hidden="true" />
+        </button>
       </div>
-
-      {mounted && drawer ? createPortal(drawer, document.body) : null}
-
+      {mounted ? createPortal(drawer, document.body) : null}
       <style>{`
-        .mobile-nav {
-          border-bottom: 1px solid #b9c7d0;
-          background: rgba(247, 250, 251, 0.96);
-          box-shadow: 0 8px 24px rgba(24, 44, 59, 0.08);
-          backdrop-filter: blur(18px);
-        }
-
-        .mobile-nav-bar {
-          min-height: 68px;
-          padding: 10px 28px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
-          box-sizing: border-box;
-        }
-
-        .mobile-nav-brand-logo { color: #173044; }
-        .mobile-nav-bar-actions { display: flex; align-items: center; gap: 10px; }
-
-        .mobile-nav-language select,
-        .mobile-nav-language button {
-          min-height: 44px;
-          border: 1px solid #afbdc8;
-          border-radius: 10px;
-          background: #ffffff;
-          color: #243e51;
-          font-weight: 700;
-        }
-
-        .mobile-nav-menu-btn {
-          width: 46px;
-          height: 46px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #9eafbb;
-          border-radius: 12px;
-          background: #243f53;
-          color: #ffffff;
-          box-shadow: 0 7px 18px rgba(36, 63, 83, 0.2);
-        }
-
-        .mobile-nav-menu-btn:hover { background: #1b3142; }
-
-        .mobile-nav-overlay-portal {
-          position: fixed;
-          inset: 0;
-          z-index: 1000;
-          display: flex;
-          justify-content: flex-end;
-          background: rgba(15, 31, 42, 0.48);
-          backdrop-filter: blur(5px);
-        }
-
-        .mobile-nav-drawer {
-          width: min(390px, calc(100vw - 28px));
-          height: 100dvh;
-          display: grid;
-          grid-template-rows: auto minmax(0, 1fr) auto;
-          border-left: 1px solid rgba(255, 255, 255, 0.65);
-          background: #f6f9fa;
-          box-shadow: -24px 0 70px rgba(10, 28, 40, 0.24);
-          animation: everittDrawerIn 180ms ease-out;
-        }
-
-        .mobile-nav-drawer-head {
-          min-height: 76px;
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          border-bottom: 1px solid #c7d2da;
-          background: #ffffff;
-        }
-
-        .mobile-nav-close-btn {
-          min-height: 42px;
-          padding-inline: 15px;
-          border-color: #9eafbb;
-          background: #eef3f5;
-          color: #223b4d;
-          font-weight: 750;
-        }
-
-        .mobile-nav-panel { overflow-y: auto; padding: 16px 14px 24px; }
-
-        .mobile-nav-drawer-link {
-          min-height: 50px;
-          margin: 4px 0;
-          padding: 12px 14px;
-          border: 1px solid transparent;
-          border-radius: 12px;
-          color: #30485a;
-          font-size: 15px;
-          font-weight: 700;
-        }
-
-        .mobile-nav-drawer-link:hover,
-        .mobile-nav-drawer-link[aria-current='page'] {
-          border-color: #bccad3;
-          background: #ffffff;
-          color: #1e3c50;
-          box-shadow: 0 5px 16px rgba(25, 47, 63, 0.08);
-        }
-
-        .mobile-nav-drawer-footer {
-          display: grid;
-          gap: 12px;
-          padding: 16px 18px max(18px, env(safe-area-inset-bottom));
-          border-top: 1px solid #c7d2da;
-          background: #e8eef2;
-        }
-
-        .mobile-nav-logout {
-          min-height: 48px;
-          border-color: #8fa2af;
-          background: #ffffff;
-          color: #243f53;
-          font-weight: 750;
-        }
-
-        body.mobile-nav-open { overflow: hidden; }
-
-        @keyframes everittDrawerIn {
-          from { transform: translateX(28px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-
-        @media (min-width: 720px) and (max-width: 1100px) {
-          .mobile-nav-bar { min-height: 74px; padding-inline: 44px; }
-          .mobile-nav-drawer { width: min(430px, 54vw); }
-        }
-
-        @media (max-width: 480px) {
-          .mobile-nav-language { display: none; }
-          .mobile-nav-bar { min-height: 64px; padding: 9px 20px; }
-          .mobile-nav-drawer { width: calc(100vw - 18px); }
-          .mobile-nav-drawer-footer { padding-inline: 14px; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .mobile-nav-drawer { animation: none; }
-        }
+        .mobile-nav{border-bottom:0;background:transparent}.mobile-nav-bar{min-height:52px;padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:14px;box-sizing:border-box;background:transparent!important;border:0!important;box-shadow:none!important}.mobile-nav-top-logo{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(9,24,35,.14)}.mobile-nav-top-logo .brand-logo-image{display:block;border-radius:8px}.mobile-nav-brand-logo{color:#173044}.mobile-nav-menu-btn{position:relative;z-index:2147482999;width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d2dbe0;border-radius:14px;background:#fff;color:#173044;box-shadow:0 8px 24px rgba(9,24,35,.08);cursor:pointer;pointer-events:auto!important;touch-action:manipulation}
+        .mobile-nav-menu-icon,.mobile-nav-menu-icon:before,.mobile-nav-menu-icon:after{display:block;width:18px;height:2px;border-radius:999px;background:#173044}.mobile-nav-menu-icon{position:relative}.mobile-nav-menu-icon:before,.mobile-nav-menu-icon:after{content:'';position:absolute;left:0}.mobile-nav-menu-icon:before{top:-6px}.mobile-nav-menu-icon:after{top:6px}
+        .mobile-nav-overlay-portal{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(17,31,40,.46);backdrop-filter:blur(3px);pointer-events:auto!important}.mobile-nav-drawer{position:relative;z-index:2147483001;width:100%;max-height:min(82dvh,760px);display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;border:1px solid #d5dde2;border-bottom:0;border-radius:26px 26px 0 0;background:#fff;color:#173044;box-shadow:0 -14px 50px rgba(16,34,47,.2);overflow:hidden;pointer-events:auto!important}.mobile-nav-drawer-handle{width:42px;height:5px;margin:10px auto 2px;border-radius:999px;background:#c5cdd2}.mobile-nav-drawer-head{min-height:58px;padding:8px 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #edf0f2;background:#fff}.mobile-nav-close-btn{width:40px;height:40px;border:0;border-radius:50%;background:#eef2f4;color:#173044;font-size:28px;line-height:1;cursor:pointer}.mobile-nav-panel{overflow-y:auto;padding:12px 14px;background:#fff}.mobile-nav-panel .app-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mobile-nav-drawer-link{min-height:58px!important;margin:0!important;padding:13px 14px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;border:1px solid #dbe3e7!important;border-radius:15px!important;background:#f7f9fa!important;color:#173044!important;font-size:16px!important;font-weight:700!important;line-height:1.25!important;text-decoration:none!important;box-shadow:none!important}.mobile-nav-drawer-link .nav-item-label{color:#173044!important}.mobile-nav-drawer-link.active,.mobile-nav-drawer-link[aria-current='page']{border-color:#9fb2bf!important;background:#eaf0f3!important;color:#173044!important}.mobile-nav-drawer-footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:10px;padding:12px 14px max(14px,env(safe-area-inset-bottom));border-top:1px solid #e3e8eb;background:#f4f7f8;color:#173044}.mobile-nav-drawer-footer label,.mobile-nav-drawer-footer span{color:#173044!important}.mobile-nav-drawer-footer select{min-height:46px;border:1px solid #c9d2d8;border-radius:14px;background:#fff;color:#173044}.mobile-nav-logout{min-height:46px;padding:0 18px;border:1px solid #c9d2d8;border-radius:14px;background:#fff;color:#173044;font:inherit;font-weight:700;cursor:pointer}body.mobile-nav-open{overflow:hidden}
+        @media(min-width:700px){.mobile-nav-overlay-portal{align-items:stretch;justify-content:flex-end}.mobile-nav-drawer{width:min(390px,calc(100vw - 28px));height:100dvh;max-height:none;border-radius:0;border-top:0}.mobile-nav-drawer-handle{display:none}.mobile-nav-panel .app-nav{grid-template-columns:1fr}.mobile-nav-drawer-footer{grid-template-columns:1fr}}
+        @media(max-width:480px){.mobile-nav-panel .app-nav{grid-template-columns:1fr 1fr}.mobile-nav-drawer-footer{grid-template-columns:1fr 1fr}.mobile-nav-logout{grid-column:1/-1}}
       `}</style>
     </header>
   );

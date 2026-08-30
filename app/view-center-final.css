@@ -1,0 +1,328 @@
+/* Last-loaded alignment lock.
+   One centered column. Equal left/right inset. Cards, search, and footer share width.
+   Navigation is not part of the centered column and must stay visible. */
+
+:root {
+  --eo-view-inset: clamp(14px, 4.2vw, 28px);
+  --eo-view-max: 760px;
+}
+
+@media (min-width: 900px) {
+  :root { --eo-view-max: 920px; }
+}
+
+@media (min-width: 1200px) {
+  :root { --eo-view-max: 1080px; }
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.contractor-main,
+.client-main {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.role-portal-shell .main,
+.contractor-main,
+.client-main,
+.app-page-content,
+.app-page-stage,
+.page-content,
+.dashboard-content,
+.today-page,
+.dashboard-home,
+.owner-home-sheet,
+.contractor-dashboard,
+.client-upcoming-simple {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-stage,
+.role-portal-shell .app-page-content,
+.contractor-main .app-page-content,
+.client-main .app-page-content,
+.today-page,
+.dashboard-home {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+}
+
+.dashboard-shell .app-page-content > *,
+.dashboard-shell .app-page-stage > *,
+.role-portal-shell .app-page-content > *,
+.contractor-main > *,
+.client-main > *,
+.today-page > *,
+.dashboard-home > *,
+.owner-home-sheet,
+.owner-home-sheet > *,
+.dashboard-shell .everitt-cmd-trigger,
+.role-portal-shell .everitt-cmd-trigger,
+.contractor-main .everitt-cmd-trigger,
+.dashboard-shell .app-footer,
+.role-portal-shell .app-footer,
+.app-footer,
+.dashboard-shell .page-header,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .role-summary-card,
+.dashboard-shell .client-job-card,
+.dashboard-shell .quote-workspace,
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-shell-minimal {
+  width: min(100%, var(--eo-view-max)) !important;
+  max-width: var(--eo-view-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-authenticated-header,
+.dashboard-shell .dashboard-shell-mobile,
+.dashboard-shell .app-page-top {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.dashboard-shell .app-authenticated-header > *,
+.dashboard-shell .dashboard-shell-mobile > *,
+.dashboard-shell .app-page-top > *:not(.sidebar) {
+  width: min(100%, calc(var(--eo-view-max) + (var(--eo-view-inset) * 2))) !important;
+  max-width: calc(var(--eo-view-max) + (var(--eo-view-inset) * 2)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .everitt-cmd-trigger {
+  display: block !important;
+}
+
+.dashboard-shell .app-footer,
+.app-footer {
+  width: min(100%, var(--eo-view-max)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 640px) {
+  :root { --eo-view-inset: 16px; --eo-view-max: 100%; }
+
+  .dashboard-shell .app-page-content,
+  .dashboard-shell .app-page-stage,
+  .today-page,
+  .dashboard-home {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .dashboard-shell .app-page-content > *,
+  .dashboard-shell .app-page-stage > *,
+  .today-page > *,
+  .dashboard-home > *,
+  .dashboard-shell .everitt-cmd-trigger,
+  .dashboard-shell .app-footer,
+  .app-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* One nav rule for every view.
+   Desktop: left sidebar. Smaller views: top hamburger menu.
+   Content centering must never hide either control. */
+@media (min-width: 1280px) {
+  .dashboard-shell {
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    grid-template-areas: 'side main' !important;
+    min-height: 100svh !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    grid-area: side !important;
+    display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    position: sticky !important;
+    top: 0 !important;
+    align-self: stretch !important;
+    margin: 0 !important;
+    padding: 16px 12px 14px !important;
+    border: 0 !important;
+    border-right: 1px solid #d5dee5 !important;
+    border-radius: 0 !important;
+    background: #eef3f6 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+    z-index: 4 !important;
+  }
+
+  .dashboard-shell .sidebar-brand {
+    flex: 0 0 auto !important;
+    margin: 0 4px 14px !important;
+    padding: 4px 6px 12px !important;
+    border-bottom: 1px solid #d5dee5 !important;
+  }
+
+  .dashboard-shell .sidebar-nav {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 2px !important;
+  }
+
+  .dashboard-shell .sidebar .app-nav,
+  .dashboard-shell .sidebar .nav-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .dashboard-shell .sidebar .nav-item,
+  .dashboard-shell .sidebar a.nav-item {
+    min-height: 40px !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #31495b !important;
+    font-size: 14px !important;
+    font-weight: 550 !important;
+  }
+
+  .dashboard-shell .sidebar .nav-item:hover {
+    background: rgba(255, 255, 255, 0.62) !important;
+    color: #173044 !important;
+  }
+
+  .dashboard-shell .sidebar .nav-item.active,
+  .dashboard-shell .sidebar a.nav-item.active {
+    background: #ffffff !important;
+    color: #173044 !important;
+    font-weight: 700 !important;
+    box-shadow: inset 3px 0 0 #243f53 !important;
+  }
+
+  .dashboard-shell .sidebar-footer,
+  .dashboard-shell .sidebar-single-nav-footer {
+    flex: 0 0 auto !important;
+    margin-top: auto !important;
+    padding: 12px 2px 2px !important;
+    border-top: 1px solid #d5dee5 !important;
+    background: transparent !important;
+  }
+
+  .dashboard-shell .sidebar-logout,
+  .dashboard-shell .sidebar-single-nav-footer select,
+  .dashboard-shell .sidebar-language-compact select {
+    width: 100% !important;
+    min-height: 40px !important;
+    border: 1px solid #c9d2d8 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    color: #173044 !important;
+  }
+
+  .dashboard-shell-header,
+  .dashboard-shell > .dashboard-shell-header,
+  .dashboard-shell .mobile-nav,
+  .dashboard-shell .mobile-nav-bar,
+  .dashboard-shell .mobile-nav-menu-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell {
+    display: block !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
+    display: none !important;
+  }
+
+  .dashboard-shell-header,
+  .dashboard-shell > .dashboard-shell-header {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-shell-header .mobile-nav,
+  .dashboard-shell-header .mobile-nav-bar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-menu-btn,
+  .dashboard-shell-header .mobile-nav-top-logo {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-nav-drawer {
+    background: #eef3f6 !important;
+    color: #173044 !important;
+  }
+
+  .mobile-nav-drawer-link,
+  .mobile-nav-drawer .nav-item {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    color: #173044 !important;
+  }
+}

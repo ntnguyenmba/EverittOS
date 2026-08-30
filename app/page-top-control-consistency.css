@@ -1,0 +1,144 @@
+/* Shared page/subpage top controls: consistent sizing and better mobile fit. */
+.dashboard-shell .app-page-top-branded {
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-shell .app-page-top-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 10px !important;
+  width: min(100%, 520px) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+}
+
+.dashboard-shell .app-page-top-workspace .org-switcher {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  flex: none !important;
+}
+
+.dashboard-shell .app-page-top-workspace .org-switcher-label {
+  display: none !important;
+}
+
+.dashboard-shell .app-page-top-workspace .org-switcher-select {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 38px 0 13px !important;
+  border: 1px solid rgba(37, 54, 74, 0.72) !important;
+  border-radius: 10px !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: var(--text) !important;
+  font-family: var(--font-ui) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
+
+.dashboard-shell .app-page-top-actions {
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+.dashboard-shell .app-page-top-actions .app-back-button,
+.dashboard-shell .app-back-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  width: auto !important;
+  min-width: 94px !important;
+  max-width: 118px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 13px !important;
+  border: 1px solid rgba(37, 54, 74, 0.72) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: var(--text) !important;
+  font-family: var(--font-ui) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  flex: 0 0 auto !important;
+}
+
+.dashboard-shell .app-back-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  color: var(--text-secondary) !important;
+}
+
+.dashboard-shell .app-back-label {
+  font-size: inherit !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell .app-page-top-branded {
+    margin-bottom: 12px !important;
+  }
+
+  .dashboard-shell .app-page-top-workspace {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .app-page-top-actions .app-back-button,
+  .dashboard-shell .app-back-button {
+    min-width: 88px !important;
+    max-width: 104px !important;
+    padding-inline: 11px !important;
+  }
+
+  .dashboard-shell .app-page-top-workspace .org-switcher-select {
+    padding-left: 11px !important;
+    padding-right: 34px !important;
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-shell .app-page-top-actions .app-back-button,
+  .dashboard-shell .app-back-button {
+    min-width: 78px !important;
+    max-width: 90px !important;
+    padding-inline: 9px !important;
+  }
+
+  .dashboard-shell .app-back-arrow {
+    font-size: 16px !important;
+  }
+
+  .dashboard-shell .app-back-label {
+    font-size: 14px !important;
+  }
+}

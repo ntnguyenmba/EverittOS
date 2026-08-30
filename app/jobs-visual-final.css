@@ -7,12 +7,16 @@
 
 .jobs-list-page .page-header {
   min-height: auto !important;
-  margin: 0 0 14px !important;
+  margin: 0 0 18px !important;
 }
 
 .jobs-list-page .page-header h1 {
   margin: 0 !important;
   color: #1c2d37 !important;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.035em !important;
 }
 
 .jobs-header-actions .btn:not(.btn-primary) {
@@ -29,17 +33,20 @@
 
 .jobs-filter-tabs {
   position: static !important;
-  margin-bottom: 16px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  margin-bottom: 18px !important;
+  border: 1px solid rgba(37, 54, 74, 0.1) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.06) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
 }
 
 .jobs-filter-tab {
   color: #647681 !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .jobs-filter-tab:hover,
@@ -51,7 +58,7 @@
 .jobs-filter-tab-active {
   background: #ffffff !important;
   color: #244d65 !important;
-  box-shadow: 0 1px 6px rgba(35, 62, 77, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(35, 62, 77, 0.09) !important;
 }
 
 .jobs-table-card,
@@ -81,7 +88,7 @@
 .jobs-operations-table tbody {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 12px !important;
+  gap: 16px !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row {
@@ -91,14 +98,14 @@
     'job date'
     'job status' !important;
   align-items: start !important;
-  gap: 12px 20px !important;
+  gap: 14px 22px !important;
   min-width: 0 !important;
   min-height: 150px !important;
-  padding: 18px 20px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  padding: 22px !important;
+  border: 1px solid rgba(37, 54, 74, 0.1) !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 8px 24px rgba(37, 54, 74, 0.065) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
   transition: transform 150ms ease, box-shadow 150ms ease !important;
@@ -108,7 +115,7 @@
 .jobs-operations-table tbody > .jobs-operations-row:hover,
 .jobs-operations-table tbody > .jobs-operations-row:focus-visible {
   transform: translateY(-1px) !important;
-  box-shadow: 0 12px 28px rgba(37, 54, 74, 0.12) !important;
+  box-shadow: 0 12px 28px rgba(37, 54, 74, 0.1) !important;
   outline: none !important;
 }
 
@@ -129,11 +136,12 @@
 
 .jobs-property-link {
   display: block !important;
-  margin: 0 0 8px !important;
+  margin: 0 0 6px !important;
   color: #1f313b !important;
-  font-size: 1.04rem !important;
-  font-weight: 700 !important;
-  line-height: 1.3 !important;
+  font-size: 1.2rem !important;
+  font-weight: 650 !important;
+  line-height: 1.22 !important;
+  letter-spacing: -0.025em !important;
   text-decoration: none !important;
   overflow-wrap: anywhere !important;
 }
@@ -145,8 +153,8 @@
 
 .jobs-col-property .jobs-secondary {
   display: block !important;
-  color: #6c7d88 !important;
-  font-size: 0.92rem !important;
+  color: #657681 !important;
+  font-size: 0.98rem !important;
   line-height: 1.45 !important;
 }
 
@@ -156,11 +164,22 @@
 
 .jobs-owner-finance-row .jobs-col-property .jobs-secondary:first-of-type {
   display: block !important;
-  margin-top: -2px !important;
-  color: #75858f !important;
-  font-size: 0.78rem !important;
-  font-weight: 600 !important;
+  margin-top: 0 !important;
+  color: #6f7f89 !important;
+  font-size: 0.98rem !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+.jobs-next-action-hint {
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid rgba(37, 54, 74, 0.1) !important;
+  color: #223846 !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
   line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-date {
@@ -172,16 +191,18 @@
 .jobs-col-date strong {
   display: block !important;
   color: #263d4b !important;
-  font-size: 0.92rem !important;
-  line-height: 1.35 !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.015em !important;
   white-space: normal !important;
 }
 
 .jobs-row-time {
   display: block !important;
-  margin-top: 5px !important;
-  color: #72838d !important;
-  font-size: 0.9rem !important;
+  margin-top: 4px !important;
+  color: #6f808a !important;
+  font-size: 0.95rem !important;
   line-height: 1.35 !important;
   white-space: nowrap !important;
 }
@@ -204,46 +225,66 @@
 .jobs-col-status .status {
   max-width: 100% !important;
   white-space: nowrap !important;
+  font-size: 0.9rem !important;
 }
 
-/* Owner-only finance layout: Client and Worker Pay stack left; Owner Profit sits right. */
+/* Owner view: finance values read as one compact summary instead of stacked mini-sections. */
 .jobs-operations-table tbody > .jobs-owner-finance-row {
-  grid-template-columns: minmax(0, 1fr) minmax(180px, auto) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   grid-template-areas:
-    'job date'
-    'client profit'
-    'worker status' !important;
-  row-gap: 10px !important;
+    'job job date'
+    'client worker profit'
+    'status status status' !important;
+  column-gap: 20px !important;
+  row-gap: 16px !important;
   min-height: 190px !important;
 }
 
-.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-customer-pay {
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-customer-pay,
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-contractor-pay,
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-owner-profit {
   display: block !important;
-  grid-area: client !important;
-  align-self: end !important;
-  justify-self: start !important;
+  align-self: start !important;
+  justify-self: stretch !important;
   text-align: left !important;
+}
+
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-customer-pay {
+  grid-area: client !important;
 }
 
 .jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-contractor-pay {
-  display: block !important;
   grid-area: worker !important;
-  align-self: start !important;
-  justify-self: start !important;
-  text-align: left !important;
 }
 
 .jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-owner-profit {
-  display: block !important;
   grid-area: profit !important;
-  align-self: end !important;
-  justify-self: end !important;
-  text-align: right !important;
 }
 
 .jobs-owner-finance-row .jobs-col-money {
-  white-space: nowrap !important;
-  line-height: 1.35 !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+  line-height: 1.3 !important;
+}
+
+.jobs-owner-finance-row .jobs-money-label {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #6d7d87 !important;
+  font-size: 0.84rem !important;
+  font-weight: 550 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.jobs-owner-finance-row .jobs-money-value {
+  display: block !important;
+  color: #172a36 !important;
+  font-size: 1.18rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label,
@@ -252,13 +293,13 @@
 }
 
 .jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label::after {
-  content: 'Client Pay\00a0';
-  font-size: 1rem !important;
+  content: 'Client Pay';
+  font-size: 0.84rem !important;
 }
 
 .jobs-owner-finance-row .jobs-col-contractor-pay .jobs-money-label::after {
-  content: 'Worker Pay\00a0';
-  font-size: 1rem !important;
+  content: 'Worker Pay';
+  font-size: 0.84rem !important;
 }
 
 @media (max-width: 900px) {
@@ -267,25 +308,40 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 720px) {
+  .jobs-list-page .page-header h1 {
+    font-size: 2.15rem !important;
+  }
+
   .jobs-filter-tabs {
-    overflow-x: auto !important;
-    white-space: nowrap !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    padding: 6px !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    white-space: normal !important;
   }
 
-  .jobs-operations-table tbody > .jobs-operations-row {
-    grid-template-columns: 1fr !important;
-    grid-template-areas:
-      'job'
-      'date'
-      'status' !important;
-    gap: 12px !important;
-    min-height: 0 !important;
-    padding: 18px !important;
+  .jobs-filter-tab {
+    min-height: 54px !important;
+    padding: 12px 10px !important;
+    border-radius: 15px !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
   }
 
+  .jobs-operations-table tbody,
+  .jobs-mobile-table tbody {
+    gap: 16px !important;
+  }
+
+  .jobs-mobile-table .jobs-operations-row,
+  .jobs-operations-table tbody > .jobs-operations-row,
   .jobs-operations-table tbody > .jobs-owner-finance-row {
-    grid-template-columns: 1fr !important;
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     grid-template-areas:
       'job'
       'date'
@@ -293,21 +349,145 @@
       'worker'
       'profit'
       'status' !important;
+    gap: 0 !important;
     min-height: 0 !important;
+    padding: 22px 20px !important;
+    border-radius: 22px !important;
   }
 
-  .jobs-owner-finance-row > .jobs-col-owner-profit {
-    justify-self: start !important;
-    text-align: left !important;
+  .jobs-mobile-table .jobs-col-property,
+  .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-property {
+    padding: 0 !important;
   }
 
+  .jobs-mobile-table .jobs-property-link,
+  .jobs-property-link {
+    margin-bottom: 6px !important;
+    font-size: 1.28rem !important;
+    font-weight: 650 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .jobs-mobile-table .jobs-secondary,
+  .jobs-owner-finance-row .jobs-col-property .jobs-secondary:first-of-type {
+    margin-top: 0 !important;
+    color: #6b7b85 !important;
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .jobs-next-action-hint {
+    margin-top: 14px !important;
+    padding-top: 13px !important;
+    font-size: 1rem !important;
+    font-weight: 650 !important;
+  }
+
+  .jobs-mobile-table .jobs-col-date,
   .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-date {
-    padding-top: 12px !important;
-    border-top: 1px solid rgba(37, 54, 74, 0.1) !important;
+    margin-top: 16px !important;
+    padding: 15px 0 0 !important;
+    border-top: 1px solid rgba(37, 54, 74, 0.09) !important;
     text-align: left !important;
   }
 
+  .jobs-mobile-table .jobs-col-date strong,
+  .jobs-col-date strong {
+    font-size: 1.16rem !important;
+    font-weight: 650 !important;
+    line-height: 1.3 !important;
+  }
+
+  .jobs-mobile-table .jobs-row-time,
+  .jobs-row-time {
+    margin-top: 4px !important;
+    color: #6f808a !important;
+    font-size: 1rem !important;
+  }
+
+  .jobs-mobile-table .jobs-col-assigned {
+    display: none !important;
+  }
+
+  .jobs-mobile-table .jobs-col-money,
+  .jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-money {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 16px !important;
+    min-height: 0 !important;
+    padding: 14px 0 !important;
+    border-top: 1px solid rgba(37, 54, 74, 0.075) !important;
+  }
+
+  .jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-customer-pay {
+    margin-top: 14px !important;
+  }
+
+  .jobs-owner-finance-row .jobs-money-label,
+  .jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label::after,
+  .jobs-owner-finance-row .jobs-col-contractor-pay .jobs-money-label::after {
+    margin: 0 !important;
+    color: #60717c !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  .jobs-mobile-table .jobs-money-value,
+  .jobs-owner-finance-row .jobs-money-value {
+    margin-left: 0 !important;
+    color: #172a36 !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    text-align: right !important;
+  }
+
+  .jobs-mobile-table .jobs-col-money::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .jobs-mobile-table .jobs-col-status,
   .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-status {
+    display: block !important;
+    margin-top: 2px !important;
+    padding: 14px 0 0 !important;
+    border-top: 1px solid rgba(37, 54, 74, 0.075) !important;
     justify-self: start !important;
+    text-align: left !important;
+  }
+
+  .jobs-mobile-table .jobs-col-status::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .jobs-col-status .status {
+    font-size: 0.94rem !important;
+  }
+
+  .jobs-mobile-table .jobs-col-actions,
+  .jobs-mobile-table .jobs-menu-trigger,
+  .jobs-mobile-table .jobs-more-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .jobs-filter-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .jobs-mobile-table .jobs-operations-row,
+  .jobs-operations-table tbody > .jobs-operations-row {
+    padding: 19px 17px !important;
+  }
+
+  .jobs-mobile-table .jobs-property-link,
+  .jobs-property-link {
+    font-size: 1.18rem !important;
   }
 }

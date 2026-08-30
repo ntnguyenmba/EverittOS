@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { AppNavItems } from '@/components/app-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { OrgSwitcher } from '@/components/org-switcher';
 import { useTranslation } from '@/components/locale-provider';
-import { SidebarPlanCard } from '@/components/sidebar-plan-card';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
-import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
-import { canManageBilling } from '@/lib/roles';
-import { canAccessNavHref } from '@/lib/nav-access';
-import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type SidebarProps = {
@@ -22,12 +20,10 @@ type SidebarProps = {
 
 export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const router = useRouter();
-  const pathname = usePathname() || '/';
-  const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const { t } = useTranslation();
   const workspacePlan = useWorkspacePlanOptional();
   const normalized = normalizePlan(workspacePlan?.plan ?? plan);
-  const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
+  const resolvedRole = roleProp != null ? normalizeRole(roleProp) : normalizeRole(workspacePlan?.role);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(resolvedRole);
 
@@ -52,7 +48,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
         .is('read_at', null);
       setUnread(count || 0);
     }
-    load();
+    void load();
   }, [roleProp, workspacePlan?.role]);
 
   async function logout() {
@@ -60,14 +56,9 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
     await performClientLogout(router);
   }
 
-  const showBillingLink = canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
-  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
-  const showViewPlans = !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
-  const isOwnerDashboard = pathname === '/dashboard' && role === 'owner';
-
   return (
-    <aside className={isOwnerDashboard ? 'sidebar sidebar-owner-dashboard' : 'sidebar'} aria-label="App navigation">
-      <div className="sidebar-brand">
+    <aside className="sidebar" aria-label="App navigation">
+      <div className="sidebar-brand sidebar-brand-auth-like">
         <BrandLogo href={dashboardPathForRole(role)} size={28} showName />
       </div>
 
@@ -75,21 +66,20 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
         <AppNavItems plan={normalized} role={role} unread={unread} />
       </div>
 
-      <div className="sidebar-footer">
-        <SidebarPlanCard
-          plan={normalized}
-          showBillingLink={showBillingLink}
-          showUpgrade={showUpgrade}
-          showViewPlans={showViewPlans}
-          billingActive={pathname.startsWith('/settings/billing')}
-        />
-        <div className="sidebar-footer-actions">
-          <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
-          <button className="btn btn-sm sidebar-logout" type="button" onClick={logout}>
-            {t('ux.logOut')}
-          </button>
-        </div>
+      <div className="sidebar-footer sidebar-single-nav-footer">
+        <OrgSwitcher />
+        <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
+        <button type="button" className="sidebar-logout" onClick={() => void logout()}>{t('ux.logOut')}</button>
       </div>
+
+      <style jsx global>{`
+        .sidebar{display:flex;flex-direction:column}
+        .sidebar-nav{flex:1 1 auto;min-height:0}
+        .sidebar-single-nav-footer{display:grid;gap:10px;margin-top:auto;padding:14px}
+        .sidebar-single-nav-footer .org-switcher,.sidebar-single-nav-footer .language-switcher{width:100%;min-width:0}
+        .sidebar-single-nav-footer select{width:100%;min-height:44px}
+        .sidebar-logout{width:100%;min-height:44px;border:1px solid #c9d2d8;border-radius:12px;background:#fff;color:#173044;font:inherit;font-weight:700;cursor:pointer}
+      `}</style>
     </aside>
   );
 }

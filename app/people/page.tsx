@@ -18,7 +18,7 @@ import { canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Contractor = {
   id: string;
@@ -31,6 +31,11 @@ type Contractor = {
   active: boolean | null;
 };
 
+type WorkerSummary = {
+  openJobs: number;
+  unpaid: number;
+};
+
 const EMPTY_CONTRACTOR = {
   name: '',
   email: '',
@@ -39,8 +44,16 @@ const EMPTY_CONTRACTOR = {
   contractorClassification: 'contractor' as ContractorClassification
 };
 
+const PAGE_SIZE = 10;
+
+function money(value: number) {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
+}
+
 function ContractorPanel({ canManage }: { canManage: boolean }) {
   const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, WorkerSummary>>({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [form, setForm] = useState(EMPTY_CONTRACTOR);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,29 +62,73 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
   const loadContractors = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/contractors', { cache: 'no-store' });
-    const json = (await res.json().catch(() => ({}))) as {
-      contractors?: Contractor[];
-      error?: string;
-    };
-    setLoading(false);
+    const json = (await res.json().catch(() => ({}))) as { contractors?: Contractor[]; error?: string };
 
     if (!res.ok) {
+      setLoading(false);
       setMessage(json.error || 'Unable to load team members.');
       setContractors([]);
+      setSummaries({});
       return;
     }
 
-    setContractors(
-      (json.contractors || []).map((row) => ({
-        ...row,
-        contractor_classification: normalizeContractorClassification(row.contractor_classification)
-      }))
-    );
+    const rows = (json.contractors || []).map((row) => ({
+      ...row,
+      contractor_classification: normalizeContractorClassification(row.contractor_classification)
+    }));
+    setContractors(rows);
+    setVisibleCount(PAGE_SIZE);
+
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth.user;
+    const org = user ? await fetchOrganizationContext(user.id) : null;
+    if (!org?.organizationId || rows.length === 0) {
+      setSummaries({});
+      setLoading(false);
+      return;
+    }
+
+    const contractorIds = rows.map((row) => row.id);
+    const [{ data: jobs }, { data: labor }] = await Promise.all([
+      supabase
+        .from('jobs')
+        .select('assigned_to, status')
+        .eq('organization_id', org.organizationId)
+        .in('assigned_to', contractorIds),
+      supabase
+        .from('job_labor')
+        .select('worker_name, total_cost, payment_status')
+        .eq('organization_id', org.organizationId)
+    ]);
+
+    const next: Record<string, WorkerSummary> = {};
+    for (const contractor of rows) next[contractor.id] = { openJobs: 0, unpaid: 0 };
+
+    for (const job of jobs || []) {
+      const id = String(job.assigned_to || '');
+      if (!next[id]) continue;
+      const status = String(job.status || '').toLowerCase();
+      if (!['completed', 'finished', 'cancelled', 'canceled'].includes(status)) next[id].openJobs += 1;
+    }
+
+    const byName = new Map(rows.map((row) => [row.name.trim().toLowerCase(), row.id]));
+    for (const row of labor || []) {
+      const status = String(row.payment_status || 'unpaid').toLowerCase();
+      if (status === 'paid') continue;
+      const id = byName.get(String(row.worker_name || '').trim().toLowerCase());
+      if (!id || !next[id]) continue;
+      next[id].unpaid += Number(row.total_cost || 0);
+    }
+
+    setSummaries(next);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     void loadContractors();
   }, [loadContractors]);
+
+  const visibleContractors = useMemo(() => contractors.slice(0, visibleCount), [contractors, visibleCount]);
 
   async function addContractor() {
     if (!canManage || saving) return;
@@ -82,7 +139,6 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
     setSaving(true);
     setMessage('');
-
     const res = await fetch('/api/contractors', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -95,7 +151,6 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
       })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
-
     setSaving(false);
     if (!res.ok) {
       setMessage(json.error || 'Unable to add team member.');
@@ -125,91 +180,64 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
   return (
     <section style={{ marginTop: 24 }}>
       <h2>Contractors and staff records</h2>
-      <p className="muted">Add people who need job assignments or payment records but do not need workspace access.</p>
+      <p className="muted">See who has open work and what is still owed before opening the full record.</p>
 
       {canManage ? (
         <details className="card" style={{ marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Add team record</summary>
           <div className="form" style={{ marginTop: 16 }}>
             <div className="grid-2">
-              <label>
-                Name
-                <input className="input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-              </label>
-              <label>
-                Company
-                <input className="input" value={form.companyName} onChange={(event) => setForm({ ...form, companyName: event.target.value })} placeholder="Optional" />
-              </label>
-              <label>
-                Phone
-                <input className="input" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="Optional" />
-              </label>
-              <label>
-                Email
-                <input className="input" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Optional" />
-              </label>
+              <label>Name<input className="input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+              <label>Company<input className="input" value={form.companyName} onChange={(event) => setForm({ ...form, companyName: event.target.value })} placeholder="Optional" /></label>
+              <label>Phone<input className="input" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="Optional" /></label>
+              <label>Email<input className="input" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Optional" /></label>
               <label>
                 Type
-                <select
-                  className="input"
-                  value={form.contractorClassification}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      contractorClassification: normalizeContractorClassification(event.target.value)
-                    })
-                  }
-                >
-                  {contractorClassificationOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
+                <select className="input" value={form.contractorClassification} onChange={(event) => setForm({ ...form, contractorClassification: normalizeContractorClassification(event.target.value) })}>
+                  {contractorClassificationOptions().map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </label>
             </div>
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addContractor()}>
-              {saving ? 'Adding...' : 'Add record'}
-            </button>
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addContractor()}>{saving ? 'Adding...' : 'Add record'}</button>
           </div>
         </details>
       ) : null}
 
       {message ? <p className="muted">{message}</p> : null}
       {loading ? <p className="loading-state">Loading...</p> : null}
-      {!loading && contractors.length === 0 ? (
-        <p className="muted">
-          {canManage ? 'No team records yet.' : 'No team records have been added.'}
-        </p>
-      ) : null}
+      {!loading && contractors.length === 0 ? <p className="muted">{canManage ? 'No team records yet.' : 'No team records have been added.'}</p> : null}
 
-      {contractors.length > 0 ? (
+      {visibleContractors.length > 0 ? (
         <div className="team-member-list">
-          {contractors.map((contractor) => {
+          {visibleContractors.map((contractor) => {
             const contact = contractor.phone || contractor.email;
+            const summary = summaries[contractor.id] || { openJobs: 0, unpaid: 0 };
             return (
               <article key={contractor.id} className="list-row team-member-card open-in-new-tab-card">
                 <Link href={`/jobs?assigned_to=${encodeURIComponent(contractor.id)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${contractor.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {contractor.name} in a new tab</span></Link>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong><Link href={`/jobs?assigned_to=${encodeURIComponent(contractor.id)}`} target="_blank" rel="noopener noreferrer">{contractor.name}</Link></strong>
-                  <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>
-                    {contractorClassificationLabel(contractor.contractor_classification)}
-                    {contractor.company_name ? ` · ${contractor.company_name}` : ''}
-                  </p>
-                  {contact ? (
-                    <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>
-                      {contact}
-                    </p>
-                  ) : null}
+                  <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>{contractorClassificationLabel(contractor.contractor_classification)}{contractor.company_name ? ` · ${contractor.company_name}` : ''}</p>
+                  <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 10 }}>
+                    <span><strong>{summary.openJobs}</strong> <span className="muted">open jobs</span></span>
+                    <span><strong>{money(summary.unpaid)}</strong> <span className="muted">unpaid</span></span>
+                  </div>
+                  {contact ? <p className="muted" style={{ margin: '8px 0 0', overflowWrap: 'anywhere' }}>{contact}</p> : null}
                 </div>
-                {canManage ? (
-                  <button type="button" className="btn btn-sm" onClick={() => void toggleContractor(contractor)}>
-                    {contractor.active === false ? 'Activate' : 'Deactivate'}
-                  </button>
-                ) : null}
+                <div className="inline-actions" style={{ position: 'relative', zIndex: 2 }}>
+                  <Link className="btn btn-sm" href={`/contractor-pay?status=unpaid`}>Pay</Link>
+                  {canManage ? <button type="button" className="btn btn-sm" onClick={() => void toggleContractor(contractor)}>{contractor.active === false ? 'Activate' : 'Deactivate'}</button> : null}
+                </div>
               </article>
             );
           })}
+        </div>
+      ) : null}
+
+      {!loading && contractors.length > 0 ? (
+        <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
+          <p className="muted" style={{ margin: 0 }}>Showing {Math.min(visibleCount, contractors.length)} / {contractors.length}</p>
+          {visibleCount < contractors.length ? <button type="button" className="btn" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>Show 10 more</button> : null}
         </div>
       ) : null}
     </section>
@@ -227,9 +255,7 @@ export default function PeoplePage() {
 
   useEffect(() => {
     async function load() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login?next=/people');
         return;
@@ -243,13 +269,7 @@ export default function PeoplePage() {
     void load();
   }, [router]);
 
-  if (loading) {
-    return (
-      <AppShell plan={plan} role={role}>
-        <p className="loading-state">Loading...</p>
-      </AppShell>
-    );
-  }
+  if (loading) return <AppShell plan={plan} role={role}><p className="loading-state">Loading...</p></AppShell>;
 
   return (
     <AppShell plan={plan} role={role}>
@@ -258,17 +278,7 @@ export default function PeoplePage() {
           <h1 style={{ margin: 0 }}>{t('nav.team')}</h1>
           <p className="muted" style={{ margin: '8px 0 0' }}>Find team members, manage access, and assign work.</p>
         </div>
-        {canViewTeam(role) ? (
-          <ExportMenu
-            endpoint="/api/exports/team"
-            locale={locale}
-            onError={(message) => setExportError(message || exportCopy.exportFailed)}
-            onSuccess={(format) => {
-              setExportError('');
-              if (format === 'share') setExportError('');
-            }}
-          />
-        ) : null}
+        {canViewTeam(role) ? <ExportMenu endpoint="/api/exports/team" locale={locale} onError={(message) => setExportError(message || exportCopy.exportFailed)} onSuccess={() => setExportError('')} /> : null}
       </div>
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
       <TeamDirectory />

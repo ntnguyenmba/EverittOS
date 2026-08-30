@@ -1,4 +1,6 @@
 import './globals.css';
+import './design/tokens.css';
+import './design/primitives.css';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { Manrope } from 'next/font/google';
@@ -12,9 +14,12 @@ import { ActivityHeartbeat } from '@/components/activity-heartbeat';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { WorkspacePlanProvider } from '@/components/workspace-plan-provider';
+import { RoleHomeGuard } from '@/components/role-home-guard';
 import { AppConnectivityBanner } from '@/components/app-connectivity-banner';
 import { NetworkStatusBanner } from '@/components/network-status-banner';
 import { NativeAppProvider } from '@/components/native-app-provider';
+import { NativePinLock } from '@/components/native-pin-lock';
+import { NativeSensitiveActionGuard } from '@/components/native-sensitive-action-guard';
 import { MobileDocumentFlags } from '@/components/mobile-document-flags';
 import { PwaRegistration } from '@/components/pwa-registration';
 import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
@@ -23,142 +28,53 @@ import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { JobFinanceWordingAndCustomerRate } from '@/components/job-finance-wording-and-customer-rate';
 import { CreateFormCancelControls } from '@/components/create-form-cancel-controls';
-import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { ContractorJobPayVisibility } from '@/components/contractor-job-pay-visibility';
-import { OwnerTopPerformerMetric } from '@/components/owner-top-performer-metric';
+import { ExpensesListEnhancer } from '@/components/expenses-list-enhancer';
+import { AskEverittQuickClear } from '@/components/ask-everitt-quick-clear';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
+
+/* Base product styles only. */
 import './everitt-theme.css';
-import './everitt-app-polish.css';
-import './everitt-editorial-fixes.css';
 import './typography.css';
 import './nav.css';
 import './outbound.css';
 import './feedback-toast.css';
-import './everitt-luxury-refresh.css';
-import './app-readability-pass.css';
-import './customer-ready-polish.css';
 import './dashboard.css';
-import './job-mobile-fixes.css';
-import './payment-receipt-modal-fix.css';
-import './job-visit-layout-override.css';
 import './form-alignment-fixes.css';
-import './jobs-visual-polish.css';
-import './mobile-safe-areas.css';
+import './job-visit-layout-override.css';
+import './payment-receipt-modal-fix.css';
 import './receipt.css';
-import './mobile-usability-fixes.css';
-import './everitt-modern-refresh.css';
-import './text-contrast.css';
+import './mobile-safe-areas.css';
 import './contractor-portal.css';
-import './native-tablet-release-polish.css';
-import './everitt-visual-system.css';
+import './quote-workspace.css';
+import './role-home-structure.css';
+
+/* Signed-in shell: one canvas, one nav rule, one spacing system. */
+import './signed-in-canvas.css';
+import './jobs-filter-mobile-alignment.css';
+import './jobs-mobile-layout-hotfix.css';
+import './word-spacing-fix.css';
+import './top-chrome-align.css';
+import './ask-everitt-overlay-fix.css';
+import './job-card-spacing.css';
+import './one-nav.css';
+import './box-stack-spacing.css';
+import './signed-in-stability.css';
+import './hero-last.css';
+import './visual-unify.css';
+import './readability-last.css';
+import './everitt-login-look.css';
 import './final-layout-guard.css';
-import './jobs-visual-final.css';
-import './jobs-actions-spacing-fix.css';
-import './unified-record-cards.css';
-import './team-customer-consistency.css';
-import './button-consistency.css';
-import './final-app-polish.css';
-import './final-overlay-polish.css';
-import './final-compact-controls-polish.css';
-import './final-language-layout-polish.css';
-import './sidebar-plan-card-polish.css';
-import './navigation-visibility-guard.css';
-import './minimal-release-polish.css';
-import './role-dashboard-v1.css';
-import './jobs-owner-minimal.css';
-import './final-record-card-consistency.css';
-import './portal-role-consistency.css';
-import './mobile-overflow-final-fix.css';
-import './contractor-outlook-label-fix.css';
-import './dashboard-responsive-fit.css';
-import './job-form-spacing-final.css';
-import './cross-role-alignment-final.css';
-import './settings-card-spacing-final.css';
-import './notification-settings-layout-fix.css';
-import './final-release-polish.css';
-import './owner-job-card-mobile-alignment.css';
+import './view-center-final.css';
 
-const manrope = Manrope({
-  subsets: ['latin', 'vietnamese'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-manrope',
-  display: 'swap'
-});
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
-  themeColor: '#243F53'
-};
-
-export const metadata: Metadata = {
-  title: 'EverittOS | Run Your Service Business',
-  description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.',
-  manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    title: 'EverittOS',
-    statusBarStyle: 'default'
-  },
-  other: {
-    'mobile-web-app-capable': 'yes'
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '512x512' }
-    ],
-    apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
-    shortcut: '/favicon.ico'
-  }
-};
+const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
+export const metadata: Metadata = { title: 'EverittOS | Run Your Service Business', description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.', manifest: '/manifest.webmanifest', appleWebApp: { capable: true, title: 'EverittOS', statusBarStyle: 'default' }, other: { 'mobile-web-app-capable': 'yes' }, icons: { icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }], shortcut: '/favicon.ico' } };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-
-  return (
-    <html
-      lang={initialLocale}
-      data-locale={initialLocale}
-      data-deployment={deployment}
-      className={manrope.variable}
-    >
-      <body className={manrope.className} data-locale={initialLocale}>
-        <SupabaseRuntimeConfig />
-        <PwaRegistration />
-        <MobileDocumentFlags />
-        <NativeAppProvider />
-        <AppConnectivityBanner />
-        <NetworkStatusBanner />
-        <PwaUpdatePrompt />
-        <SuppressVercelToolbar />
-        <LocaleProvider initialLocale={initialLocale}>
-          <JobFinanceWordingAndCustomerRate />
-          <CreateFormCancelControls />
-          <DashboardTodayCountFix />
-          <ContractorJobPayVisibility />
-          <OwnerTopPerformerMetric />
-          <ToastProvider>
-            <LocaleSync />
-            <SessionGuard>
-              <ActivityHeartbeat />
-              <WorkspacePlanProvider>
-                <WorkspaceBootstrap />
-                <SkipToMain />
-                <SiteChrome />
-                <ContractorStaticSections />
-                {children}
-                <AnalyticsGate />
-                <CookieConsentBanner />
-              </WorkspacePlanProvider>
-            </SessionGuard>
-          </ToastProvider>
-        </LocaleProvider>
-      </body>
-    </html>
-  );
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><NativeSensitiveActionGuard /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><ContractorJobPayVisibility /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><RoleHomeGuard /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }

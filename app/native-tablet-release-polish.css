@@ -123,6 +123,48 @@ body.mobile-nav-open {
   margin-top: 2px;
 }
 
+/* Native shells use the same EverittOS UI as web, but slightly stronger contrast
+   keeps owner, client, and worker views easier to scan on phones and tablets. */
+html[data-native-platform='ios'] .muted,
+html[data-native-platform='android'] .muted,
+body.capacitor-native .muted {
+  color: #52606b !important;
+}
+
+html[data-native-platform='ios'] .card,
+html[data-native-platform='android'] .card,
+body.capacitor-native .card,
+html[data-native-platform='ios'] input,
+html[data-native-platform='android'] input,
+body.capacitor-native input,
+html[data-native-platform='ios'] select,
+html[data-native-platform='android'] select,
+body.capacitor-native select,
+html[data-native-platform='ios'] textarea,
+html[data-native-platform='android'] textarea,
+body.capacitor-native textarea {
+  border-color: #c7d0d6;
+}
+
+html[data-native-platform='ios'] input::placeholder,
+html[data-native-platform='android'] input::placeholder,
+body.capacitor-native input::placeholder,
+html[data-native-platform='ios'] textarea::placeholder,
+html[data-native-platform='android'] textarea::placeholder,
+body.capacitor-native textarea::placeholder {
+  color: #687680;
+  opacity: 1;
+}
+
+html[data-native-platform='ios'] label,
+html[data-native-platform='android'] label,
+body.capacitor-native label,
+html[data-native-platform='ios'] .form-label,
+html[data-native-platform='android'] .form-label,
+body.capacitor-native .form-label {
+  color: #25333c;
+}
+
 @media (max-width: 1180px) {
   .dashboard-shell {
     display: block !important;
