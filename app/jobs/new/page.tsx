@@ -3,17 +3,20 @@
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
+import { useTranslation } from '@/components/locale-provider';
+import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import styles from './job-form-simplify.module.css';
 
 export default function NewJobPage() {
+  const { locale } = useTranslation();
+  const copy = getJobCreateCopy(locale);
+
   return (
     <AppShell plan="free" role="owner">
       <header className="page-header job-create-page-header">
         <div>
-          <h1>Create job</h1>
-          <p className="page-subtitle">
-            Choose an existing customer or add a new one, then save the job.
-          </p>
+          <h1>{copy.pageTitle}</h1>
+          <p className="page-subtitle">{copy.intro}</p>
         </div>
       </header>
 
