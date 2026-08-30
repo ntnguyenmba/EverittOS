@@ -61,6 +61,7 @@ import './signed-in-stability.css';
 import './hero-last.css';
 import './visual-unify.css';
 import './readability-last.css';
+import './everitt-login-look.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
