@@ -1,4 +1,6 @@
 import './globals.css';
+import './design/tokens.css';
+import './design/primitives.css';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { Manrope } from 'next/font/google';
