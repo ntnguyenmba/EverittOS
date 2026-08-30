@@ -1,7 +1,7 @@
-/* Worker and Client share the signed-in Everitt canvas. Hero photography is auth-only. */
+/* Worker and Client use the same login desk photo. No cream wash. */
 .contractor-dashboard-shell,
 .client-dashboard-shell {
-  background: #edf2f4 !important;
+  background: #243f53 !important;
 }
 
 .contractor-main,
@@ -15,25 +15,22 @@
   inset: 0 !important;
   z-index: 0 !important;
   pointer-events: none !important;
-  background: #edf2f4 !important;
-  background-image: none !important;
+  background-color: #243f53 !important;
+  background-image: url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
   opacity: 1 !important;
   filter: none !important;
   -webkit-filter: none !important;
   transform: none !important;
-  transition: none !important;
 }
 
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
-  display: block !important;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16)) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
 }
 
 .contractor-sidebar,
