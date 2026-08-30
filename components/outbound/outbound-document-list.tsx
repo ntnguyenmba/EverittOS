@@ -84,9 +84,9 @@ function RecordPaymentForm({ doc, onDone }: { doc: OutboundDocument; onDone: () 
     if (doc.job_id) params.set('jobId', doc.job_id);
     if (doc.customer_id) params.set('customerId', doc.customer_id);
     return (
-      <div className="outbound-payment-prompt card" style={{ marginTop: 8, padding: 12 }}>
+      <div className="outbound-payment-prompt card" style={{ marginTop: 12, padding: 16 }}>
         <strong>{billingCopy.paymentRecorded}</strong>
-        <div className="button-row" style={{ marginTop: 10 }}>
+        <div className="button-row" style={{ marginTop: 12, gap: 10, flexWrap: 'wrap' }}>
           <Link className="btn btn-primary" href={`/receipts?${params.toString()}`}>{billingCopy.sendReceipt}</Link>
           <button type="button" className="btn" onClick={() => onDone()}>{billingCopy.later}</button>
         </div>
@@ -95,24 +95,103 @@ function RecordPaymentForm({ doc, onDone }: { doc: OutboundDocument; onDone: () 
   }
 
   return (
-    <div className="outbound-payment-form" style={{ marginTop: 8 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
-        <div><span className="muted" style={{ display: 'block' }}>{billingCopy.invoiceTotal}</span><strong>{formatMoneyUsd(invoiceTotal, locale)}</strong></div>
-        <div><span className="muted" style={{ display: 'block' }}>{billingCopy.paid}</span><strong>{formatMoneyUsd(paid, locale)}</strong></div>
-        <div><span className="muted" style={{ display: 'block' }}>{billingCopy.stillOwed}</span><strong>{formatMoneyUsd(stillOwed, locale)}</strong></div>
+    <div className="outbound-payment-form" style={{ marginTop: 12 }}>
+      <div className="outbound-payment-summary">
+        <div><span className="muted">{billingCopy.invoiceTotal}</span><strong>{formatMoneyUsd(invoiceTotal, locale)}</strong></div>
+        <div><span className="muted">{billingCopy.paid}</span><strong>{formatMoneyUsd(paid, locale)}</strong></div>
+        <div><span className="muted">{billingCopy.stillOwed}</span><strong>{formatMoneyUsd(stillOwed, locale)}</strong></div>
       </div>
-      <p className="muted" style={{ marginTop: 8 }}>{billingCopy.recordPaymentOnce}</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-        <input className="input" type="number" min="0" step="0.01" placeholder={billingCopy.paymentAmount} aria-label={billingCopy.paymentAmount} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input className="input" type="date" aria-label={billingCopy.paymentDate} value={paidDate} onChange={(e) => setPaidDate(e.target.value)} />
-        <select className="input" aria-label={billingCopy.paymentMethod} value={method} onChange={(e) => setMethod(e.target.value)}>
-          {INVOICE_PAYMENT_METHODS.map((m) => <option key={m} value={m}>{billingCopy.paymentMethods[m] || m}</option>)}
-        </select>
-        <input className="input" placeholder={billingCopy.referenceNumber} aria-label={billingCopy.referenceNumber} value={reference} onChange={(e) => setReference(e.target.value)} />
+      <p className="muted" style={{ margin: '12px 0 0' }}>{billingCopy.recordPaymentOnce}</p>
+
+      <div className="outbound-payment-fields">
+        <label className="outbound-payment-field">
+          <span>{billingCopy.paymentAmount}</span>
+          <input className="input" type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </label>
+        <label className="outbound-payment-field">
+          <span>{billingCopy.paymentDate}</span>
+          <input className="input" type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} />
+        </label>
+        <label className="outbound-payment-field">
+          <span>{billingCopy.paymentMethod}</span>
+          <select className="input" value={method} onChange={(e) => setMethod(e.target.value)}>
+            {INVOICE_PAYMENT_METHODS.map((m) => <option key={m} value={m}>{billingCopy.paymentMethods[m] || m}</option>)}
+          </select>
+        </label>
+        <label className="outbound-payment-field">
+          <span>{billingCopy.referenceNumber}</span>
+          <input className="input" value={reference} onChange={(e) => setReference(e.target.value)} />
+        </label>
+        <label className="outbound-payment-field outbound-payment-field-wide">
+          <span>{billingCopy.notes}</span>
+          <textarea className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+        </label>
       </div>
-      <input className="input" style={{ marginTop: 8, width: '100%' }} placeholder={billingCopy.notes} aria-label={billingCopy.notes} value={note} onChange={(e) => setNote(e.target.value)} />
-      {error ? <span className="outbound-document-error">{error}</span> : null}
-      <button type="button" className="btn btn-sm btn-primary" style={{ marginTop: 8 }} disabled={saving} onClick={() => void submit()}>{saving ? billingCopy.savingEllipsis : billingCopy.savePayment}</button>
+
+      {error ? <span className="outbound-document-error" style={{ display: 'block', marginTop: 10 }}>{error}</span> : null}
+      <button type="button" className="btn btn-primary outbound-payment-submit" disabled={saving} onClick={() => void submit()}>{saving ? billingCopy.savingEllipsis : billingCopy.savePayment}</button>
+
+      <style jsx>{`
+        .outbound-payment-summary {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .outbound-payment-summary > div {
+          min-width: 0;
+          display: grid;
+          gap: 4px;
+          padding: 12px 14px;
+          border: 1px solid #d8e0e5;
+          border-radius: 14px;
+          background: rgba(255,255,255,.82);
+        }
+        .outbound-payment-fields {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 16px;
+        }
+        .outbound-payment-field {
+          min-width: 0;
+          display: grid;
+          gap: 7px;
+          color: #173044;
+          font-weight: 700;
+          line-height: 1.3;
+        }
+        .outbound-payment-field > span {
+          display: block;
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+        .outbound-payment-field :global(.input) {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+          margin: 0 !important;
+        }
+        .outbound-payment-field textarea {
+          resize: vertical;
+        }
+        .outbound-payment-field-wide {
+          grid-column: 1 / -1;
+        }
+        .outbound-payment-submit {
+          width: 100%;
+          margin-top: 14px;
+        }
+        @media (max-width: 680px) {
+          .outbound-payment-summary,
+          .outbound-payment-fields {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .outbound-payment-field-wide {
+            grid-column: auto;
+          }
+        }
+      `}</style>
     </div>
   );
 }
