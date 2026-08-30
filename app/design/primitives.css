@@ -1,0 +1,36 @@
+/* Shared primitives. Pages opt in with these classes.
+   Do not target frozen page selectors here until harvest PRs say so. */
+
+.eo-chrome {
+  width: min(100%, var(--eo-view-max));
+  margin-inline: auto;
+}
+
+.eo-card {
+  padding: var(--job-card-pad);
+}
+
+.eo-list-row {
+  min-height: var(--eo-tap);
+}
+
+.eo-btn {
+  min-height: var(--eo-tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eo-field {
+  min-height: var(--eo-control);
+  width: 100%;
+}
+
+.eo-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--eo-filter-tab);
+  padding: 0 13px;
+  border-radius: var(--eo-radius-pill);
+  white-space: nowrap;
+}
