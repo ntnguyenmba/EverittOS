@@ -1,6 +1,6 @@
 /* Last-loaded alignment lock.
    One centered column. Equal left/right inset. Cards, search, and footer share width.
-   Navigation is not part of the centered column and must stay visible. */
+   Navigation is the worker hamburger, not a left sidebar. */
 
 :root {
   --eo-view-inset: clamp(14px, 4.2vw, 28px);
@@ -154,175 +154,62 @@ body {
   }
 }
 
-/* One nav rule for every view.
-   Desktop: left sidebar. Smaller views: top hamburger menu.
-   Content centering must never hide either control. */
-@media (min-width: 1280px) {
-  .dashboard-shell {
-    display: grid !important;
-    grid-template-columns: 280px minmax(0, 1fr) !important;
-    grid-template-areas: 'side main' !important;
-    min-height: 100svh !important;
-    align-items: stretch !important;
-  }
-
-  .dashboard-shell > .sidebar,
-  .dashboard-shell .sidebar {
-    grid-area: side !important;
-    display: flex !important;
-    flex-direction: column !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    height: 100svh !important;
-    min-height: 100svh !important;
-    max-height: 100svh !important;
-    position: sticky !important;
-    top: 0 !important;
-    align-self: stretch !important;
-    margin: 0 !important;
-    padding: 16px 12px 14px !important;
-    border: 0 !important;
-    border-right: 1px solid #d5dee5 !important;
-    border-radius: 0 !important;
-    background: #eef3f6 !important;
-    box-shadow: none !important;
-    overflow: hidden !important;
-    pointer-events: auto !important;
-    z-index: 4 !important;
-  }
-
-  .dashboard-shell .sidebar-brand {
-    flex: 0 0 auto !important;
-    margin: 0 4px 14px !important;
-    padding: 4px 6px 12px !important;
-    border-bottom: 1px solid #d5dee5 !important;
-  }
-
-  .dashboard-shell .sidebar-nav {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 0 2px !important;
-  }
-
-  .dashboard-shell .sidebar .app-nav,
-  .dashboard-shell .sidebar .nav-section {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-  }
-
-  .dashboard-shell .sidebar .nav-item,
-  .dashboard-shell .sidebar a.nav-item {
-    min-height: 40px !important;
-    margin: 0 !important;
-    padding: 8px 12px !important;
-    border: 0 !important;
-    border-radius: 10px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    color: #31495b !important;
-    font-size: 14px !important;
-    font-weight: 550 !important;
-  }
-
-  .dashboard-shell .sidebar .nav-item:hover {
-    background: rgba(255, 255, 255, 0.62) !important;
-    color: #173044 !important;
-  }
-
-  .dashboard-shell .sidebar .nav-item.active,
-  .dashboard-shell .sidebar a.nav-item.active {
-    background: #ffffff !important;
-    color: #173044 !important;
-    font-weight: 700 !important;
-    box-shadow: inset 3px 0 0 #243f53 !important;
-  }
-
-  .dashboard-shell .sidebar-footer,
-  .dashboard-shell .sidebar-single-nav-footer {
-    flex: 0 0 auto !important;
-    margin-top: auto !important;
-    padding: 12px 2px 2px !important;
-    border-top: 1px solid #d5dee5 !important;
-    background: transparent !important;
-  }
-
-  .dashboard-shell .sidebar-logout,
-  .dashboard-shell .sidebar-single-nav-footer select,
-  .dashboard-shell .sidebar-language-compact select {
-    width: 100% !important;
-    min-height: 40px !important;
-    border: 1px solid #c9d2d8 !important;
-    border-radius: 10px !important;
-    background: #fff !important;
-    color: #173044 !important;
-  }
-
-  .dashboard-shell-header,
-  .dashboard-shell > .dashboard-shell-header,
-  .dashboard-shell .mobile-nav,
-  .dashboard-shell .mobile-nav-bar,
-  .dashboard-shell .mobile-nav-menu-btn {
-    display: none !important;
-  }
+/* One nav rule for every view: worker chrome.
+   No left sidebar. Logo left, 3-stripe menu top right. */
+.dashboard-shell {
+  display: block !important;
 }
 
-@media (max-width: 1279px) {
-  .dashboard-shell {
-    display: block !important;
-  }
+.dashboard-shell > .sidebar,
+.dashboard-shell .sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
 
-  .dashboard-shell > .sidebar,
-  .dashboard-shell .sidebar {
-    display: none !important;
-  }
+.dashboard-shell-header,
+.dashboard-shell > .dashboard-shell-header {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  width: 100% !important;
+}
 
-  .dashboard-shell-header,
-  .dashboard-shell > .dashboard-shell-header {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
-    width: 100% !important;
-  }
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
 
-  .dashboard-shell-header .mobile-nav,
-  .dashboard-shell-header .mobile-nav-bar {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-  }
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-top-logo {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
-  .dashboard-shell-header .mobile-nav-menu-btn,
-  .dashboard-shell-header .mobile-nav-top-logo {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
+.mobile-nav-drawer {
+  background: #eef3f6 !important;
+  color: #173044 !important;
+}
 
-  .mobile-nav-drawer {
-    background: #eef3f6 !important;
-    color: #173044 !important;
-  }
-
-  .mobile-nav-drawer-link,
-  .mobile-nav-drawer .nav-item {
-    min-height: 48px !important;
-    border-radius: 12px !important;
-    background: #fff !important;
-    color: #173044 !important;
-  }
+.mobile-nav-drawer-link,
+.mobile-nav-drawer .nav-item {
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: #173044 !important;
 }
