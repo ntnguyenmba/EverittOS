@@ -7,6 +7,7 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(EverittBillingPlugin())
         bridge?.registerPluginInstance(EverittFieldStorePlugin())
         bridge?.registerPluginInstance(EverittSecureStorePlugin())
+        bridge?.registerPluginInstance(EverittBiometricPlugin())
     }
 }
 
