@@ -12,7 +12,6 @@ import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
-import { isNativePlatform } from '@/lib/platform/detect';
 import { supabase } from '@/lib/supabase';
 
 type MobileNavProps = { plan?: EverittosPlan | string | null; role?: UserRole | string | null };
@@ -25,13 +24,12 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [native, setNative] = useState(false);
   const normalized = normalizePlan(workspacePlan?.plan ?? plan);
   const resolvedRole = roleProp != null ? normalizeRole(roleProp) : normalizeRole(workspacePlan?.role);
   const [role, setRole] = useState<UserRole>(resolvedRole);
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => { setMounted(true); setNative(isNativePlatform()); }, []);
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => setRole(resolvedRole), [resolvedRole]);
   useEffect(() => { if (roleProp) setRole(normalizeRole(roleProp)); }, [roleProp]);
 
@@ -111,14 +109,12 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
 
   return (
     <header className={`mobile-nav${isFocusedPortal ? ' mobile-nav-focused-portal' : ''}${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
-      {!native ? (
-        <div className="mobile-nav-bar">
-          <BrandLogo href={homeHref} size={32} showName={false} className="mobile-nav-top-logo" />
-          <button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : t('ux.mobileNavLabel')} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}>
-            <span className="mobile-nav-menu-icon" aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
+      <div className="mobile-nav-bar">
+        <BrandLogo href={homeHref} size={32} showName={false} className="mobile-nav-top-logo" />
+        <button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : t('ux.mobileNavLabel')} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}>
+          <span className="mobile-nav-menu-icon" aria-hidden="true" />
+        </button>
+      </div>
       {mounted ? createPortal(drawer, document.body) : null}
       <style>{`
         .mobile-nav{border-bottom:0;background:transparent}.mobile-nav-bar{min-height:52px;padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:14px;box-sizing:border-box;background:transparent!important;border:0!important;box-shadow:none!important}.mobile-nav-top-logo{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(9,24,35,.14)}.mobile-nav-top-logo .brand-logo-image{display:block;border-radius:8px}.mobile-nav-brand-logo{color:#173044}.mobile-nav-menu-btn{position:relative;z-index:2147482999;width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d2dbe0;border-radius:14px;background:#fff;color:#173044;box-shadow:0 8px 24px rgba(9,24,35,.08);cursor:pointer;pointer-events:auto!important;touch-action:manipulation}
