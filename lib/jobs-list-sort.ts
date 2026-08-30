@@ -3,6 +3,7 @@ import { displayPersonName } from '@/lib/exports/format';
 export type JobListSortMode = 'date' | 'assigned';
 
 export type SortableJob = {
+  status?: string | null;
   assigned_to?: string | null;
   assigned_email?: string | null;
   scheduled_start?: string | null;
@@ -13,6 +14,30 @@ export type SortableJob = {
 
 export function jobDateValue(job: SortableJob): string {
   return job.scheduled_start || job.start_date || job.due_date || '';
+}
+
+function normalizedStatus(job: SortableJob) {
+  return String(job.status || '').trim().toLowerCase();
+}
+
+function isClosedJob(job: SortableJob) {
+  return ['completed', 'finished', 'cancelled', 'canceled'].includes(normalizedStatus(job));
+}
+
+function attentionScore(job: SortableJob): number {
+  if (isClosedJob(job)) return 100;
+
+  let score = 0;
+  const status = normalizedStatus(job);
+  const hasWorker = Boolean(job.assigned_to || job.assigned_email);
+  const hasSchedule = Boolean(job.scheduled_start || job.start_date || job.due_date);
+
+  if (!hasWorker) score -= 30;
+  if (!hasSchedule) score -= 20;
+  if (status === 'new') score -= 10;
+  if (status === 'active' || status === 'in_progress') score -= 5;
+
+  return score;
 }
 
 export function compareJobsByDate(a: SortableJob, b: SortableJob): number {
@@ -56,7 +81,11 @@ export function sortJobs<T extends SortableJob>(
         const byName = aName.localeCompare(bName, locale, { sensitivity: 'base' });
         if (byName !== 0) return byName;
       }
+      return compareJobsByDate(a, b);
     }
+
+    const attentionDifference = attentionScore(a) - attentionScore(b);
+    if (attentionDifference !== 0) return attentionDifference;
     return compareJobsByDate(a, b);
   });
 }

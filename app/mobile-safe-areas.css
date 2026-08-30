@@ -1,17 +1,35 @@
 /* Safe-area support for installed PWA and Capacitor shells only.
-   Never apply horizontal safe-area padding to body because the native/standalone
-   flags are added after hydration and would shift the entire app after first paint. */
+   Native apps draw behind the status bar, so the page background reaches the
+   top edge while the actual header controls remain inside the safe area. */
 
 @supports (padding: env(safe-area-inset-top)) {
   html[data-native-app='true'] body,
-  html[data-standalone='true'] body {
+  html[data-standalone='true'] body,
+  body.native-app,
+  body.capacitor-app {
+    padding-top: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
+  /* Capacitor: no separate blank strip above the app chrome. */
+  html[data-native-app='true'] .dashboard-shell-header {
+    padding-top: max(4px, env(safe-area-inset-top)) !important;
+  }
+
   html[data-native-app='true'] .app-shell-header,
+  html[data-native-app='true'] .mobile-nav-top {
+    padding-top: 0 !important;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* Installed PWA: browser chrome does not reserve the safe area for us. */
+  html[data-standalone='true'] .dashboard-shell-header {
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+  }
+
   html[data-standalone='true'] .app-shell-header,
-  html[data-native-app='true'] .mobile-nav-top,
   html[data-standalone='true'] .mobile-nav-top {
     padding-top: env(safe-area-inset-top);
     padding-left: max(16px, env(safe-area-inset-left));

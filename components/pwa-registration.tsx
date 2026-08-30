@@ -2,17 +2,26 @@
 
 import { useEffect } from 'react';
 
-/** Registers the EverittOS service worker on supported web browsers. */
+/**
+ * Temporarily disable the service worker while the signed-in app is changing
+ * quickly. Existing registrations/caches are removed so stale app shells cannot
+ * trap users on a broken or old deploy.
+ */
 export function PwaRegistration() {
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-    if (process.env.NODE_ENV !== 'production') return;
+    if (typeof window === 'undefined') return;
 
-    void navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
-      .catch(() => {
-        // Registration can fail on unsupported origins or during local development.
-      });
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.getRegistrations().then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister()))
+      ).catch(() => undefined);
+    }
+
+    if ('caches' in window) {
+      void caches.keys().then((keys) =>
+        Promise.all(keys.filter((key) => key.startsWith('everittos-mobile-')).map((key) => caches.delete(key)))
+      ).catch(() => undefined);
+    }
   }, []);
 
   return null;

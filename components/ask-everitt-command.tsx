@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AiUpgradeModal } from '@/components/ai-upgrade-modal';
 import type { ProposedAiAction } from '@/lib/ai-actions';
-import type { AskEverittMetric, AskEverittSearchGroup, AskEverittSearchRecord } from '@/lib/ask-everitt/types';
+import type { AskEverittMetric, AskEverittSearchGroup, AskEverittSearchRecord, AskEverittSuggestion } from '@/lib/ask-everitt/types';
 import { resolveAskEverittUiAccess, shouldOpenAskEverittUpgrade, type AskEverittUiAccess } from '@/lib/ask-everitt-ui-access';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { useTranslation } from '@/components/locale-provider';
@@ -251,6 +251,7 @@ type SearchResponse = {
   groups?: AskEverittSearchGroup[];
   metrics?: AskEverittMetric[];
   noResultsHint?: string;
+  suggestions?: AskEverittSuggestion[];
 };
 
 type AiResponse = { mode: 'ai'; reply: string; action?: ProposedAiAction | null };
@@ -269,6 +270,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
   const [searchGroups, setSearchGroups] = useState<AskEverittSearchGroup[]>([]);
   const [searchMetrics, setSearchMetrics] = useState<AskEverittMetric[]>([]);
   const [searchHint, setSearchHint] = useState<string | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<AskEverittSuggestion[]>([]);
   const [aiReply, setAiReply] = useState('');
   const [pendingAction, setPendingAction] = useState<ProposedAiAction | null>(null);
   const [status, setStatus] = useState<AskEverittStatus | null>(null);
@@ -341,6 +343,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     setSearchGroups([]);
     setSearchMetrics([]);
     setSearchHint(null);
+    setSearchSuggestions([]);
     setPendingAction(null);
     setLastMode(null);
   }, []);
@@ -374,6 +377,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     setSearchGroups([]);
     setSearchMetrics([]);
     setSearchHint(null);
+    setSearchSuggestions([]);
     setPendingAction(null);
 
     const res = await fetch('/api/ask-everitt', {
@@ -407,6 +411,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
       setSearchGroups(payload.groups || []);
       setSearchMetrics(payload.metrics || []);
       setSearchHint(payload.noResultsHint || null);
+      setSearchSuggestions(payload.suggestions || []);
       return;
     }
 
@@ -456,6 +461,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
       searchGroups={searchGroups}
       searchMetrics={searchMetrics}
       searchHint={searchHint}
+      searchSuggestions={searchSuggestions}
       aiReply={aiReply}
       notice={notice}
       pendingAction={pendingAction}
@@ -518,6 +524,7 @@ type OverlayProps = {
   searchGroups: AskEverittSearchGroup[];
   searchMetrics: AskEverittMetric[];
   searchHint: string | null;
+  searchSuggestions: AskEverittSuggestion[];
   aiReply: string;
   notice: string;
   pendingAction: ProposedAiAction | null;
@@ -545,6 +552,7 @@ function CommandOverlay({
   searchGroups,
   searchMetrics,
   searchHint,
+  searchSuggestions,
   aiReply,
   notice,
   pendingAction,
@@ -654,6 +662,21 @@ function CommandOverlay({
           <div className="everitt-cmd-search-answer">
             <p className="everitt-cmd-summary">{searchSummary}</p>
             {searchHint ? <p className="muted everitt-cmd-hint">{searchHint}</p> : null}
+            {searchSuggestions.length > 0 ? (
+              <div className="everitt-cmd-suggestions everitt-cmd-smart-suggestions">
+                <p className="everitt-cmd-section-label">{copy.tryAsking}</p>
+                {searchSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    className="everitt-cmd-chip"
+                    onClick={() => void submitAsk(suggestion.prompt, 'search')}
+                  >
+                    {suggestion.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {searchMetrics.length > 0 ? (
               <div className="everitt-cmd-metrics">
                 {searchMetrics.map((m) => (

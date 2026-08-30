@@ -7,7 +7,6 @@ import { useTranslation } from '@/components/locale-provider';
 type AuthShellProps = {
   title: string;
   children: ReactNode;
-  /** Signup uses an explicit consent checkbox; skip the duplicate continuing note. */
   hideContinuingLegalNote?: boolean;
 };
 
@@ -26,7 +25,6 @@ const authIntroCopy = {
   }
 };
 
-/** Centered authentication layout with the original EverittOS background image. */
 export function AuthShell({ title, children, hideContinuingLegalNote = false }: AuthShellProps) {
   const { locale } = useTranslation();
   const intro = authIntroCopy[locale] || authIntroCopy.en;
@@ -46,9 +44,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
         <section className="auth-tech-card" aria-labelledby="auth-page-title">
           <div className="auth-card-heading">
-            <h1 id="auth-page-title" className="auth-title">
-              {title}
-            </h1>
+            <h1 id="auth-page-title" className="auth-title">{title}</h1>
             <p className="auth-card-subtitle">{intro.subtitle}</p>
             <p className="auth-card-description">{intro.description}</p>
           </div>
@@ -94,6 +90,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         .auth-tech-shell {
+          --auth-column-width: 450px;
           position: relative;
           z-index: 1;
           min-height: 100svh;
@@ -103,13 +100,35 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           padding: clamp(18px, 4vw, 42px);
         }
 
+        .auth-tech-header,
+        .auth-tech-card {
+          width: min(var(--auth-column-width), calc(100vw - 56px)) !important;
+          max-width: min(var(--auth-column-width), calc(100vw - 56px)) !important;
+          box-sizing: border-box;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+
         .auth-tech-header {
-          width: min(1120px, 100%);
-          margin: 0 auto;
+          position: relative !important;
+          inset: auto !important;
+          display: grid !important;
+          grid-template-columns: 1fr auto !important;
+          align-items: center !important;
+          gap: 16px;
+          padding: 0 !important;
+          min-height: 48px;
+        }
+
+        .auth-tech-header .brand-logo {
+          position: static !important;
+          inset: auto !important;
+          transform: none !important;
+          justify-self: start !important;
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 16px;
+          margin: 0 !important;
         }
 
         .auth-tech-header .brand-logo,
@@ -118,10 +137,34 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           text-shadow: 0 2px 18px rgba(10, 24, 34, 0.32);
         }
 
+        .auth-shell-language.auth-tech-language {
+          position: static !important;
+          inset: auto !important;
+          transform: none !important;
+          justify-self: end !important;
+          width: auto !important;
+          max-width: 170px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          z-index: auto !important;
+        }
+
+        .auth-shell-language.auth-tech-language > * {
+          position: static !important;
+          inset: auto !important;
+          transform: none !important;
+          margin: 0 !important;
+        }
+
         .auth-tech-language select,
         .auth-tech-language button {
-          min-height: 44px;
+          width: auto !important;
+          min-width: 126px !important;
+          max-width: 170px !important;
+          height: 44px !important;
+          min-height: 44px !important;
           border: 1px solid rgba(255, 255, 255, 0.62);
+          border-radius: 12px !important;
           background: rgba(255, 255, 255, 0.94);
           color: #1e3445;
           font-weight: 700;
@@ -130,8 +173,8 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         .auth-tech-card {
-          width: min(450px, 100%);
-          margin: clamp(28px, 7vh, 74px) auto;
+          margin-top: clamp(24px, 5vh, 54px) !important;
+          margin-bottom: clamp(24px, 5vh, 54px) !important;
           padding: clamp(30px, 4.5vw, 42px);
           border: 1px solid rgba(255, 255, 255, 0.85);
           border-radius: 26px;
@@ -366,16 +409,25 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
             padding: 16px 14px 20px;
           }
 
+          .auth-tech-header,
+          .auth-tech-card {
+            width: calc(100vw - 32px) !important;
+            max-width: calc(100vw - 32px) !important;
+          }
+
           .auth-tech-header {
             gap: 12px;
           }
 
-          .auth-tech-header .brand-logo-name {
-            font-size: 20px;
+          .auth-tech-language select,
+          .auth-tech-language button {
+            min-width: 112px !important;
+            max-width: 142px !important;
           }
 
           .auth-tech-card {
-            margin: 24px auto;
+            margin-top: 20px !important;
+            margin-bottom: 20px !important;
             padding: 25px 22px;
             border-radius: 22px;
           }
@@ -412,8 +464,10 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         @media (min-width: 641px) and (max-width: 1024px) {
-          .auth-tech-card {
-            width: min(470px, 100%);
+          .auth-tech-shell {
+            --auth-column-width: 500px;
+            padding-left: 28px;
+            padding-right: 28px;
           }
 
           .auth-tech-background {

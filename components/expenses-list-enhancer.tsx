@@ -1,0 +1,131 @@
+'use client';
+
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+
+export function ExpensesListEnhancer() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const isExpensesPage = pathname === '/expenses';
+    document.body.classList.toggle('expenses-page-active', isExpensesPage);
+
+    if (!isExpensesPage) return;
+
+    let frame = 0;
+    const apply = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.finance-expense-list .finance-list-card'));
+
+        cards.forEach((card) => {
+          card.style.display = '';
+
+          const tags = card.querySelector<HTMLElement>('.finance-tags');
+          if (!tags) return;
+          const hasJob = Boolean(tags.querySelector('a[href^="/jobs/"]'));
+          let badge = card.querySelector<HTMLElement>('.expense-unassigned-badge');
+
+          if (!hasJob) {
+            if (!badge) {
+              badge = document.createElement('span');
+              badge.className = 'expense-unassigned-badge';
+              badge.textContent = 'Not linked to a job';
+              tags.prepend(badge);
+            }
+          } else if (badge) {
+            badge.remove();
+          }
+        });
+      });
+    };
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      document.body.classList.remove('expenses-page-active');
+      document.querySelectorAll<HTMLElement>('.finance-expense-list .finance-list-card').forEach((card) => {
+        card.style.display = '';
+      });
+    };
+  }, [pathname]);
+
+  return (
+    <style jsx global>{`
+      .expense-unassigned-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 9px;
+        margin-right: 8px;
+        border: 1px solid rgba(158, 83, 58, 0.28);
+        border-radius: 999px;
+        background: rgba(255, 249, 246, 0.96);
+        color: #7a4937;
+        font-weight: 700;
+      }
+
+      /* Expenses is a compact working page. Keep its controls together instead of
+         spreading the header, filters and total across the background. */
+      .expenses-page-active .page-header {
+        margin-top: 18px !important;
+        margin-bottom: 14px !important;
+        row-gap: 12px !important;
+      }
+
+      .expenses-page-active .page-header-text {
+        display: grid !important;
+        gap: 8px !important;
+      }
+
+      .expenses-page-active .page-header h1,
+      .expenses-page-active .page-header .page-subtitle {
+        margin: 0 !important;
+      }
+
+      .expenses-page-active .page-header .page-subtitle {
+        line-height: 1.45 !important;
+      }
+
+      .expenses-page-active .page-header-action {
+        margin-top: 0 !important;
+      }
+
+      .expenses-page-active .finance-filter-bar {
+        margin-top: 10px !important;
+        margin-bottom: 16px !important;
+        min-height: 48px;
+        align-items: center !important;
+      }
+
+      @media (max-width: 640px) {
+        .expenses-page-active .page-header {
+          margin-top: 18px !important;
+          margin-bottom: 14px !important;
+          row-gap: 12px !important;
+        }
+
+        .expenses-page-active .page-header-text {
+          gap: 8px !important;
+        }
+
+        .expenses-page-active .page-header-action {
+          margin-top: 0 !important;
+        }
+
+        .expenses-page-active .page-header-action > * {
+          margin: 0 !important;
+        }
+
+        .expenses-page-active .finance-filter-bar {
+          margin-top: 10px !important;
+          margin-bottom: 16px !important;
+        }
+      }
+    `}</style>
+  );
+}

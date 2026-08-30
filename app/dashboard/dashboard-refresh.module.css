@@ -81,12 +81,8 @@
 }
 
 @keyframes dashboardSkeleton {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,17 +103,25 @@
 
 @media (max-width: 720px) {
   .dashboardRefresh :global(.main) {
-    padding: 18px 16px 32px !important;
+    padding: 14px 16px 28px !important;
   }
 
-  .dashboardRefresh :global(.app-page-content),
+  .dashboardRefresh :global(.app-page-content) {
+    gap: 12px;
+  }
+
   .dashboardRefresh :global(.today-page.dashboard-home) {
-    gap: 18px;
+    gap: 14px;
   }
 
   .dashboardRefresh :global(.everitt-cmd-trigger) {
     width: 100%;
     min-height: 52px;
+  }
+
+  .dashboardRefresh :global(.today-page.dashboard-home > .page-head),
+  .dashboardRefresh :global(.today-page.dashboard-home > header) {
+    margin-bottom: 0 !important;
   }
 
   .dashboardRefresh :global(.today-page.dashboard-home .card),

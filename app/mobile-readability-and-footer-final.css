@@ -1,0 +1,3 @@
+/* Compatibility file intentionally owns no backdrop or layout.
+   AuthShell is the visual master; hero-last.css mirrors it for signed-in views.
+   Do not add hero filters, overlays, canvases, wrappers, cards, or footer rules here. */

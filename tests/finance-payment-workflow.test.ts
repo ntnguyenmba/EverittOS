@@ -6,12 +6,15 @@ import {
   calculateContractorCashPaid,
   calculateCustomerInvoices,
   calculateEstimatedProfit,
+  calculateJobRevenueFromJobs,
   calculateLatePayments,
   calculatePaidToYou,
   calculateStillOwed,
   countUnpaidInvoices,
+  filterValidJobsInPeriod,
   reconcileAllTimeInvoices,
   remainingBalance,
+  type DashboardJobFinanceRow,
   type InvoiceMetricRow,
   type InvoicePaymentRow,
   type LaborCostRow
@@ -63,6 +66,56 @@ describe('canonical payment workflow metrics', () => {
     assert.equal(result.collectedProfit, 100);
   });
 
+  it('keeps service-date job revenue separate from next-month customer cash', () => {
+    const jobs: DashboardJobFinanceRow[] = [
+      {
+        id: 'job-july',
+        status: 'completed',
+        completed_at: '2026-07-28T18:00:00.000Z',
+        revenue_amount: 1000
+      }
+    ];
+    const julyJobs = filterValidJobsInPeriod(jobs, 'month', new Date('2026-07-15T12:00:00.000Z'));
+    const augustJobs = filterValidJobsInPeriod(jobs, 'month', new Date('2026-08-15T12:00:00.000Z'));
+    const invoicePayments: InvoicePaymentRow[] = [
+      { invoice_id: 'inv-july', amount: 1000, paid_at: '2026-08-03T12:00:00.000Z' }
+    ];
+    const invoices: InvoiceMetricRow[] = [
+      {
+        id: 'inv-july',
+        job_id: 'job-july',
+        amount: 1000,
+        amount_paid: 1000,
+        invoice_date: '2026-07-28',
+        payment_status: 'paid',
+        status: 'paid'
+      }
+    ];
+
+    assert.equal(calculateJobRevenueFromJobs(julyJobs), 1000);
+    assert.equal(calculateJobRevenueFromJobs(augustJobs), 0);
+    assert.equal(
+      calculatePaidToYou({
+        invoices,
+        paymentRows: invoicePayments,
+        start: '2026-07-01',
+        end: '2026-08-01',
+        range: 'month'
+      }).paidToYou,
+      0
+    );
+    assert.equal(
+      calculatePaidToYou({
+        invoices,
+        paymentRows: invoicePayments,
+        start: '2026-08-01',
+        end: '2026-09-01',
+        range: 'month'
+      }).paidToYou,
+      1000
+    );
+  });
+
   it('keeps Customer invoices = Paid + Still owed (all time) through partial payments', () => {
     const invoices: InvoiceMetricRow[] = [
       {
@@ -77,7 +130,6 @@ describe('canonical payment workflow metrics', () => {
     ];
     const payments: InvoicePaymentRow[] = [];
 
-    // Step 1: invoice created
     assert.equal(calculateCustomerInvoices(invoices, null, null), 1000);
     assert.equal(calculateStillOwed(invoices), 1000);
     assert.equal(countUnpaidInvoices(invoices), 1);
@@ -87,7 +139,6 @@ describe('canonical payment workflow metrics', () => {
       0
     );
 
-    // Step 2: record first payment $400 on 2026-07-05
     payments.push({ invoice_id: 'inv-1', amount: 400, paid_at: '2026-07-05' });
     invoices[0].amount_paid = 400;
     invoices[0].payment_status = calculateInvoicePaymentStatus({
@@ -123,7 +174,6 @@ describe('canonical payment workflow metrics', () => {
       true
     );
 
-    // Step 3: second payment $600 on 2026-07-20
     payments.push({ invoice_id: 'inv-1', amount: 600, paid_at: '2026-07-20' });
     invoices[0].amount_paid = 1000;
     invoices[0].payment_status = 'paid';

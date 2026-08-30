@@ -1,0 +1,142 @@
+/* Last visual pass. Does not change routes, save, or data flow. */
+:root {
+  --eo-ink: #132433;
+  --eo-muted: #31495b;
+  --eo-line: #c9d4dc;
+  --eo-accent: #243f53;
+  --eo-paper: #ffffff;
+}
+
+html,
+body,
+.dashboard-shell,
+.dashboard-shell *,
+.app-footer,
+.mobile-bottom-nav,
+.mobile-bottom-nav * {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-top,
+.role-portal-shell .app-page-content,
+.contractor-main,
+.client-main {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.dashboard-shell .app-page-stage {
+  background: #ffffff !important;
+  color: var(--eo-ink) !important;
+  -webkit-text-fill-color: var(--eo-ink) !important;
+}
+
+.dashboard-shell .app-page-stage,
+.dashboard-shell .app-page-stage p,
+.dashboard-shell .app-page-stage li,
+.dashboard-shell .app-page-stage label,
+.dashboard-shell .app-page-stage h1,
+.dashboard-shell .app-page-stage h2,
+.dashboard-shell .app-page-stage h3,
+.dashboard-shell .app-page-stage td,
+.dashboard-shell .app-page-stage th,
+.dashboard-shell .app-page-stage span {
+  color: var(--eo-ink) !important;
+}
+
+.dashboard-shell .app-page-stage .muted,
+.dashboard-shell .app-page-stage .page-subtitle,
+.dashboard-shell .app-page-stage .meta,
+.dashboard-shell .app-page-stage small,
+.dashboard-shell .record-count,
+.dashboard-shell .jobs-count {
+  color: var(--eo-muted) !important;
+  -webkit-text-fill-color: var(--eo-muted) !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .app-page-stage a:not(.btn):not(.btn-primary) {
+  color: var(--eo-accent) !important;
+}
+
+.dashboard-shell .app-page-stage input,
+.dashboard-shell .app-page-stage select,
+.dashboard-shell .app-page-stage textarea {
+  background: #ffffff !important;
+  color: var(--eo-ink) !important;
+  -webkit-text-fill-color: var(--eo-ink) !important;
+}
+
+.dashboard-shell .app-page-stage .btn-primary,
+.dashboard-shell .app-page-stage button[type='submit'],
+.dashboard-shell .jobs-header-actions > :last-child,
+.dashboard-shell .jobs-list-page .page-header-action .btn,
+.dashboard-shell .jobs-list-page .page-header-action a {
+  background: var(--eo-accent) !important;
+  border-color: var(--eo-accent) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.dashboard-shell .app-page-stage .btn:not(.btn-primary),
+.dashboard-shell .jobs-header-actions a:not(.btn-primary),
+.dashboard-shell .jobs-header-actions button:not(.btn-primary) {
+  background: #ffffff !important;
+  color: var(--eo-ink) !important;
+  -webkit-text-fill-color: var(--eo-ink) !important;
+  border: 1px solid var(--eo-line) !important;
+}
+
+.dashboard-shell .jobs-header-actions > :first-child,
+.dashboard-shell .jobs-header-actions > :nth-child(2) {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  min-height: 48px !important;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell-header .mobile-nav-top-logo {
+    display: inline-flex !important;
+  }
+
+  .dashboard-shell .app-page-top-logo {
+    display: none !important;
+  }
+}
+
+/* Keep status and pay as separate readable phrases. */
+.worker-job-link,
+.portal-job-row .worker-job-link {
+  display: block !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.portal-job-finance,
+.dashboard-shell .portal-job-finance,
+.client-job-card-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 12px !important;
+  margin-top: 8px !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.portal-job-finance .status-badge,
+.portal-job-finance .portal-finance-empty,
+.portal-job-finance .portal-finance-amount,
+.portal-finance-sep {
+  display: inline-block !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+.portal-finance-sep {
+  color: var(--eo-muted) !important;
+}

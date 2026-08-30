@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 type OwnerFinancialRow = {
   id: string;
+  property_id: string | null;
   revenue_amount: number | null;
   expected_contractor_cost: number | null;
   expected_additional_expense: number | null;
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
 
   let jobsQuery = ctx.supabase
     .from('jobs')
-    .select('id, revenue_amount, expected_contractor_cost, expected_additional_expense')
+    .select('id, property_id, revenue_amount, expected_contractor_cost, expected_additional_expense')
     .in('id', ids);
 
   if (ctx.workspace.organizationId) {
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
 
   if (jobsRes.error) {
     return NextResponse.json({ error: 'Unable to load owner financials.' }, { status: 500 });
-  }
+v  }
 
   const invoiceByJob = new Map<string, { amount: number; amountPaid: number }>();
   for (const row of (invoicesRes.data || []) as InvoiceRow[]) {

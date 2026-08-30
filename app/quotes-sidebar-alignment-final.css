@@ -1,0 +1,542 @@
+/* Final alignment pass for the Quotes workspace and desktop sidebar footer. */
+
+body:has(.pricing-helper-layout) .pricing-helper-layout {
+  align-items: start !important;
+  grid-auto-rows: auto !important;
+}
+
+body:has(.pricing-helper-layout) .pricing-helper-inputs,
+body:has(.pricing-helper-layout) .pricing-helper-summary {
+  grid-row: 1 !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  align-self: start !important;
+  position: relative !important;
+  top: 0 !important;
+  inset-block-start: 0 !important;
+  box-sizing: border-box !important;
+}
+
+body:has(.pricing-helper-layout) .pricing-helper-layout > .card {
+  border-radius: 16px !important;
+}
+
+body:has(.pricing-helper-layout) .pricing-helper-inputs {
+  grid-column: 1 !important;
+  transform: none !important;
+}
+
+body:has(.pricing-helper-layout) .pricing-helper-summary {
+  grid-column: 2 !important;
+  min-height: 0 !important;
+  transform: translateY(-28px) !important;
+}
+
+.sidebar-footer-actions-stacked {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  padding: 2px 0 0 !important;
+}
+
+.sidebar-language-field {
+  display: grid !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+.sidebar-language-label {
+  display: block !important;
+  padding: 0 2px !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+.sidebar-language-field .sidebar-language-compact,
+.sidebar-language-field .language-switcher,
+.sidebar-language-field .language-switcher-select,
+.sidebar-language-field select {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.sidebar-language-field .language-switcher-select,
+.sidebar-language-field select {
+  min-height: 40px !important;
+  padding: 7px 34px 7px 10px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.sidebar-footer-actions-stacked .sidebar-logout {
+  width: 100% !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.sidebar-footer-actions-stacked .sidebar-logout:hover {
+  background: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+/* Create Job: visual-only clarity pass. Keep the existing save flow and calculations intact. */
+.unified-job-form {
+  gap: 18px !important;
+}
+
+.unified-job-form > .job-create-section,
+.unified-job-form > details {
+  border-color: color-mix(in srgb, var(--line) 72%, var(--text) 28%) !important;
+  background: color-mix(in srgb, var(--surface) 96%, var(--text) 4%) !important;
+}
+
+.unified-job-form > .job-create-section {
+  padding: 18px !important;
+}
+
+.unified-job-form > .job-create-section h4 {
+  color: var(--text) !important;
+  font-weight: 800 !important;
+}
+
+.unified-job-form label {
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+.unified-job-form .muted {
+  color: color-mix(in srgb, var(--text) 76%, var(--surface) 24%) !important;
+}
+
+.unified-job-form > .job-create-section:has(+ .job-create-section #assigned-to) {
+  border-width: 2px !important;
+  border-color: color-mix(in srgb, var(--accent, #243f53) 68%, var(--line) 32%) !important;
+  background: color-mix(in srgb, var(--surface) 93%, var(--accent, #243f53) 7%) !important;
+}
+
+.unified-job-form > .job-create-section:has(#assigned-to) {
+  border-width: 2px !important;
+  border-color: color-mix(in srgb, var(--text) 50%, var(--line) 50%) !important;
+  background: color-mix(in srgb, var(--surface) 91%, var(--text) 9%) !important;
+}
+
+.unified-job-form > .job-create-section:has(#assigned-to) .segmented-control {
+  max-width: 420px;
+}
+
+.unified-job-form > .job-create-section:has(#assigned-to) .segmented-control .btn:not(.btn-primary) {
+  background: var(--surface) !important;
+  border-color: color-mix(in srgb, var(--line) 56%, var(--text) 44%) !important;
+  color: var(--text) !important;
+}
+
+.unified-job-form button[type='submit']:not(.unified-job-save) {
+  display: none !important;
+}
+
+.unified-job-save {
+  margin-top: 4px !important;
+  min-height: 54px !important;
+  border: 2px solid color-mix(in srgb, var(--text) 24%, transparent) !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+  box-shadow: 0 3px 10px rgba(18, 31, 40, .12) !important;
+}
+
+.unified-job-form .job-customer-mode button,
+.unified-job-form button.btn:not(.btn-primary),
+.unified-job-form a.btn:not(.btn-primary) {
+  box-shadow: none !important;
+}
+
+/* App-wide readability: keep the current visual system but make text, borders and controls less muted. */
+body {
+  --readability-border: color-mix(in srgb, var(--line) 60%, var(--text) 40%);
+}
+
+.main,
+.app-page-content,
+.dashboard-main,
+.portal-main,
+.card,
+.settings-card,
+.finance-list-card,
+.client-summary-card,
+.record-card,
+.metric-card,
+.snapshot-card {
+  color: var(--text) !important;
+}
+
+.card,
+.settings-card,
+.finance-list-card,
+.client-summary-card,
+.record-card,
+.metric-card,
+.snapshot-card,
+details,
+fieldset,
+.table-card,
+.jobs-table-card {
+  border-color: var(--readability-border) !important;
+}
+
+.input,
+input,
+select,
+textarea {
+  color: var(--text) !important;
+}
+
+.input,
+input.input,
+select.input,
+textarea.input,
+.language-switcher-select {
+  border-color: color-mix(in srgb, var(--line) 54%, var(--text) 46%) !important;
+  background-color: var(--surface) !important;
+}
+
+.input:focus,
+input.input:focus,
+select.input:focus,
+textarea.input:focus,
+.language-switcher-select:focus {
+  border-color: color-mix(in srgb, var(--accent, #243f53) 74%, var(--text) 26%) !important;
+  outline-color: color-mix(in srgb, var(--accent, #243f53) 70%, transparent) !important;
+}
+
+.input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--text) 62%, var(--surface) 38%) !important;
+  opacity: 1 !important;
+}
+
+.form label,
+.form-group label,
+.card h2,
+.card h3,
+.card h4,
+.settings-card h2,
+.settings-card h3,
+.page-header h1,
+.page-header h2,
+.section-title,
+.table-card th,
+table th {
+  color: var(--text) !important;
+}
+
+.muted,
+.text-muted,
+.secondary-text,
+.helper-text,
+.jobs-row-time,
+.jobs-secondary,
+.finance-metric-label,
+.dashboard-revenue-metric-label,
+.sidebar-language-label {
+  color: color-mix(in srgb, var(--text) 76%, var(--surface) 24%) !important;
+  opacity: 1 !important;
+}
+
+.status,
+.badge,
+.pill,
+.chip {
+  border-color: color-mix(in srgb, var(--line) 58%, var(--text) 42%) !important;
+}
+
+.btn,
+button,
+a.btn {
+  font-weight: 650;
+}
+
+.btn:not(.btn-primary),
+button:not(.btn-primary):not(.everitt-cmd-trigger):not(.mobile-nav-toggle):not(.jobs-menu-trigger) {
+  border-color: color-mix(in srgb, var(--line) 58%, var(--text) 42%);
+}
+
+.sidebar,
+.mobile-nav-drawer,
+.mobile-nav-panel {
+  color: var(--text) !important;
+}
+
+.sidebar a,
+.sidebar button,
+.mobile-nav-drawer a,
+.mobile-nav-drawer button,
+.mobile-nav-panel a,
+.mobile-nav-panel button {
+  color: var(--text) !important;
+}
+
+.sidebar a[aria-current='page'],
+.sidebar .active,
+.mobile-nav-drawer a[aria-current='page'],
+.mobile-nav-panel a[aria-current='page'] {
+  font-weight: 750 !important;
+}
+
+.table-card td,
+table td,
+.list-row,
+.record-card p,
+.card p {
+  color: color-mix(in srgb, var(--text) 92%, var(--surface) 8%);
+}
+
+/* Final Create Job heading fix: use the real localized/semantic heading only.
+   The older generated nth-of-type labels caused text such as "5. Assignment6. Worker". */
+.unified-job-form > .job-create-section > h4 {
+  display: block !important;
+  font-size: 1.02rem !important;
+  line-height: 1.3 !important;
+  margin: 0 0 10px !important;
+  padding: 0 0 10px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 62%, var(--text) 38%) !important;
+  letter-spacing: -0.01em !important;
+}
+
+.unified-job-form > .job-create-section > h4::before,
+.unified-job-form > .job-create-section > h4::after {
+  content: none !important;
+  display: none !important;
+}
+
+.unified-job-form > .job-create-section {
+  gap: 14px !important;
+}
+
+.unified-job-form > .job-create-section > h4 + * {
+  margin-top: 2px !important;
+}
+
+/* Client and worker portals now use the same strong navy/blue visual language as owner views. */
+.contractor-dashboard,
+.authenticated-portal,
+.customer-portal,
+.client-portal,
+.portal-page,
+.client-portal-jobs {
+  --portal-ink: #132b3a;
+  --portal-secondary: #405968;
+  --portal-border: #8fa4af;
+  --portal-border-soft: #bdcbd2;
+  --portal-blue: #315f86;
+  --portal-blue-deep: #244a67;
+  --portal-blue-soft: #eaf2f7;
+  --portal-surface: #ffffff;
+  --portal-surface-soft: #f4f7f8;
+  color: var(--portal-ink) !important;
+}
+
+.contractor-dashboard h1,
+.contractor-dashboard h2,
+.contractor-dashboard h3,
+.contractor-dashboard h4,
+.authenticated-portal h1,
+.authenticated-portal h2,
+.authenticated-portal h3,
+.authenticated-portal h4,
+.customer-portal h1,
+.customer-portal h2,
+.customer-portal h3,
+.customer-portal h4,
+.client-portal h1,
+.client-portal h2,
+.client-portal h3,
+.client-portal h4,
+.portal-page h1,
+.portal-page h2,
+.portal-page h3,
+.portal-page h4,
+.client-portal-jobs h1,
+.client-portal-jobs h2,
+.client-portal-jobs h3,
+.client-portal-jobs h4 {
+  color: var(--portal-ink) !important;
+  font-weight: 750 !important;
+}
+
+.contractor-dashboard .muted,
+.contractor-dashboard .secondary-text,
+.contractor-dashboard .helper-text,
+.authenticated-portal .muted,
+.authenticated-portal .secondary-text,
+.authenticated-portal .helper-text,
+.customer-portal .muted,
+.customer-portal .secondary-text,
+.customer-portal .helper-text,
+.client-portal .muted,
+.client-portal .secondary-text,
+.client-portal .helper-text,
+.portal-page .muted,
+.portal-page .secondary-text,
+.portal-page .helper-text,
+.client-portal-jobs .muted,
+.client-job-secondary,
+.client-job-schedule span,
+.contractor-job-card .muted,
+.contractor-history-card .muted {
+  color: var(--portal-secondary) !important;
+  opacity: 1 !important;
+}
+
+.contractor-dashboard .card,
+.contractor-history-card,
+.contractor-job-card,
+.authenticated-portal .card,
+.customer-portal .card,
+.client-portal .card,
+.portal-page .card,
+.client-portal-jobs .card,
+.client-portal-jobs .portal-dashboard-section,
+.client-portal-jobs .role-summary-card,
+.client-job-card {
+  background: var(--portal-surface) !important;
+  border: 1.5px solid var(--portal-border-soft) !important;
+  color: var(--portal-ink) !important;
+  box-shadow: 0 6px 18px rgba(23, 49, 66, .08) !important;
+}
+
+.contractor-job-card-display > .inline-actions .badge,
+.contractor-job-card > button > .inline-actions .badge,
+.contractor-history-card dl > div,
+.contractor-history-address,
+.client-job-schedule {
+  background: var(--portal-surface-soft) !important;
+  border-color: var(--portal-border-soft) !important;
+  color: var(--portal-ink) !important;
+}
+
+.contractor-dashboard .input,
+.contractor-dashboard input,
+.contractor-dashboard select,
+.contractor-dashboard textarea,
+.authenticated-portal .input,
+.authenticated-portal input,
+.authenticated-portal select,
+.authenticated-portal textarea,
+.customer-portal .input,
+.customer-portal input,
+.customer-portal select,
+.customer-portal textarea,
+.client-portal .input,
+.client-portal input,
+.client-portal select,
+.client-portal textarea,
+.portal-page .input,
+.portal-page input,
+.portal-page select,
+.portal-page textarea,
+.client-portal-jobs .input,
+.client-portal-jobs input,
+.client-portal-jobs select,
+.client-portal-jobs textarea {
+  background: #fff !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-ink) !important;
+}
+
+.contractor-dashboard label,
+.authenticated-portal label,
+.customer-portal label,
+.client-portal label,
+.portal-page label,
+.client-portal-jobs label {
+  color: var(--portal-ink) !important;
+  font-weight: 700 !important;
+}
+
+.contractor-dashboard .btn-primary,
+.authenticated-portal .btn-primary,
+.customer-portal .btn-primary,
+.client-portal .btn-primary,
+.portal-page .btn-primary,
+.client-portal-jobs .btn-primary,
+.client-portal-jobs .role-period-filter button.is-active {
+  background: var(--portal-blue) !important;
+  border-color: var(--portal-blue) !important;
+  color: #fff !important;
+  box-shadow: 0 3px 9px rgba(36, 74, 103, .16) !important;
+}
+
+.contractor-dashboard .btn:not(.btn-primary),
+.authenticated-portal .btn:not(.btn-primary),
+.customer-portal .btn:not(.btn-primary),
+.client-portal .btn:not(.btn-primary),
+.portal-page .btn:not(.btn-primary),
+.client-portal-jobs .btn:not(.btn-primary),
+.client-portal-jobs .role-period-filter button:not(.is-active) {
+  background: #fff !important;
+  border-color: var(--portal-border) !important;
+  color: var(--portal-ink) !important;
+}
+
+.client-portal-jobs .portal-client-nav,
+.contractor-dashboard .contractor-dash-nav {
+  background: var(--portal-blue-soft) !important;
+  border-color: var(--portal-border-soft) !important;
+}
+
+.contractor-job-card .eyebrow,
+.contractor-history-card .eyebrow,
+.client-job-card .eyebrow,
+.contractor-job-card-display > div:first-child > .badge,
+.contractor-job-card > button > div:first-child > .badge {
+  background: var(--portal-blue-soft) !important;
+  border-color: #a8bfd0 !important;
+  color: var(--portal-blue-deep) !important;
+  font-weight: 750 !important;
+}
+
+@media (max-width: 820px) {
+  body:has(.pricing-helper-layout) .pricing-helper-layout {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+
+  body:has(.pricing-helper-layout) .pricing-helper-inputs,
+  body:has(.pricing-helper-layout) .pricing-helper-summary {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    transform: none !important;
+  }
+
+  .unified-job-form > .job-create-section {
+    padding: 15px !important;
+  }
+
+  .unified-job-save {
+    min-height: 52px !important;
+  }
+
+  .unified-job-form > .job-create-section > h4 {
+    margin-bottom: 8px !important;
+    padding-bottom: 9px !important;
+  }
+}
