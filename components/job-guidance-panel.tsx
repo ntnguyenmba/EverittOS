@@ -31,45 +31,18 @@ type GuidanceState = {
   assigned: boolean;
   financials: FinancialRow | null;
   invoice: InvoiceRow | null;
+  directPaymentTotal: number;
 };
 
 const copy = {
   en: {
-    nextAction: 'Next action',
-    clientPay: 'Client pay',
-    worker: 'Worker',
-    workerPay: 'Worker pay',
-    schedule: 'Schedule',
-    invoice: 'Invoice',
-    payment: 'Payment',
-    set: 'Set',
-    missing: 'Missing',
-    assigned: 'Assigned',
-    scheduled: 'Scheduled',
-    created: 'Created',
-    notCreated: 'Not created',
-    paid: 'Paid',
-    unpaid: 'Unpaid',
-    partial: 'Partial',
-    setClientPay: 'Set client pay',
-    assignWorker: 'Assign worker',
-    setWorkerPay: 'Set worker pay',
-    setSchedule: 'Set schedule',
-    startJob: 'Start job',
-    createInvoice: 'Create invoice',
-    recordPayment: 'Record payment',
-    markComplete: 'Mark job complete',
-    complete: 'Job is complete',
-    review: 'Review job',
-    moreDetails: 'More job details',
-    fewerDetails: 'Show fewer details',
-    hint: 'Suggested from the current job status. You can still jump to any section below.'
+    nextAction: 'Next action', clientPay: 'Client pay', worker: 'Worker', workerPay: 'Worker pay', schedule: 'Schedule', invoice: 'Invoice', payment: 'Payment', set: 'Set', missing: 'Missing', assigned: 'Assigned', scheduled: 'Scheduled', created: 'Created', notCreated: 'Not created', paid: 'Paid', unpaid: 'Unpaid', partial: 'Partial', setClientPay: 'Set client pay', assignWorker: 'Assign worker', setWorkerPay: 'Set worker pay', setSchedule: 'Set schedule', startJob: 'Start job', createInvoice: 'Create invoice', recordPayment: 'Record payment', markComplete: 'Mark job complete', complete: 'Job is complete', review: 'Review job', hint: 'Suggested from the current job status. You can still jump to any section below.'
   },
   es: {
-    nextAction: 'Siguiente acción', clientPay: 'Pago del cliente', worker: 'Trabajador', workerPay: 'Pago al trabajador', schedule: 'Horario', invoice: 'Factura', payment: 'Pago', set: 'Listo', missing: 'Falta', assigned: 'Asignado', scheduled: 'Programado', created: 'Creada', notCreated: 'No creada', paid: 'Pagado', unpaid: 'Pendiente', partial: 'Parcial', setClientPay: 'Agregar pago del cliente', assignWorker: 'Asignar trabajador', setWorkerPay: 'Agregar pago del trabajador', setSchedule: 'Programar trabajo', startJob: 'Iniciar trabajo', createInvoice: 'Crear factura', recordPayment: 'Registrar pago', markComplete: 'Marcar trabajo completo', complete: 'Trabajo completo', review: 'Revisar trabajo', moreDetails: 'Más detalles del trabajo', fewerDetails: 'Mostrar menos detalles', hint: 'Sugerencia basada en el estado actual. Aún puedes ir a cualquier sección.'
+    nextAction: 'Siguiente acción', clientPay: 'Pago del cliente', worker: 'Trabajador', workerPay: 'Pago al trabajador', schedule: 'Horario', invoice: 'Factura', payment: 'Pago', set: 'Listo', missing: 'Falta', assigned: 'Asignado', scheduled: 'Programado', created: 'Creada', notCreated: 'No creada', paid: 'Pagado', unpaid: 'Pendiente', partial: 'Parcial', setClientPay: 'Agregar pago del cliente', assignWorker: 'Asignar trabajador', setWorkerPay: 'Agregar pago del trabajador', setSchedule: 'Programar trabajo', startJob: 'Iniciar trabajo', createInvoice: 'Crear factura', recordPayment: 'Registrar pago', markComplete: 'Marcar trabajo completo', complete: 'Trabajo completo', review: 'Revisar trabajo', hint: 'Sugerencia basada en el estado actual. Aún puedes ir a cualquier sección.'
   },
   vi: {
-    nextAction: 'Việc tiếp theo', clientPay: 'Khách trả', worker: 'Nhân sự', workerPay: 'Trả nhân sự', schedule: 'Lịch', invoice: 'Hóa đơn', payment: 'Thanh toán', set: 'Đã đặt', missing: 'Còn thiếu', assigned: 'Đã giao', scheduled: 'Đã lên lịch', created: 'Đã tạo', notCreated: 'Chưa tạo', paid: 'Đã trả', unpaid: 'Chưa trả', partial: 'Một phần', setClientPay: 'Nhập tiền khách trả', assignWorker: 'Giao nhân sự', setWorkerPay: 'Nhập tiền trả nhân sự', setSchedule: 'Đặt lịch', startJob: 'Bắt đầu công việc', createInvoice: 'Tạo hóa đơn', recordPayment: 'Ghi nhận thanh toán', markComplete: 'Đánh dấu hoàn tất', complete: 'Công việc đã hoàn tất', review: 'Xem công việc', moreDetails: 'Xem thêm chi tiết', fewerDetails: 'Thu gọn chi tiết', hint: 'Gợi ý dựa trên trạng thái hiện tại. Bạn vẫn có thể mở bất kỳ mục nào bên dưới.'
+    nextAction: 'Việc tiếp theo', clientPay: 'Khách trả', worker: 'Nhân sự', workerPay: 'Trả nhân sự', schedule: 'Lịch', invoice: 'Hóa đơn', payment: 'Thanh toán', set: 'Đã đặt', missing: 'Còn thiếu', assigned: 'Đã giao', scheduled: 'Đã lên lịch', created: 'Đã tạo', notCreated: 'Chưa tạo', paid: 'Đã trả', unpaid: 'Chưa trả', partial: 'Một phần', setClientPay: 'Nhập tiền khách trả', assignWorker: 'Giao nhân sự', setWorkerPay: 'Nhập tiền trả nhân sự', setSchedule: 'Đặt lịch', startJob: 'Bắt đầu công việc', createInvoice: 'Tạo hóa đơn', recordPayment: 'Ghi nhận thanh toán', markComplete: 'Đánh dấu hoàn tất', complete: 'Công việc đã hoàn tất', review: 'Xem công việc', hint: 'Gợi ý dựa trên trạng thái hiện tại. Bạn vẫn có thể mở bất kỳ mục nào bên dưới.'
   }
 } as const;
 
@@ -100,17 +73,6 @@ export function JobGuidancePanel() {
   const c = copy[locale];
   const jobId = useMemo(() => isJobDetailPath(pathname), [pathname]);
   const [state, setState] = useState<GuidanceState | null>(null);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
-
-  useEffect(() => {
-    setShowMoreDetails(false);
-  }, [jobId]);
-
-  useEffect(() => {
-    if (!jobId) return;
-    document.documentElement.classList.toggle('job-secondary-details-expanded', showMoreDetails);
-    return () => document.documentElement.classList.remove('job-secondary-details-expanded');
-  }, [jobId, showMoreDetails]);
 
   useEffect(() => {
     if (!jobId) {
@@ -127,36 +89,40 @@ export function JobGuidancePanel() {
         .maybeSingle();
       if (!job || cancelled) return;
 
-      const [assignmentsRes, invoicesRes, outboundInvoicesRes, financialRes] = await Promise.all([
+      const [assignmentsRes, invoicesRes, outboundInvoicesRes, jobPaymentsRes, financialRes] = await Promise.all([
         supabase.from('job_assignments').select('id').eq('job_id', jobId).limit(1),
-        supabase.from('invoices').select('id, amount, amount_paid, status').eq('job_id', jobId).order('created_at', { ascending: false }).limit(1),
+        supabase.from('invoices').select('id, amount, amount_paid, status, payment_status').eq('job_id', jobId).order('created_at', { ascending: false }).limit(1),
         supabase.from('outbound_documents').select('id, amount, amount_paid, status, payment_status').eq('doc_type', 'invoice').eq('job_id', jobId).order('created_at', { ascending: false }).limit(1),
+        supabase.from('job_payments').select('amount').eq('job_id', jobId),
         fetch(`/api/jobs/owner-financials?ids=${encodeURIComponent(jobId)}`, { cache: 'no-store' }).then(async (res) => res.ok ? await res.json() : null).catch(() => null)
       ]);
 
       if (cancelled) return;
       const financials = financialRes?.financials?.[jobId] || null;
-      const canonicalInvoice = ((invoicesRes.data || [])[0] || null) as InvoiceRow | null;
+      const canonicalRaw = ((invoicesRes.data || [])[0] || null) as (InvoiceRow & { payment_status?: string | null }) | null;
       const outboundInvoice = ((outboundInvoicesRes.data || [])[0] || null) as (InvoiceRow & { payment_status?: string | null }) | null;
-      const invoice = canonicalInvoice || (outboundInvoice ? {
-        id: outboundInvoice.id,
-        amount: outboundInvoice.amount,
-        amount_paid: outboundInvoice.amount_paid,
-        status: outboundInvoice.payment_status || outboundInvoice.status
-      } : null);
+      const sourceInvoice = canonicalRaw || outboundInvoice;
+      const invoice = sourceInvoice ? {
+        id: sourceInvoice.id,
+        amount: sourceInvoice.amount,
+        amount_paid: sourceInvoice.amount_paid,
+        status: sourceInvoice.payment_status || sourceInvoice.status
+      } : null;
+      const directPaymentTotal = (jobPaymentsRes.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
 
       setState({
         job: job as JobRow,
         assigned: Boolean(job.assigned_to || job.assigned_email || (assignmentsRes.data || []).length),
         financials,
-        invoice
+        invoice,
+        directPaymentTotal
       });
     }
 
     void load();
     const refresh = () => void load();
     window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 15000);
+    const timer = window.setInterval(refresh, 10000);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', refresh);
@@ -171,15 +137,15 @@ export function JobGuidancePanel() {
   const scheduleSet = Boolean(state.job.scheduled_start || state.job.start_date);
   const invoiceExists = Boolean(state.invoice);
   const invoiceAmount = Number(state.invoice?.amount || 0);
-  const amountPaid = Number(state.invoice?.amount_paid || 0);
+  const invoiceLedgerPaid = Number(state.invoice?.amount_paid || 0);
+  const amountPaid = Math.max(invoiceLedgerPaid, state.directPaymentTotal);
   const invoiceStatus = String(state.invoice?.status || '').toLowerCase();
-  const paymentState = !invoiceExists
-    ? c.notCreated
-    : invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount)
-      ? c.paid
-      : amountPaid > 0
-        ? c.partial
-        : c.unpaid;
+  const hasAnyPayment = amountPaid > 0;
+  const paymentState = invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount)
+    ? c.paid
+    : hasAnyPayment
+      ? (invoiceAmount > 0 ? c.partial : c.paid)
+      : c.unpaid;
   const status = String(state.job.status || '').toLowerCase();
   const scheduledAt = state.job.scheduled_start ? new Date(state.job.scheduled_start) : null;
   const pastDue = Boolean(scheduledAt && !Number.isNaN(scheduledAt.getTime()) && scheduledAt.getTime() < Date.now() && !['active', 'in_progress', 'completed', 'cancelled'].includes(status));
@@ -240,9 +206,6 @@ export function JobGuidancePanel() {
           </button>
         ))}
       </div>
-      <button type="button" className="job-guidance-more" aria-expanded={showMoreDetails} onClick={() => setShowMoreDetails((value) => !value)}>
-        {showMoreDetails ? c.fewerDetails : c.moreDetails}
-      </button>
       <style jsx>{`
         .job-guidance-panel { width: 100%; min-width: 0; margin: 0 0 18px; display: grid; gap: 10px; box-sizing: border-box; }
         .job-guidance-next { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; border: 1px solid rgba(37,54,74,.14); border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(37,54,74,.07); box-sizing: border-box; }
@@ -256,7 +219,6 @@ export function JobGuidancePanel() {
         .job-guidance-status button span { display: block; color: #66727c; font-size: 12px; line-height: 1.2; margin-bottom: 4px; overflow-wrap: anywhere; }
         .job-guidance-status button strong { display: block; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
         .job-guidance-status button.is-missing { border-color: rgba(158,83,58,.28); background: rgba(255,249,246,.97); }
-        .job-guidance-more { min-height: 48px; width: fit-content; padding: 0 4px; border: 0; background: transparent; color: #3f586a; font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; text-decoration: underline; text-underline-offset: 3px; }
         @media (max-width: 900px) { .job-guidance-status { grid-template-columns: repeat(3, minmax(0,1fr)); } }
         @media (max-width: 640px) {
           .job-guidance-panel { gap: 8px; margin-bottom: 14px; }
@@ -268,7 +230,6 @@ export function JobGuidancePanel() {
           .job-guidance-status button { min-height: 62px; padding: 9px 10px; border-radius: 11px; }
           .job-guidance-status button span { font-size: 11px; }
           .job-guidance-status button strong { font-size: 13px; }
-          .job-guidance-more { width: 100%; min-height: 48px; text-align: center; }
         }
         @media (max-width: 360px) {
           .job-guidance-status button { padding-inline: 8px; }
@@ -276,14 +237,6 @@ export function JobGuidancePanel() {
         }
       `}</style>
       <style jsx global>{`
-        html:not(.job-secondary-details-expanded) .job-detail-shell > .job-photos-card,
-        html:not(.job-secondary-details-expanded) .job-detail-shell > details.card {
-          display: none !important;
-        }
-        html.job-secondary-details-expanded .job-detail-shell > .job-photos-card,
-        html.job-secondary-details-expanded .job-detail-shell > details.card {
-          display: block;
-        }
         @media (max-width: 640px) {
           .job-detail-shell { min-width: 0; overflow-x: hidden; }
           .job-detail-shell .page-head { gap: 10px !important; margin-bottom: 14px !important; }
