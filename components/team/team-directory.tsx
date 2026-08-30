@@ -238,17 +238,16 @@ export function TeamDirectory() {
   function renderMember(member: DirectoryMember) {
     const summary = jobSummaries[member.userId] || emptySummary();
     return (
-      <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
-        <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`${c.viewJobs} ${member.name}`}><span className="record-card-overlay-label">{c.viewJobs} {member.name}</span></Link>
+      <article key={member.userId} className="list-row team-member-card">
         <div className="team-member-copy">
           <strong>{member.name}</strong>
           <p className="muted team-member-meta">{teamRoleLabel(member.role, c)} · {member.active ? c.active : c.inactive}</p>
-          {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
+          {member.email && member.email !== member.name ? <p className="muted team-member-email">{member.email}</p> : null}
           <p className="muted team-member-summary">{summary.active} {c.activeCount} · {summary.completed} {c.completedCount} · {formatLastJob(summary.lastJobAt, c.lastJob, c.noJobsYet)}</p>
         </div>
         {member.active ? (
           <div className="inline-actions team-member-actions">
-            <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">{c.viewJobs}</Link>
+            <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>{c.viewJobs}</Link>
             <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>{c.assignToJob}</Link>
           </div>
         ) : null}
