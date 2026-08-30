@@ -4,7 +4,6 @@ import { getPlaybookCopy } from '@/lib/i18n/playbook-copy';
 
 const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/dashboard': 'dashboard',
-  '/quotes': 'quotes',
   '/jobs': 'jobs',
   '/customers': 'crm',
   '/projects': 'projects',
@@ -55,13 +54,13 @@ export function navLabel(href: string, t: (key: string) => string, fallback: str
   const path = href.split(/[?#]/)[0];
   if (path === '/dashboard') {
     const translated = t('nav.dashboard');
-    if (translated && translated !== 'nav.dashboard' && translated !== 'Dashboard') return translated;
-    return locale ? DASHBOARD_LABEL[locale] || DASHBOARD_LABEL.en : fallback || DASHBOARD_LABEL.en;
+    if (translated && !translated.startsWith('nav.') && translated !== 'Dashboard') return translated;
+    return (locale && DASHBOARD_LABEL[locale]) || fallback || DASHBOARD_LABEL.en;
   }
   if (path === '/quotes' || path === '/pricing-helper') {
     const translated = t('nav.quotes');
-    if (translated && translated !== 'nav.quotes' && translated !== 'Quotes') return translated;
-    return locale ? QUOTES_LABEL[locale] || QUOTES_LABEL.en : fallback || QUOTES_LABEL.en;
+    if (translated && !translated.startsWith('nav.') && translated !== 'Quotes') return translated;
+    return (locale && QUOTES_LABEL[locale]) || fallback || QUOTES_LABEL.en;
   }
   if (path === '/assistant') return locale === 'es' ? 'Asistente' : locale === 'vi' ? 'Trợ lý' : 'Assistant';
   if (path === '/knowledge' && locale) return getPlaybookCopy(locale).navLabel;
