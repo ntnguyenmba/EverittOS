@@ -11,7 +11,7 @@ Do not delete overlays in this step. Do not shrink `app/globals.css` in this ste
 - [x] 2. Empty-safe tokens/primitives imported after globals (look unchanged)
 - [x] 3. Winning Jobs numbers in `app/design/tokens.css`
 - [x] 4. Winning Jobs geometry in `app/design/primitives.css` (`.eo-*` only)
-- [x] 5. Jobs markup opts into primitive classes *in addition to* frozen selectors
+- [ ] 5. Jobs markup opts into primitive classes *in addition to* frozen selectors
 - [ ] 6. Job-flow tests stay green for a week (New Job / Export / Cleanup / filters / row menu)
 - [ ] 7. Delete dead overlay files listed below
 - [ ] 8. Stop importing `jobs-filter-mobile-alignment.css` and `jobs-mobile-layout-hotfix.css`
@@ -65,18 +65,20 @@ Harvest is failed if any of these move off-screen, drop below 44px, or get `disp
 - Clear filters
 - Row menu / Start / Finish on a job row
 
-## Primitive map (Jobs markup)
+## Primitive map (next markup PR)
 
-| Frozen selector | Primitive class added |
+Add these classes next to the frozen selectors. Do not remove the frozen selectors yet.
+
+| Frozen selector | Primitive class to add |
 | --- | --- |
 | `.jobs-list-page` | `.eo-chrome` |
 | `.jobs-header-actions` | `.eo-action-grid` |
 | `.btn` on header / clear / show-more | `.eo-btn` |
 | `.jobs-filter-tab` | `.eo-status` |
 | filter `<select>` | `.eo-field` |
-| filter labels (`span`) | `.eo-visually-hidden` on mobile is already overlay-owned; keep the span in the DOM |
 | `.card.jobs-table-card` | `.eo-card` |
 | `.jobs-operations-row` | `.eo-list-row` |
 | `.jobs-menu-trigger` | `.eo-btn` |
 
 Overlays still win on the frozen selectors. Primitive classes are additive so dropping an overlay later does not leave the surface unstyled.
+Keep filter label `<span>`s in the DOM. The overlay already visually hides them on mobile.
