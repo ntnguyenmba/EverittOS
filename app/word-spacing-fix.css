@@ -1,16 +1,56 @@
-/* Visual only: never glue status against pay or empty-state copy. */
-.status-badge + .portal-finance-empty::before,
-.status-badge + .portal-finance-amount::before,
-.portal-status-completed + strong::before,
-.portal-status-new + span::before {
-  content: '\00a0\00b7\00a0';
+/* Global readable type. Visual only. Owner, worker, client. */
+
+.dashboard-shell,
+.role-portal-shell {
+  color: #132433;
 }
 
-.dashboard-shell .status-badge,
-.contractor-dashboard .status-badge,
-.portal-job-finance .status-badge {
-  text-transform: capitalize !important;
-  letter-spacing: 0 !important;
+.dashboard-shell,
+.dashboard-shell *,
+.role-portal-shell,
+.role-portal-shell * {
+  word-spacing: normal;
+  overflow-wrap: break-word;
+}
+
+.dashboard-shell .muted,
+.role-portal-shell .muted,
+.dashboard-shell small,
+.role-portal-shell small {
+  color: #31495b !important;
+  -webkit-text-fill-color: #31495b !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .app-page-stage,
+.dashboard-shell .bookkeeping-ledger,
+.dashboard-shell .bookkeeping-metric-card {
+  color: #132433 !important;
+  background: #fff !important;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell button.btn-primary,
+.dashboard-shell .bookkeeping-range.is-active,
+.role-portal-shell .btn-primary {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: #243f53 !important;
+}
+
+.dashboard-shell .btn:not(.btn-primary),
+.dashboard-shell .bookkeeping-range:not(.is-active) {
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
+  background: #fff !important;
+}
+
+.status-badge + .portal-finance-empty::before,
+.status-badge + .portal-finance-amount::before {
+  content: ' \00b7\00a0';
 }
 
 .portal-job-finance,
@@ -20,4 +60,30 @@
   flex-wrap: wrap !important;
   align-items: center !important;
   gap: 8px 12px !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span > strong,
+.dashboard-shell .bookkeeping-ledger-summary > span > small,
+.dashboard-shell .bookkeeping-ledger-total {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span > small::before {
+  content: none;
 }
