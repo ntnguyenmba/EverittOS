@@ -25,6 +25,8 @@
 .formWrap :global(.unified-job-form > *) {
   order: 10;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.unified-job-form > .job-create-section:has(.job-customer-mode)) {
@@ -57,9 +59,12 @@
 }
 
 .formWrap :global(.job-create-section) {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   padding: 18px 0;
   border-bottom: 1px solid rgba(37, 54, 74, 0.12);
+  box-sizing: border-box;
 }
 
 .formWrap :global(.job-create-section > h4) {
@@ -68,6 +73,7 @@
   font-size: 1.05rem;
   line-height: 1.3;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .formWrap :global(.job-create-section > p.muted) {
@@ -75,16 +81,21 @@
   color: #405766 !important;
   font-size: 0.9rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .formWrap :global(.job-create-section label) {
   color: #193041 !important;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
-.formWrap :global(.job-create-section .input) {
+.formWrap :global(.job-create-section .input),
+.formWrap :global(.job-create-section select),
+.formWrap :global(.job-create-section textarea) {
   min-height: 48px;
   width: 100%;
+  min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -94,22 +105,29 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
+  min-width: 0;
   margin: 0 0 14px;
 }
 
 .formWrap :global(.job-customer-mode button) {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 50px;
+  height: auto;
   margin: 0 !important;
-  padding: 11px 12px;
+  padding: 11px 10px;
   border: 1px solid rgba(37, 54, 74, 0.22);
   border-radius: 12px;
   background: #fff;
   color: #243f53;
   font-size: 14px;
+  line-height: 1.2;
   font-weight: 750;
   text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.job-customer-mode button[aria-pressed='true']) {
@@ -126,12 +144,20 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px !important;
+  width: 100%;
+  min-width: 0;
 }
 
 .formWrap :global(.unified-job-form .button-row .btn),
 .formWrap :global(.unified-job-form .job-detail-actions .btn),
 .formWrap :global(.unified-job-form .inline-actions .btn) {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
   margin: 0 !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.segmented-control) {
@@ -139,12 +165,18 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px !important;
   width: 100%;
+  min-width: 0;
 }
 
 .formWrap :global(.segmented-control .btn) {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  height: auto;
   margin: 0 !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.unified-job-form > details) {
@@ -158,29 +190,43 @@
   display: flex;
   align-items: center;
   width: fit-content;
+  max-width: 100%;
   color: #285d78;
   font-weight: 750;
   cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .formWrap :global(.unified-job-form button[type='submit']) {
   order: 30;
   min-height: 54px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
   margin-top: 20px;
   border-radius: 12px;
   background: #285d78 !important;
   border-color: #285d78 !important;
   color: #fff !important;
   font-size: 16px;
+  line-height: 1.2;
   font-weight: 800;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.unified-job-form button[type='button']:not(.job-customer-mode button):not(.segmented-control .btn)) {
+  max-width: 100%;
+  height: auto;
   box-shadow: none !important;
   color: #285d78 !important;
   border-color: rgba(37, 54, 74, 0.18) !important;
   font-weight: 700 !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 720px) {
@@ -201,11 +247,15 @@
   .formWrap :global(.financials-summary-grid) {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 12px !important;
+    width: 100%;
+    min-width: 0;
   }
 
   .formWrap :global(.client-summary-card) {
+    max-width: 100%;
     padding: 14px !important;
     overflow-wrap: anywhere;
+    box-sizing: border-box;
   }
 }
 
