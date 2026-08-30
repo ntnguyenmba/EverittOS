@@ -12,6 +12,8 @@ type QuoteMarketHelpProps = {
   onSettingsChange: (next: PricingHelperSettings) => void;
 };
 
+const OTHER_VALUE = 'Other';
+
 export function QuoteMarketHelp({
   settings,
   paidIntelligence,
@@ -20,6 +22,9 @@ export function QuoteMarketHelp({
   onServiceTypeChange,
   onSettingsChange
 }: QuoteMarketHelpProps) {
+  const knownProfession = QUOTE_PROFESSIONS.includes(serviceType);
+  const selectedProfession = !serviceType ? '' : knownProfession ? serviceType : OTHER_VALUE;
+
   return (
     <details className="quote-pricing-settings" open>
       <summary>Country, region, and profession</summary>
@@ -31,18 +36,38 @@ export function QuoteMarketHelp({
       <div className="form-grid">
         <label>
           Profession / service
-          <input
+          <select
             className="input"
-            list="quote-professions"
-            value={serviceType}
-            onChange={(event) => onServiceTypeChange(event.target.value)}
-          />
-          <datalist id="quote-professions">
+            value={selectedProfession}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === OTHER_VALUE) {
+                onServiceTypeChange(knownProfession || !serviceType ? '' : serviceType);
+                return;
+              }
+              onServiceTypeChange(value);
+            }}
+          >
+            <option value="">Select profession</option>
             {QUOTE_PROFESSIONS.map((profession) => (
-              <option key={profession} value={profession} />
+              <option key={profession} value={profession}>
+                {profession}
+              </option>
             ))}
-          </datalist>
+            <option value={OTHER_VALUE}>Other</option>
+          </select>
         </label>
+        {selectedProfession === OTHER_VALUE ? (
+          <label>
+            Custom profession
+            <input
+              className="input"
+              value={knownProfession ? '' : serviceType}
+              placeholder="Type your profession or service"
+              onChange={(event) => onServiceTypeChange(event.target.value)}
+            />
+          </label>
+        ) : null}
         <label>
           Country
           <select
