@@ -35,7 +35,6 @@ export type PlanTierRow = {
   brandedReports: boolean;
 };
 
-/** -1 = unlimited */
 export const UNLIMITED_CAP = -1;
 
 export const PLAN_TIER_ROWS: PlanTierRow[] = [
@@ -100,10 +99,14 @@ export function planTierRow(id: PlanTierId): PlanTierRow {
   return row;
 }
 
-/** Legacy aliases */
 export function normalizePlanId(value: string | null | undefined): PlanTierId {
-  const v = (value || 'free').toLowerCase();
-  if (v === 'operations') return 'growth';
+  const v = (value || 'free').toLowerCase().trim().replace(/[\s-]+/g, '_');
+  if (v === 'operations' || v === 'scale') return 'growth';
+  if (v === 'ent' || v === 'corp' || v === 'corporate' || v === 'unlimited' || v === 'enterprise_annual' || v === 'enterprise_monthly') return 'enterprise';
+  if (v === 'biz' || v === 'business_annual' || v === 'business_monthly') return 'business';
+  if (v === 'start' || v === 'starter_annual' || v === 'starter_monthly') return 'starter';
+  if (v === 'growth_annual' || v === 'growth_monthly') return 'growth';
+  if (v === 'pro_annual' || v === 'pro_monthly' || v === 'professional') return 'pro';
   const allowed: PlanTierId[] = ['free', 'pro', 'business', 'starter', 'growth', 'enterprise'];
   if (allowed.includes(v as PlanTierId)) return v as PlanTierId;
   return 'free';
