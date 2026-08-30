@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
+import { getTeamPageCopy, teamRoleLabel } from '@/lib/i18n/team-page-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { normalizeRole } from '@/lib/roles';
 import { normalizeJobStatus } from '@/lib/worker-assignment';
@@ -57,32 +58,20 @@ type JobSummary = {
 
 const PAGE_SIZE = 8;
 
-function roleLabel(role: string) {
-  const normalized = normalizeRole(role);
-  if (normalized === 'employee') return 'Staff';
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1).replaceAll('_', ' ');
-}
-
 function emptySummary(): JobSummary {
   return { active: 0, completed: 0, lastJobAt: null };
 }
 
-const copy = {
-  en: { noJobsYet: 'No jobs yet', showMore: 'Show 8 more', showLess: 'Show less', inactive: 'Inactive' },
-  es: { noJobsYet: 'Aún no hay trabajos', showMore: 'Mostrar 8 más', showLess: 'Mostrar menos', inactive: 'Inactivos' },
-  vi: { noJobsYet: 'Chưa có công việc', showMore: 'Hiển thị thêm 8', showLess: 'Thu gọn', inactive: 'Không hoạt động' }
-} as const;
-
-function formatLastJob(value: string | null, noJobsYet: string) {
+function formatLastJob(value: string | null, lastJobLabel: string, noJobsYet: string) {
   if (!value) return noJobsYet;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return noJobsYet;
-  return `Last job ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  return `${lastJobLabel} ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 }
 
 export function TeamDirectory() {
   const { locale } = useTranslation();
-  const c = copy[locale];
+  const c = getTeamPageCopy(locale);
   const [members, setMembers] = useState<DirectoryMember[]>([]);
   const [jobSummaries, setJobSummaries] = useState<Record<string, JobSummary>>({});
   const [query, setQuery] = useState('');
@@ -128,7 +117,7 @@ export function TeamDirectory() {
 
       if (memberError) {
         if (!cancelled) {
-          setError('Team members could not be loaded.');
+          setError(c.unableLoad);
           setLoading(false);
         }
         return;
@@ -224,7 +213,7 @@ export function TeamDirectory() {
 
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [c.unableLoad]);
 
   useEffect(() => {
     setActiveVisibleCount(PAGE_SIZE);
@@ -237,9 +226,9 @@ export function TeamDirectory() {
     return members.filter((member) => {
       if (roleFilter !== 'all' && member.role !== roleFilter) return false;
       if (!text) return true;
-      return [member.name, member.email, roleLabel(member.role)].some((value) => value.toLowerCase().includes(text));
+      return [member.name, member.email, teamRoleLabel(member.role, c)].some((value) => value.toLowerCase().includes(text));
     });
-  }, [members, query, roleFilter]);
+  }, [members, query, roleFilter, c]);
 
   const activeMatches = roleAndSearchMatches.filter((member) => member.active);
   const inactiveMatches = roleAndSearchMatches.filter((member) => !member.active);
@@ -250,17 +239,17 @@ export function TeamDirectory() {
     const summary = jobSummaries[member.userId] || emptySummary();
     return (
       <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
-        <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${member.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {member.name} in a new tab</span></Link>
+        <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`${c.viewJobs} ${member.name}`}><span className="record-card-overlay-label">{c.viewJobs} {member.name}</span></Link>
         <div className="team-member-copy">
           <strong>{member.name}</strong>
-          <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
+          <p className="muted team-member-meta">{teamRoleLabel(member.role, c)} · {member.active ? c.active : c.inactive}</p>
           {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
-          <p className="muted team-member-summary">{summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt, c.noJobsYet)}</p>
+          <p className="muted team-member-summary">{summary.active} {c.activeCount} · {summary.completed} {c.completedCount} · {formatLastJob(summary.lastJobAt, c.lastJob, c.noJobsYet)}</p>
         </div>
         {member.active ? (
           <div className="inline-actions team-member-actions">
-            <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">View jobs</Link>
-            <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
+            <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">{c.viewJobs}</Link>
+            <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>{c.assignToJob}</Link>
           </div>
         ) : null}
       </article>
@@ -289,42 +278,42 @@ export function TeamDirectory() {
     <section className="card team-directory-card">
       <div className="team-directory-header">
         <div>
-          <h2>Team members</h2>
-          <p className="muted">{activeCount} active · Find someone and assign work.</p>
+          <h2>{c.membersTitle}</h2>
+          <p className="muted">{activeCount} {c.active.toLowerCase()} · {c.membersSubtitle}</p>
         </div>
         <div className="inline-actions team-directory-actions">
-          <Link className="btn" href="/people#invite-by-email">Add team member</Link>
-          <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+          <Link className="btn" href="/people#invite-by-email">{c.addMember}</Link>
+          <Link className="btn btn-primary" href="/jobs/new">{c.createJob}</Link>
         </div>
       </div>
 
       <div className="grid-2 team-directory-filters">
         <label>
-          Search team
-          <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or role" />
+          {c.searchTeam}
+          <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.searchPlaceholder} />
         </label>
         <label>
-          Role
+          {c.role}
           <select className="input" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-            <option value="all">All roles</option>
-            <option value="owner">Owner</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="employee">Staff</option>
-            <option value="contractor">Contractor</option>
+            <option value="all">{c.allRoles}</option>
+            <option value="owner">{c.owner}</option>
+            <option value="admin">{c.admin}</option>
+            <option value="manager">{c.manager}</option>
+            <option value="employee">{c.staff}</option>
+            <option value="contractor">{c.contractor}</option>
           </select>
         </label>
       </div>
 
-      <div className="segmented-control" role="group" aria-label="Team member status">
-        <button type="button" className={`btn${statusFilter === 'active' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
-        <button type="button" className={`btn${statusFilter === 'inactive' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button>
-        <button type="button" className={`btn${statusFilter === 'all' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('all')}>All</button>
+      <div className="segmented-control" role="group" aria-label={c.role}>
+        <button type="button" className={`btn${statusFilter === 'active' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('active')}>{c.active}</button>
+        <button type="button" className={`btn${statusFilter === 'inactive' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('inactive')}>{c.inactive}</button>
+        <button type="button" className={`btn${statusFilter === 'all' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('all')}>{c.all}</button>
       </div>
 
-      {loading ? <p className="loading-state team-directory-state">Loading team...</p> : null}
+      {loading ? <p className="loading-state team-directory-state">{c.loading}</p> : null}
       {error ? <p className="auth-message auth-message-error team-directory-state">{error}</p> : null}
-      {!loading && !error && filtered.length === 0 ? <p className="muted team-directory-state">No matching team members.</p> : null}
+      {!loading && !error && filtered.length === 0 ? <p className="muted team-directory-state">{c.noMatch}</p> : null}
 
       {!loading && !error && statusFilter === 'active' && activeMatches.length > 0 ? renderPagedList(activeMatches, activeVisibleCount, setActiveVisibleCount) : null}
       {!loading && !error && statusFilter === 'inactive' && inactiveMatches.length > 0 ? renderPagedList(inactiveMatches, inactiveVisibleCount, setInactiveVisibleCount) : null}
