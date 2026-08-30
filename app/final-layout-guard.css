@@ -34,171 +34,118 @@
   animation-name: none !important;
 }
 
-/* Collapse the desktop sidebar only when the hamburger header is active. */
-@media (max-width: 1279px) {
-  .dashboard-shell {
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto minmax(0, 1fr) !important;
-    grid-template-areas:
-      'mobile'
-      'main' !important;
-  }
-
-  .dashboard-shell > .sidebar,
-  .dashboard-shell .sidebar {
-    display: none !important;
-    position: absolute !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-
-  .dashboard-shell-header,
-  .dashboard-shell-mobile {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    position: sticky !important;
-    top: 0;
-    z-index: 100;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 10px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)) !important;
-    box-sizing: border-box !important;
-  }
-
-  .dashboard-shell-header .mobile-nav,
-  .dashboard-shell-header .mobile-nav-bar {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-  }
-
-  .dashboard-shell-header .mobile-nav-menu-btn,
-  .dashboard-shell-header .mobile-nav-top-logo {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-
-  .dashboard-shell > .main,
-  .main {
-    display: block !important;
-    grid-area: main !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    margin-left: 0 !important;
-    inset: auto !important;
-    translate: none !important;
-    transform: none !important;
-    padding-left: clamp(16px, 3vw, 30px) !important;
-    padding-right: clamp(16px, 3vw, 30px) !important;
-  }
-
-  .main > .app-page-top,
-  .main > .app-page-content,
-  .app-page-content,
-  .page-content,
-  .dashboard-content,
-  .app-authenticated-header,
-  .app-authenticated-header-search,
-  .app-authenticated-header-search-only,
-  body:has(.today-page) .app-page-content,
-  body:has(.today-page) .today-page,
-  .today-page,
-  .dashboard-home {
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    margin-inline: 0 !important;
-    inset: auto !important;
-    translate: none !important;
-    transform: none !important;
-  }
-
-  .app-page-content {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-
-  .today-page,
-  .dashboard-home {
-    justify-self: stretch !important;
-    align-self: stretch !important;
-  }
-
-  .today-page > *,
-  .dashboard-home > * {
-    min-width: 0 !important;
-    max-width: 100% !important;
-  }
+/* Owner, worker, and client all use the worker chrome: no left sidebar, hamburger top right. */
+.dashboard-shell {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
 }
 
-@media (min-width: 1280px) {
-  .dashboard-shell {
-    display: grid !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: 100svh !important;
-    grid-template-columns: 280px minmax(0, 1fr) !important;
-    grid-template-areas: 'side main' !important;
-    align-items: stretch !important;
-  }
+.dashboard-shell > .sidebar,
+.dashboard-shell .sidebar {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 
-  .dashboard-shell > .sidebar,
-  .dashboard-shell .sidebar {
-    display: flex !important;
-    flex-direction: column !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    height: 100svh !important;
-    min-height: 100svh !important;
-    overflow: hidden !important;
-    pointer-events: auto !important;
-    position: sticky !important;
-    top: 0 !important;
-  }
+.dashboard-shell-header,
+.dashboard-shell-mobile {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: sticky !important;
+  top: 0;
+  z-index: 100;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 10px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)) !important;
+  box-sizing: border-box !important;
+}
 
-  .dashboard-shell-header,
-  .dashboard-shell-mobile {
-    display: none !important;
-  }
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
 
-  .dashboard-shell > .main {
-    width: 100%;
-    max-width: none;
-  }
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-top-logo {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
-  .app-page-content,
-  .page-content,
-  .dashboard-content {
-    width: min(100%, 1240px);
-    margin-inline: auto;
-  }
+.dashboard-shell > .main,
+.main {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  inset: auto !important;
+  translate: none !important;
+  transform: none !important;
+  padding-left: clamp(16px, 3vw, 30px) !important;
+  padding-right: clamp(16px, 3vw, 30px) !important;
+}
+
+.main > .app-page-top,
+.main > .app-page-content,
+.app-page-content,
+.page-content,
+.dashboard-content,
+.app-authenticated-header,
+.app-authenticated-header-search,
+.app-authenticated-header-search-only,
+body:has(.today-page) .app-page-content,
+body:has(.today-page) .today-page,
+.today-page,
+.dashboard-home {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-inline: 0 !important;
+  inset: auto !important;
+  translate: none !important;
+  transform: none !important;
+}
+
+.app-page-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.today-page,
+.dashboard-home {
+  justify-self: stretch !important;
+  align-self: stretch !important;
+}
+
+.today-page > *,
+.dashboard-home > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 
 @media (max-width: 640px) {
