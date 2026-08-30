@@ -50,23 +50,24 @@ const QUOTES_LABEL: Record<Locale, string> = {
   vi: 'Báo giá'
 };
 
+function usableLabel(value: string | undefined, missingPrefix: string) {
+  if (!value) return '';
+  if (value === missingPrefix || value === `[[${missingPrefix}]]`) return '';
+  if (value.startsWith('[[') || value.startsWith('nav.')) return '';
+  return value;
+}
+
 export function navLabel(href: string, t: (key: string) => string, fallback: string, locale?: Locale): string {
   const path = href.split(/[?#]/)[0];
   if (path === '/dashboard') {
-    const translated = t('nav.dashboard');
-    if (translated && !translated.startsWith('nav.') && translated !== 'Dashboard') return translated;
-    return (locale && DASHBOARD_LABEL[locale]) || fallback || DASHBOARD_LABEL.en;
+    return usableLabel(t('nav.dashboard'), 'nav.dashboard') || (locale && DASHBOARD_LABEL[locale]) || fallback || DASHBOARD_LABEL.en;
   }
   if (path === '/quotes' || path === '/pricing-helper') {
-    const translated = t('nav.quotes');
-    if (translated && !translated.startsWith('nav.') && translated !== 'Quotes') return translated;
     return (locale && QUOTES_LABEL[locale]) || fallback || QUOTES_LABEL.en;
   }
   if (path === '/assistant') return locale === 'es' ? 'Asistente' : locale === 'vi' ? 'Trợ lý' : 'Assistant';
   if (path === '/knowledge' && locale) return getPlaybookCopy(locale).navLabel;
   const key = NAV_HREF_KEYS[path];
   if (!key) return fallback;
-  const translated = t(`nav.${key}`);
-  if (translated && translated !== `nav.${key}`) return translated;
-  return fallback;
+  return usableLabel(t(`nav.${key}`), `nav.${key}`) || fallback;
 }
