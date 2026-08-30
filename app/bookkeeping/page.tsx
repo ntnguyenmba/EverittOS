@@ -16,42 +16,29 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isAdminRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import '../bookkeeping.css';
 
 const BOOKKEEPING_RANGE_STORAGE_KEY = 'everittos-bookkeeping-range';
 const BOOKKEEPING_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'ytd', 'year', 'all_time'];
 
 const copy = {
-  en: {
-    title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, worker payments, and what is left.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', thisYear: 'This Year', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.'
-  },
-  es: {
-    title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a trabajadores y lo que queda.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', thisYear: 'Este año', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.'
-  },
-  vi: {
-    title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhân sự và số còn lại.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', thisYear: 'Năm nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.'
-  }
+  en: { title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, worker payments, and what is left.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', thisYear: 'This Year', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.' },
+  es: { title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a trabajadores y lo que queda.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', thisYear: 'Este año', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.' },
+  vi: { title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhân sự và số còn lại.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', thisYear: 'Năm nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.' }
 } as const;
 
 function TransactionSection({ title, rows, empty, total }: { title: string; rows: DashboardDetailRow[]; empty: string; total: number }) {
   return (
     <details className="bookkeeping-ledger">
       <summary className="bookkeeping-ledger-summary">
-        <span>
-          <strong>{title}</strong>
-          <small className="muted">{rows.length} {rows.length === 1 ? 'record' : 'records'}</small>
-        </span>
+        <span><strong>{title}</strong><small className="muted">{rows.length} {rows.length === 1 ? 'record' : 'records'}</small></span>
         <strong className="bookkeeping-ledger-total">{formatCurrency(total)}</strong>
       </summary>
       <div className="bookkeeping-ledger-body">
         {rows.length === 0 ? <p className="muted" style={{ margin: 0 }}>{empty}</p> : (
           <div style={{ display: 'grid', gap: 0 }}>
             {rows.map((row, index) => (
-              <Link
-                key={row.id}
-                href={row.href}
-                className="bookkeeping-row"
-                style={{ borderBottom: index === rows.length - 1 ? '0' : '1px solid var(--border, rgba(0,0,0,.08))' }}
-              >
+              <Link key={row.id} href={row.href} className="bookkeeping-row" style={{ borderBottom: index === rows.length - 1 ? '0' : '1px solid var(--border, rgba(0,0,0,.08))' }}>
                 <span style={{ minWidth: 0 }}>
                   <strong style={{ display: 'block', overflowWrap: 'anywhere', lineHeight: 1.32 }}>{row.title}</strong>
                   {row.subtitle ? <small className="muted" style={{ display: 'block', marginTop: 4, overflowWrap: 'anywhere', lineHeight: 1.4 }}>{row.subtitle}</small> : null}
@@ -129,101 +116,36 @@ export default function BookkeepingPage() {
   const expenseTotal = expenseSection?.total || 0;
   const netTotal = netSection?.total ?? netCash?.total ?? incomeTotal - contractorTotal - expenseTotal;
 
-  const metrics = [
-    [c.income, incomeTotal],
-    [c.expenses, expenseTotal],
-    [c.contractorPay, contractorTotal],
-    [c.net, netTotal]
-  ] as const;
-
+  const metrics = [[c.income, incomeTotal], [c.expenses, expenseTotal], [c.contractorPay, contractorTotal], [c.net, netTotal]] as const;
   const rangeOptions: Array<{ id: DashboardDateRange; label: string }> = [
-    { id: 'today', label: c.today },
-    { id: 'week', label: c.thisWeek },
-    { id: 'month', label: c.thisMonth },
-    { id: 'ytd', label: c.ytd },
-    { id: 'year', label: c.thisYear },
-    { id: 'all_time', label: c.allTime }
+    { id: 'today', label: c.today }, { id: 'week', label: c.thisWeek }, { id: 'month', label: c.thisMonth },
+    { id: 'ytd', label: c.ytd }, { id: 'year', label: c.thisYear }, { id: 'all_time', label: c.allTime }
   ];
 
   return (
     <AppShell plan={plan} role={role}>
       <main className="bookkeeping-page">
         <div style={{ marginBottom: 14 }}>
-          <PageHeader
-            title={c.title}
-            subtitle={c.subtitle}
-            action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />}
-          />
+          <PageHeader title={c.title} subtitle={c.subtitle} action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />} />
         </div>
-
         <div className="bookkeeping-range-bar" role="group" aria-label="Bookkeeping period">
           {rangeOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={range === option.id ? 'bookkeeping-range is-active' : 'bookkeeping-range'}
-              aria-pressed={range === option.id}
-              disabled={loading && range === option.id}
-              onClick={() => setRange(option.id)}
-            >
-              {option.label}
-            </button>
+            <button key={option.id} type="button" className={range === option.id ? 'bookkeeping-range is-active' : 'bookkeeping-range'} aria-pressed={range === option.id} disabled={loading && range === option.id} onClick={() => setRange(option.id)}>{option.label}</button>
           ))}
         </div>
-
         {loading ? <p className="muted" style={{ padding: '10px 2px 30px' }}>{c.loading}</p> : (
           <div style={{ width: '100%', minWidth: 0 }}>
             <section className="bookkeeping-metrics" aria-label="Bookkeeping totals">
-              {metrics.map(([label, value]) => (
-                <div key={label} className="bookkeeping-metric-card">
-                  <span className="bookkeeping-metric-label">{label}</span>
-                  <strong className="bookkeeping-metric-value">{formatCurrency(value)}</strong>
-                </div>
-              ))}
+              {metrics.map(([label, value]) => <div key={label} className="bookkeeping-metric-card"><span className="bookkeeping-metric-label">{label}</span><strong className="bookkeeping-metric-value">{formatCurrency(value)}</strong></div>)}
             </section>
-
             <div className="bookkeeping-ledgers">
               <TransactionSection title={c.incomeReceived} rows={incomeRows} empty={c.empty} total={incomeTotal} />
               <TransactionSection title={c.contractorsPaid} rows={contractorSection?.rows || []} empty={c.empty} total={contractorTotal} />
               <TransactionSection title={c.expensesPaid} rows={expenseSection?.rows || []} empty={c.empty} total={expenseTotal} />
             </div>
-
-            <div className="bookkeeping-disclaimer">
-              <p className="muted">{c.disclaimer}</p>
-            </div>
+            <div className="bookkeeping-disclaimer"><p className="muted">{c.disclaimer}</p></div>
           </div>
         )}
-
-        <style jsx>{`
-          .bookkeeping-page { width: 100%; max-width: 1180px; margin: 0 auto; display: block; min-width: 0; padding: 6px 0 18px; }
-          .bookkeeping-range-bar { display: flex; gap: 8px; width: 100%; margin: 8px 0 18px; padding: 2px 0 6px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
-          .bookkeeping-range-bar::-webkit-scrollbar { display: none; }
-          .bookkeeping-range { flex: 0 0 auto; min-height: 42px; padding: 9px 14px; border: 1px solid rgba(38, 72, 93, .24); border-radius: 999px; background: rgba(255, 255, 255, .92); color: #183247; font: inherit; font-weight: 650; white-space: nowrap; cursor: pointer; }
-          .bookkeeping-range.is-active { background: #243f53; border-color: #243f53; color: #fff; }
-          .bookkeeping-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%; margin-bottom: 20px; }
-          .bookkeeping-metric-card { min-width: 0; min-height: 106px; padding: 17px 18px; border: 1px solid rgba(38, 72, 93, .42); border-top: 3px solid #243f53; border-radius: 14px; background: #fff; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
-          .bookkeeping-metric-label { color: #34566b; font-size: 13px; font-weight: 700; line-height: 1.25; }
-          .bookkeeping-metric-value { display: block; color: #102b3d; font-size: clamp(24px, 3vw, 34px); line-height: 1; font-variant-numeric: tabular-nums; }
-          .bookkeeping-ledgers { display: grid; gap: 12px; width: 100%; min-width: 0; }
-          .bookkeeping-ledger { width: 100%; min-width: 0; border: 1px solid rgba(38, 72, 93, .2); border-radius: 14px; background: #fff; overflow: hidden; }
-          .bookkeeping-ledger-summary { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 17px 18px; cursor: pointer; }
-          .bookkeeping-ledger-summary::-webkit-details-marker { display: none; }
-          .bookkeeping-ledger-summary > span { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
-          .bookkeeping-ledger-summary > span > strong { color: #102b3d; font-size: 18px; line-height: 1.2; }
-          .bookkeeping-ledger-summary > span > small { font-size: 13px; color: #31495b; }
-          .bookkeeping-ledger-summary::after { content: '+'; grid-column: 3; color: #243f53; font-size: 24px; font-weight: 400; line-height: 1; }
-          .bookkeeping-ledger[open] .bookkeeping-ledger-summary::after { content: '\2212'; }
-          .bookkeeping-ledger-total { color: #102b3d; white-space: nowrap; font-variant-numeric: tabular-nums; }
-          .bookkeeping-ledger-body { padding: 0 18px 8px; border-top: 1px solid rgba(38, 72, 93, .12); }
-          .bookkeeping-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 2px; text-decoration: none; color: inherit; }
-          .bookkeeping-row-amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
-          .bookkeeping-disclaimer { width: 100%; margin-top: 24px; padding: 18px 0 0; border-top: 1px solid var(--border, rgba(0,0,0,.08)); }
-          .bookkeeping-disclaimer p { font-size: 11px; line-height: 1.6; margin: 0 auto; max-width: 720px; width: 100%; text-align: center; }
-          @media (max-width: 760px) {
-            .bookkeeping-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-            .bookkeeping-ledger-summary { padding: 15px; }
-          }
-        `}</style>
       </main>
     </AppShell>
   );
