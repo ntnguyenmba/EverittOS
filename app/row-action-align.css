@@ -1,7 +1,8 @@
-/* Universal list rows: text left, actions right, same top line. */
+/* Universal list rows: text left, actions right, same top line.
+   Customer cards are intentionally excluded because their row is logo + content;
+   unified-record-cards.css owns that two-part layout. */
 .dashboard-shell .list-row,
 .dashboard-shell .team-member-card,
-.dashboard-shell .customer-card-row,
 .dashboard-shell .customer-row,
 .dashboard-shell .worker-card,
 .dashboard-shell .record-card,
@@ -22,8 +23,6 @@
 .dashboard-shell .list-row > .button-row,
 .dashboard-shell .team-member-card > .inline-actions,
 .dashboard-shell .team-member-card > .team-member-actions,
-.dashboard-shell .customer-card-row > .inline-actions,
-.dashboard-shell .customer-card-row > .record-actions,
 .dashboard-shell .worker-card > .inline-actions,
 .dashboard-shell .record-card > .inline-actions,
 .dashboard-shell .finance-list-card > .inline-actions,
@@ -54,8 +53,7 @@
 
 @media (max-width: 680px) {
   .dashboard-shell .list-row,
-  .dashboard-shell .team-member-card,
-  .dashboard-shell .customer-card-row {
+  .dashboard-shell .team-member-card {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
