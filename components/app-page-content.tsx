@@ -40,7 +40,6 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
         <JobGuidancePanel />
         <JobsListNextActionHints />
         {page}
-        <p className="app-stage-copyright">© {new Date().getFullYear()} Everitt Ventures</p>
       </div>
     </div>
   );
