@@ -4,7 +4,6 @@ import { AskEverittCommand } from '@/components/ask-everitt-command';
 import { AppFooter } from '@/components/app-footer';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageContent } from '@/components/app-page-content';
-import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
 import { Sidebar } from '@/components/sidebar';
 import { UnsavedChangesGuard } from '@/components/unsaved-changes-guard';
@@ -21,7 +20,7 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
+export function AppShell({ plan, role, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
   const resolvedRole = normalizeRole(role ?? workspacePlan?.role);
@@ -47,7 +46,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         <MobileNav plan={resolvedPlan} role={resolvedRole} />
       </header>
       <main id="main-content" className="main">
-        <AppPageTop role={resolvedRole} showBackButton={showBackButton} />
         <AppPageContent>
           {showAi ? <AskEverittCommand plan={resolvedPlan} embedded={false} /> : null}
           {children}
@@ -77,33 +75,34 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          opacity: 0.62;
-          filter: saturate(0.82) contrast(1.02) brightness(0.92);
-          transform: scale(1.015);
+          opacity: 0.78;
+          filter: saturate(0.96) contrast(1.04) brightness(0.98);
+          transform: scale(1.01);
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { grid-area: side; display: flex; }
         .dashboard-shell-header { display: none; }
         .dashboard-shell > .main { grid-area: main; width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 28px clamp(20px,3vw,48px) 40px!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
-        .dashboard-shell .app-page-top,.dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
+        .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
         .dashboard-shell .language-switcher { display:grid; gap:5px; min-width:0; }
         .dashboard-shell .language-switcher-label { display:block; line-height:1.25; }
         .dashboard-shell .language-switcher-select { line-height:1.25; padding-left:12px; padding-right:32px; white-space:nowrap; }
-        .dashboard-shell .owner-home-primary { display:grid!important; gap:12px!important; }
+        .dashboard-shell .owner-home-primary { display:grid!important; gap:var(--everitt-control-gap)!important; }
         .dashboard-shell .owner-home-primary > * { margin-top:0!important; margin-bottom:0!important; }
         .dashboard-shell .owner-home-kicker { display:block!important; line-height:1.35!important; }
         .dashboard-shell .owner-home-primary h2 { line-height:1.3!important; overflow-wrap:anywhere; }
         .dashboard-shell .owner-home-primary p { line-height:1.55!important; overflow-wrap:anywhere; }
-        .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:10px!important; padding-top:4px; }
+        .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:var(--everitt-control-gap)!important; padding-top:4px; }
         .role-portal-shell .btn,.role-portal-shell button,.role-portal-shell select { min-height: 44px; }
         .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#3f586a!important; border-color:#3f586a!important; color:#fff!important; }
-        .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px!important; width:100%; }
-        .role-portal-shell .role-summary-grid { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:16px!important; }
-        .role-portal-shell .metric-grid { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:16px!important; }
+        .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--everitt-control-gap)!important; width:100%; }
+        .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--everitt-section-gap)!important; }
+        .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+        .role-portal-shell .metric-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
         @media(max-width:1279px){
-          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell .app-page-top{margin:0 auto 8px!important;padding:0!important}.dashboard-shell-background{background-position:56% center!important}
+          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell-background{background-position:56% center!important}
         }
         @media(max-width:760px){.role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}.role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:480px){.role-portal-shell .portal-client-nav{grid-template-columns:minmax(0,1fr)}}
