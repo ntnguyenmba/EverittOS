@@ -1,5 +1,34 @@
-import type { EverittosPlan } from '@/lib/everittos-plans';
-import type { PlanFeature } from '@/lib/plan-access';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+
+export type PlanFeature =
+  | 'photoUpload'
+  | 'teamManagement'
+  | 'crewAssignment'
+  | 'scheduling'
+  | 'activityLog'
+  | 'advancedReporting'
+  | 'workflowCustomization'
+  | 'multiLocation'
+  | 'customBranding'
+  | 'pdfReports'
+  | 'clientPortal'
+  | 'contractorPortal'
+  | 'brandedReports'
+  | 'beforeAfterPhotos'
+  | 'aiAccess'
+  | 'aiUnlimited'
+  | 'apiAccess'
+  | 'prioritySupport'
+  | 'bookings';
+
+const PLAN_ORDER: Record<EverittosPlan, number> = {
+  free: 0,
+  pro: 1,
+  business: 2,
+  starter: 3,
+  growth: 4,
+  enterprise: 5
+};
 
 /** Lowest plan that unlocks a feature. Every higher plan includes it. */
 export const FEATURE_MIN_PLAN: Record<PlanFeature, EverittosPlan> = {
@@ -24,27 +53,19 @@ export const FEATURE_MIN_PLAN: Record<PlanFeature, EverittosPlan> = {
   aiUnlimited: 'enterprise'
 };
 
+export function planRankValue(plan: EverittosPlan): number {
+  return PLAN_ORDER[normalizePlan(plan)] ?? 0;
+}
+
 export function highestPlan(plans: Array<EverittosPlan | string | null | undefined>): EverittosPlan {
-  const ranks: Record<string, number> = {
-    free: 0,
-    pro: 1,
-    business: 2,
-    starter: 3,
-    growth: 4,
-    enterprise: 5
-  };
   let best: EverittosPlan = 'free';
-  let bestRank = 0;
   for (const value of plans) {
-    const key = String(value || 'free').toLowerCase();
-    const plan = (['free', 'pro', 'business', 'starter', 'growth', 'enterprise'].includes(key)
-      ? key
-      : 'free') as EverittosPlan;
-    const rank = ranks[plan] ?? 0;
-    if (rank > bestRank) {
-      best = plan;
-      bestRank = rank;
-    }
+    const plan = normalizePlan(value);
+    if (planRankValue(plan) > planRankValue(best)) best = plan;
   }
   return best;
+}
+
+export function planIncludesFeature(plan: EverittosPlan, feature: PlanFeature): boolean {
+  return planRankValue(plan) >= planRankValue(FEATURE_MIN_PLAN[feature]);
 }
