@@ -31,17 +31,17 @@ const LABELS = {
   en: {
     organization: 'Company', team: 'Team', notifications: 'Notifications', preferences: 'General',
     privacy: 'Privacy', terms: 'Terms', deleteAccount: 'Delete', billing: 'Billing', about: 'About',
-    instructions: 'Instructions', manageBilling: 'Billing', settings: 'Settings'
+    instructions: 'Instructions', manageBilling: 'Billing', settings: 'Settings', recommendations: 'Recommendations'
   },
   es: {
     organization: 'Empresa', team: 'Equipo', notifications: 'Notificaciones', preferences: 'General',
     privacy: 'Privacidad', terms: 'Términos', deleteAccount: 'Eliminar', billing: 'Facturación', about: 'Acerca de',
-    instructions: 'Instrucciones', manageBilling: 'Facturación', settings: 'Configuración'
+    instructions: 'Instrucciones', manageBilling: 'Facturación', settings: 'Configuración', recommendations: 'Recomendaciones'
   },
   vi: {
     organization: 'Công ty', team: 'Nhóm', notifications: 'Thông báo', preferences: 'Chung',
     privacy: 'Quyền riêng tư', terms: 'Điều khoản', deleteAccount: 'Xóa', billing: 'Thanh toán', about: 'Giới thiệu',
-    instructions: 'Hướng dẫn', manageBilling: 'Thanh toán', settings: 'Cài đặt'
+    instructions: 'Hướng dẫn', manageBilling: 'Thanh toán', settings: 'Cài đặt', recommendations: 'Đánh giá'
   }
 } as const;
 
@@ -79,6 +79,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     '/terms': copy.terms,
     '/settings/privacy#delete-account': copy.deleteAccount,
     '/settings/billing': copy.billing,
+    '/settings/reviews': copy.recommendations,
     [JOB_INSTRUCTIONS_PATH]: copy.instructions,
     '/about': copy.about
   };
