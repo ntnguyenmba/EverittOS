@@ -58,6 +58,7 @@ import './login-match-visual.css';
 import './word-spacing-fix.css';
 import './top-chrome-align.css';
 import './ask-everitt-overlay-fix.css';
+import './job-card-spacing.css';
 import './one-nav.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
