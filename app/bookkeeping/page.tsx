@@ -19,12 +19,12 @@ import { supabase } from '@/lib/supabase';
 import '../bookkeeping.css';
 
 const BOOKKEEPING_RANGE_STORAGE_KEY = 'everittos-bookkeeping-range';
-const BOOKKEEPING_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'ytd', 'year', 'all_time'];
+const BOOKKEEPING_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'ytd', 'all_time'];
 
 const copy = {
-  en: { title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, worker payments, and what is left.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', thisYear: 'This Year', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.' },
-  es: { title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a trabajadores y lo que queda.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', thisYear: 'Este año', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.' },
-  vi: { title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhân sự và số còn lại.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', thisYear: 'Năm nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.' }
+  en: { title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, worker payments, and what is left.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.' },
+  es: { title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a trabajadores y lo que queda.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.' },
+  vi: { title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhân sự và số còn lại.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.' }
 } as const;
 
 function TransactionSection({ title, rows, empty, total }: { title: string; rows: DashboardDetailRow[]; empty: string; total: number }) {
@@ -69,7 +69,8 @@ export default function BookkeepingPage() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem(BOOKKEEPING_RANGE_STORAGE_KEY) as DashboardDateRange | null;
-    if (saved && BOOKKEEPING_RANGES.includes(saved)) setRange(saved);
+    if (saved === 'year') setRange('ytd');
+    else if (saved && BOOKKEEPING_RANGES.includes(saved)) setRange(saved);
     setRangeReady(true);
   }, []);
 
@@ -119,7 +120,7 @@ export default function BookkeepingPage() {
   const metrics = [[c.income, incomeTotal], [c.expenses, expenseTotal], [c.contractorPay, contractorTotal], [c.net, netTotal]] as const;
   const rangeOptions: Array<{ id: DashboardDateRange; label: string }> = [
     { id: 'today', label: c.today }, { id: 'week', label: c.thisWeek }, { id: 'month', label: c.thisMonth },
-    { id: 'ytd', label: c.ytd }, { id: 'year', label: c.thisYear }, { id: 'all_time', label: c.allTime }
+    { id: 'ytd', label: c.ytd }, { id: 'all_time', label: c.allTime }
   ];
 
   return (
