@@ -5,7 +5,7 @@ import { JobsList } from '@/components/jobs-list';
 
 export default function JobsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="card">Loading jobs…</div>}>
       <JobsList />
     </Suspense>
   );

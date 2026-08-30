@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
@@ -16,7 +16,6 @@ import { clientPortalJobsPath } from '@/lib/portal-access';
 import { isClientRole, isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { supabase } from '@/lib/supabase';
 import { normalizeJobStatus } from '@/lib/worker-assignment';
 
@@ -36,6 +35,9 @@ type Job = {
   created_at?: string | null;
   revenue_amount?: number | null;
 };
+
+const JOB_SELECT = 'id, title, customer_name, address, status, assigned_to, assigned_email, start_date, due_date, scheduled_start, scheduled_end, timezone, created_at, revenue_amount';
+const LOAD_TIMEOUT_MS = 8000;
 
 function jobNeedsWorker(job: Job) {
   const status = normalizeJobStatus(job.status);
@@ -67,6 +69,20 @@ function jobDetailHref(role: UserRole, jobId: string) {
   return `/jobs/${jobId}`;
 }
 
+async function withTimeout<T>(task: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Jobs took too long to load.')), ms);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function JobsList() {
   const router = useRouter();
   const { t, locale } = useTranslation();
@@ -77,22 +93,34 @@ export function JobsList() {
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
     setLoadError('');
+    setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await withTimeout(supabase.auth.getUser(), LOAD_TIMEOUT_MS);
       if (!user) {
         router.push('/login');
+        setLoading(false);
         return;
       }
-      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+
+      const [{ data: profile }] = await Promise.all([
+        supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle()
+      ]);
       setPlan(normalizePlan(profile?.plan));
-      const org = await fetchOrganizationContext(user.id);
-      setRole(normalizeRole(org?.role || profile?.role));
+
+      let organizationId: string | null = null;
+      let nextRole = normalizeRole(profile?.role);
+      try {
+        const org = await withTimeout(fetchOrganizationContext(user.id), 4000);
+        organizationId = org?.organizationId || null;
+        nextRole = normalizeRole(org?.role || profile?.role);
+      } catch {
+        nextRole = normalizeRole(profile?.role);
+      }
+      setRole(nextRole);
+
       const params = new URLSearchParams();
       const customer = searchParams.get('customer');
       const status = searchParams.get('status');
@@ -106,28 +134,46 @@ export function JobsList() {
       if (filter) params.set('filter', filter);
       if (assignedTo) params.set('assigned_to', assignedTo);
       if (from) params.set('from', from);
-      const res = await fetch(`/api/jobs?${params.toString()}`, { cache: 'no-store' });
-      const json = (await res.json()) as { jobs?: Job[]; error?: string };
-      if (!res.ok) {
-        setLoadError(json.error || 'Unable to load jobs.');
-        setJobs([]);
-        return;
+
+      let loaded: Job[] = [];
+      try {
+        const res = await withTimeout(fetch(`/api/jobs?${params.toString()}`, { cache: 'no-store' }), LOAD_TIMEOUT_MS);
+        const json = (await res.json()) as { jobs?: Job[]; error?: string };
+        if (!res.ok) throw new Error(json.error || 'Unable to load jobs.');
+        loaded = json.jobs || [];
+      } catch {
+        let query = supabase.from('jobs').select(JOB_SELECT).order('scheduled_start', { ascending: false }).limit(200);
+        if (organizationId) query = query.eq('organization_id', organizationId);
+        else query = query.eq('user_id', user.id);
+        const { data, error } = await query;
+        if (error) throw error;
+        loaded = (data || []) as Job[];
       }
-      const orgIsDemo = await fetchOrganizationIsDemo(supabase, org?.organizationId);
-      setJobs(filterDemoSeedJobs(json.jobs || [], orgIsDemo));
-      let workersQuery = supabase.from('workers').select('id, name, auth_user_id, email');
-      if (org?.organizationId) workersQuery = workersQuery.eq('organization_id', org.organizationId);
-      else workersQuery = workersQuery.eq('user_id', user.id);
-      const { data: workers } = await workersQuery;
-      const names: Record<string, string> = {};
-      (workers || []).forEach((worker: { id: string; name: string; auth_user_id?: string | null; email?: string | null }) => {
-        const label = displayPersonName(worker.name, worker.email);
-        if (worker.id && label) names[worker.id] = label;
-        if (worker.auth_user_id && label) names[worker.auth_user_id] = label;
-      });
-      setWorkerNames(names);
-    } finally {
-      loadingRef.current = false;
+
+      setJobs(filterDemoSeedJobs(loaded, false));
+      setLoading(false);
+
+      void (async () => {
+        try {
+          let workersQuery = supabase.from('workers').select('id, name, auth_user_id, email');
+          workersQuery = organizationId
+            ? workersQuery.eq('organization_id', organizationId)
+            : workersQuery.eq('user_id', user.id);
+          const { data: workers } = await workersQuery;
+          const names: Record<string, string> = {};
+          (workers || []).forEach((worker: { id: string; name: string; auth_user_id?: string | null; email?: string | null }) => {
+            const label = displayPersonName(worker.name, worker.email);
+            if (worker.id && label) names[worker.id] = label;
+            if (worker.auth_user_id && label) names[worker.auth_user_id] = label;
+          });
+          setWorkerNames(names);
+        } catch {
+          /* job rows still render without worker names */
+        }
+      })();
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Unable to load jobs.');
+      setJobs([]);
       setLoading(false);
     }
   }, [router, searchParams]);
@@ -154,9 +200,14 @@ export function JobsList() {
           <Link href="/jobs?status=active" className="jobs-filter-tab">Active</Link>
           <Link href="/jobs?status=finished" className="jobs-filter-tab">Finished</Link>
         </div>
-        {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
+        {loadError ? (
+          <div className="card">
+            <p className="auth-message auth-message-error">{loadError}</p>
+            <button type="button" className="btn" onClick={() => void load()}>Try again</button>
+          </div>
+        ) : null}
         {loading ? <p className="loading-state" role="status">Loading…</p> : null}
-        {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
+        {!loading && rows.length === 0 && !loadError ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
           <div className="card jobs-table-card">
             <div className="jobs-mobile-table-wrap">
