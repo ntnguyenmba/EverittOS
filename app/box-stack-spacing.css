@@ -1,0 +1,65 @@
+/* Shared rule: neighboring boxes never sit on top of each other.
+   Spacing only. Does not change routes, filters, or control behavior. */
+
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .jobs-header-actions,
+.dashboard-shell .jobs-advanced-filters > .jobs-filter-grid,
+.dashboard-shell .page-actions,
+.dashboard-shell .page-header-action,
+.dashboard-shell .inline-actions,
+.dashboard-shell .button-row,
+.dashboard-shell .settings-actions,
+.dashboard-shell .record-actions,
+.dashboard-shell .owner-home-actions,
+.dashboard-shell .finance-filter-bar,
+.dashboard-shell .portal-job-finance,
+.role-portal-shell .page-actions,
+.role-portal-shell .inline-actions {
+  gap: 12px !important;
+}
+
+.dashboard-shell .jobs-filter-tabs {
+  margin-bottom: 12px !important;
+}
+
+.dashboard-shell .jobs-advanced-filters {
+  margin-top: 12px !important;
+}
+
+.dashboard-shell .jobs-filter-tab + .jobs-filter-tab,
+.dashboard-shell .jobs-header-actions > * + *,
+.dashboard-shell .jobs-filter-control + .jobs-filter-control,
+.dashboard-shell .page-actions > * + *,
+.dashboard-shell .inline-actions > * + *,
+.dashboard-shell .button-row > * + *,
+.dashboard-shell .settings-actions > * + *,
+.dashboard-shell .record-actions > * + *,
+.dashboard-shell .owner-home-actions > * + * {
+  margin-top: 0 !important;
+}
+
+.dashboard-shell .jobs-filter-tabs + .jobs-advanced-filters,
+.dashboard-shell .jobs-filter-tabs + *,
+.dashboard-shell .jobs-header-actions + .jobs-filter-tabs,
+.dashboard-shell .jobs-header-actions + * {
+  margin-top: 12px !important;
+}
+
+.dashboard-shell .jobs-filter-control,
+.dashboard-shell .jobs-filter-control select,
+.dashboard-shell .jobs-filter-tab {
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .app-page-stage > * + *,
+.dashboard-shell .app-page-content > .card + .card,
+.dashboard-shell .contractor-main > * + *,
+.dashboard-shell .client-main > * + * {
+  margin-top: 16px !important;
+}
+
+.dashboard-shell .app-page-stage form > * + *,
+.dashboard-shell .app-page-stage .form > * + *,
+.dashboard-shell .app-page-stage fieldset > * + * {
+  margin-top: 14px !important;
+}
