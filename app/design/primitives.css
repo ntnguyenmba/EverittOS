@@ -18,6 +18,10 @@
   min-height: var(--eo-tap);
 }
 
+.eo-card .eo-btn {
+  min-height: var(--eo-tap);
+}
+
 .eo-list-row {
   min-height: var(--eo-tap);
 }
