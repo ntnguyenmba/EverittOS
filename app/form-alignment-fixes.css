@@ -129,6 +129,11 @@ code { overflow-wrap: anywhere; }
   text-decoration: none;
 }
 
+/* Never expose internal overlay helper wording such as “Open … in a new tab” in the UI. */
+.record-card-overlay-label {
+  display: none !important;
+}
+
 @media (max-width: 720px) {
   .grid-2,
   .segmented-control { grid-template-columns: 1fr; }
@@ -353,14 +358,6 @@ code { overflow-wrap: anywhere; }
     min-height: 44px;
   }
   .record-card-overlay-label {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+    display: none !important;
   }
 }
