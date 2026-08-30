@@ -2,33 +2,40 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/components/locale-provider';
+import { getCustomerCreateCopy } from '@/lib/i18n/customer-create-copy';
 
 function buttonText(button: HTMLButtonElement) {
   return button.textContent?.trim().toLowerCase() || '';
 }
 
-function makeCancel(onClick: () => void) {
+function makeCancel(onClick: () => void, label: string) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'btn';
-  button.textContent = 'Cancel';
+  button.textContent = label;
   button.dataset.createCancel = 'true';
   button.addEventListener('click', onClick);
   return button;
 }
 
-function addAfter(target: HTMLButtonElement, onClick: () => void) {
+function addAfter(target: HTMLButtonElement, onClick: () => void, label: string) {
   const parent = target.parentElement;
   const existing = parent?.querySelector<HTMLButtonElement>('[data-create-cancel="true"]');
   if (!parent) return null;
-  if (existing) return existing;
-  const cancel = makeCancel(onClick);
+  if (existing) {
+    existing.textContent = label;
+    return existing;
+  }
+  const cancel = makeCancel(onClick, label);
   target.insertAdjacentElement('afterend', cancel);
   return cancel;
 }
 
 export function CreateFormCancelControls() {
   const pathname = usePathname();
+  const { locale } = useTranslation();
+  const copy = getCustomerCreateCopy(locale);
 
   useEffect(() => {
     /* Create Job is a controlled React form. Do not rewrite, hide, translate,
@@ -42,11 +49,16 @@ export function CreateFormCancelControls() {
     const apply = () => {
       if (isCustomerCreate) {
         const saveCustomer = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-          (button) => buttonText(button) === 'save customer'
+          (button) => {
+            const text = buttonText(button);
+            return text === 'save customer' || text === copy.save.toLowerCase();
+          }
         );
         if (saveCustomer) {
-          addAfter(saveCustomer, () =>
-            window.history.length > 1 ? window.history.back() : window.location.assign('/customers')
+          addAfter(
+            saveCustomer,
+            () => window.history.length > 1 ? window.history.back() : window.location.assign('/customers'),
+            copy.cancel
           );
         }
       }
@@ -72,7 +84,7 @@ export function CreateFormCancelControls() {
           }
           const header = inviteSection?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]');
           header?.click();
-        });
+        }, copy.cancel);
       }
     };
 
@@ -80,7 +92,7 @@ export function CreateFormCancelControls() {
     const observer = new MutationObserver(apply);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [pathname]);
+  }, [copy.cancel, copy.save, pathname]);
 
   return null;
 }

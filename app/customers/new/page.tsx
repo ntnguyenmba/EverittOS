@@ -6,12 +6,16 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { CustomerCreateForm } from '@/components/customer-create-form';
 import { PageHeader } from '@/components/page-header';
+import { useTranslation } from '@/components/locale-provider';
+import { getCustomerCreateCopy } from '@/lib/i18n/customer-create-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const copy = getCustomerCreateCopy(locale);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
 
@@ -34,11 +38,11 @@ export default function NewCustomerPage() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="New customer"
-        subtitle="Add contact details, notes, and follow-ups for a new customer."
+        title={copy.pageTitle}
+        subtitle={copy.intro}
         action={
           <Link className="btn" href="/customers">
-            Back to customers
+            {copy.back}
           </Link>
         }
       />
