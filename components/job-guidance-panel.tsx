@@ -127,26 +127,36 @@ export function JobGuidancePanel() {
         .maybeSingle();
       if (!job || cancelled) return;
 
-      const [assignmentsRes, invoicesRes, financialRes] = await Promise.all([
+      const [assignmentsRes, invoicesRes, outboundInvoicesRes, financialRes] = await Promise.all([
         supabase.from('job_assignments').select('id').eq('job_id', jobId).limit(1),
         supabase.from('invoices').select('id, amount, amount_paid, status').eq('job_id', jobId).order('created_at', { ascending: false }).limit(1),
+        supabase.from('outbound_documents').select('id, amount, amount_paid, status, payment_status').eq('doc_type', 'invoice').eq('job_id', jobId).order('created_at', { ascending: false }).limit(1),
         fetch(`/api/jobs/owner-financials?ids=${encodeURIComponent(jobId)}`, { cache: 'no-store' }).then(async (res) => res.ok ? await res.json() : null).catch(() => null)
       ]);
 
       if (cancelled) return;
       const financials = financialRes?.financials?.[jobId] || null;
+      const canonicalInvoice = ((invoicesRes.data || [])[0] || null) as InvoiceRow | null;
+      const outboundInvoice = ((outboundInvoicesRes.data || [])[0] || null) as (InvoiceRow & { payment_status?: string | null }) | null;
+      const invoice = canonicalInvoice || (outboundInvoice ? {
+        id: outboundInvoice.id,
+        amount: outboundInvoice.amount,
+        amount_paid: outboundInvoice.amount_paid,
+        status: outboundInvoice.payment_status || outboundInvoice.status
+      } : null);
+
       setState({
         job: job as JobRow,
         assigned: Boolean(job.assigned_to || job.assigned_email || (assignmentsRes.data || []).length),
         financials,
-        invoice: ((invoicesRes.data || [])[0] || null) as InvoiceRow | null
+        invoice
       });
     }
 
     void load();
     const refresh = () => void load();
     window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 45000);
+    const timer = window.setInterval(refresh, 15000);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', refresh);
@@ -162,7 +172,14 @@ export function JobGuidancePanel() {
   const invoiceExists = Boolean(state.invoice);
   const invoiceAmount = Number(state.invoice?.amount || 0);
   const amountPaid = Number(state.invoice?.amount_paid || 0);
-  const paymentState = !invoiceExists ? c.notCreated : invoiceAmount > 0 && amountPaid >= invoiceAmount ? c.paid : amountPaid > 0 ? c.partial : c.unpaid;
+  const invoiceStatus = String(state.invoice?.status || '').toLowerCase();
+  const paymentState = !invoiceExists
+    ? c.notCreated
+    : invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount)
+      ? c.paid
+      : amountPaid > 0
+        ? c.partial
+        : c.unpaid;
   const status = String(state.job.status || '').toLowerCase();
   const scheduledAt = state.job.scheduled_start ? new Date(state.job.scheduled_start) : null;
   const pastDue = Boolean(scheduledAt && !Number.isNaN(scheduledAt.getTime()) && scheduledAt.getTime() < Date.now() && !['active', 'in_progress', 'completed', 'cancelled'].includes(status));
