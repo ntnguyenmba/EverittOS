@@ -160,22 +160,27 @@
     display: grid !important;
     width: 100% !important;
     max-width: none !important;
-    grid-template-columns: 300px minmax(0, 1fr) !important;
+    min-height: 100svh !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
     grid-template-areas: 'side main' !important;
+    align-items: stretch !important;
   }
 
   .dashboard-shell > .sidebar,
   .dashboard-shell .sidebar {
     display: flex !important;
+    flex-direction: column !important;
     visibility: visible !important;
     opacity: 1 !important;
-    width: 300px !important;
-    min-width: 300px !important;
-    max-width: 300px !important;
-    height: auto !important;
-    overflow: auto !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    overflow: hidden !important;
     pointer-events: auto !important;
     position: sticky !important;
+    top: 0 !important;
   }
 
   .dashboard-shell-header,
