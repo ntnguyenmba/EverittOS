@@ -31,9 +31,7 @@ export default function InvoicePaymentSettingsPage() {
       const org = await ensureOrganizationForUser(user.id);
       if (org) {
         const { data } = await supabase.from('organization_settings').select('preferred_payment_method,payment_link,payment_instructions').eq('organization_id', org.organizationId).maybeSingle();
-        setMethod((data?.preferred_payment_method || '') as Method);
-        setLink(data?.payment_link || '');
-        setInstructions(data?.payment_instructions || '');
+        setMethod((data?.preferred_payment_method || '') as Method); setLink(data?.payment_link || ''); setInstructions(data?.payment_instructions || '');
       }
       setLoading(false);
     }
@@ -43,9 +41,8 @@ export default function InvoicePaymentSettingsPage() {
   async function save() {
     if (saving) return;
     setSaving(true); setMessage('');
-    const res = await fetch('/api/settings/workspace', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferredPaymentMethod: method, paymentLink: link, paymentInstructions: instructions }) });
-    const json = await res.json().catch(() => ({}));
-    setSaving(false);
+    const res = await fetch('/api/settings/payments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferredPaymentMethod: method, paymentLink: link, paymentInstructions: instructions }) });
+    const json = await res.json().catch(() => ({})); setSaving(false);
     setMessage(res.ok ? 'Invoice payment preference saved.' : json.error || 'Unable to save payment preference.');
   }
 
@@ -53,15 +50,10 @@ export default function InvoicePaymentSettingsPage() {
     {loading ? <p className="loading-state">Loading…</p> : <section className="settings-card form settings-form-grid">
       <p className="muted">Choose how customers should pay invoices. EverittOS will put this payment action directly in invoice emails.</p>
       <label htmlFor="payment-method">Preferred payment method</label>
-      <select id="payment-method" className="input" value={method} onChange={(e) => setMethod(e.target.value as Method)}>
-        <option value="">No payment action</option><option value="stripe">Stripe</option><option value="square">Square</option><option value="paypal">PayPal</option><option value="venmo">Venmo</option><option value="zelle">Zelle</option><option value="cash_app">Cash App</option><option value="custom">Other payment link</option>
-      </select>
-      <label htmlFor="payment-link">Payment link</label>
-      <input id="payment-link" className="input" type="url" inputMode="url" placeholder="https://..." value={link} onChange={(e) => setLink(e.target.value)} />
-      <p className="muted">For Stripe, Square, PayPal, Venmo, Cash App, or another provider, paste the HTTPS payment link customers should open.</p>
-      <label htmlFor="payment-instructions">Payment instructions</label>
-      <textarea id="payment-instructions" className="input" rows={4} placeholder="Example: Zelle to billing@example.com. Include your invoice number in the memo." value={instructions} onChange={(e) => setInstructions(e.target.value)} />
-      <p className="muted">For Zelle or another method without a usable web link, leave Payment link blank and enter the recipient details here.</p>
+      <select id="payment-method" className="input" value={method} onChange={(e) => setMethod(e.target.value as Method)}><option value="">No payment action</option><option value="stripe">Stripe</option><option value="square">Square</option><option value="paypal">PayPal</option><option value="venmo">Venmo</option><option value="zelle">Zelle</option><option value="cash_app">Cash App</option><option value="custom">Other payment link</option></select>
+      <label htmlFor="payment-link">Payment link</label><input id="payment-link" className="input" type="url" inputMode="url" placeholder="https://..." value={link} onChange={(e) => setLink(e.target.value)} />
+      <p className="muted">Paste the HTTPS link customers should open. Leave this blank for Zelle if you only want to show payment instructions.</p>
+      <label htmlFor="payment-instructions">Payment instructions</label><textarea id="payment-instructions" className="input" rows={4} placeholder="Example: Zelle to billing@example.com. Include your invoice number in the memo." value={instructions} onChange={(e) => setInstructions(e.target.value)} />
       {message ? <p role="status">{message}</p> : null}
       <div className="button-row" style={{ flexWrap: 'wrap' }}><button className="btn btn-primary" type="button" onClick={() => void save()} disabled={saving}>{saving ? 'Saving…' : 'Save payment preference'}</button><Link className="btn" href="/invoices">Back to invoices</Link></div>
     </section>}
