@@ -30,47 +30,51 @@ Do not hide or reposition New Job, Save, Start, Finish, filters, role switch, PI
 `app/layout.tsx` loads these, in order. That order *is* the current look. Do not prepend or append another global overlay.
 
 1. `globals.css`
-2. `everitt-theme.css`
-3. `typography.css`
-4. `nav.css`
-5. `outbound.css`
-6. `feedback-toast.css`
-7. `dashboard.css`
-8. `form-alignment-fixes.css`
-9. `job-visit-layout-override.css`
-10. `payment-receipt-modal-fix.css`
-11. `receipt.css`
-12. `mobile-safe-areas.css`
-13. `contractor-portal.css`
-14. `quote-workspace.css`
-15. `role-home-structure.css`
-16. `signed-in-canvas.css`
-17. `jobs-filter-mobile-alignment.css`
-18. `jobs-mobile-layout-hotfix.css`
-19. `word-spacing-fix.css`
-20. `top-chrome-align.css`
-21. `ask-everitt-overlay-fix.css`
-22. `job-card-spacing.css`
-23. `one-nav.css`
-24. `box-stack-spacing.css`
-25. `signed-in-stability.css`
-26. `hero-last.css`
-27. `visual-unify.css`
-28. `readability-last.css`
-29. `everitt-login-look.css`
-30. `final-layout-guard.css`
-31. `view-center-final.css`
+2. `design/tokens.css`
+3. `design/primitives.css`
+4. `everitt-theme.css`
+5. `typography.css`
+6. `nav.css`
+7. `outbound.css`
+8. `feedback-toast.css`
+9. `dashboard.css`
+10. `form-alignment-fixes.css`
+11. `job-visit-layout-override.css`
+12. `payment-receipt-modal-fix.css`
+13. `receipt.css`
+14. `mobile-safe-areas.css`
+15. `contractor-portal.css`
+16. `quote-workspace.css`
+17. `role-home-structure.css`
+18. `signed-in-canvas.css`
+19. `jobs-filter-mobile-alignment.css`
+20. `jobs-mobile-layout-hotfix.css`
+21. `word-spacing-fix.css`
+22. `top-chrome-align.css`
+23. `ask-everitt-overlay-fix.css`
+24. `job-card-spacing.css`
+25. `one-nav.css`
+26. `box-stack-spacing.css`
+27. `signed-in-stability.css`
+28. `hero-last.css`
+29. `visual-unify.css`
+30. `readability-last.css`
+31. `everitt-login-look.css`
+32. `final-layout-guard.css`
+33. `view-center-final.css`
 
 Files that exist under `app/` but are not in this list are still frozen. Do not add more of them. Harvest, then stop importing, then delete.
 
-`scripts/ui-polish-audit.ts` used to require `release-polish.css` as the last import. That rule created the overlay habit. It now freezes the import list above.
+`scripts/ui-polish-audit.ts` freezes the import list above, plus the two design files.
 
 ## Jobs list — first harvest surface
+
+Full keep / drop / copy list: `JOBS-HARVEST.md`.
 
 Winning files on Jobs (later imports beat earlier ones):
 
 - keep while harvesting: `globals.css`, `typography.css`, `signed-in-canvas.css`, `jobs-filter-mobile-alignment.css`, `jobs-mobile-layout-hotfix.css`, `job-card-spacing.css`, `box-stack-spacing.css`, `final-layout-guard.css`
-- harvest then drop from the Jobs path: `jobs-visual-polish.css`, `jobs-visual-final.css`, `jobs-mobile-editorial-final.css`, `jobs-actions-spacing-fix.css`, `jobs-owner-minimal.css`, `jobs-owner-v1.css`, `job-mobile-fixes.css`, `owner-job-card-mobile-alignment.css`
+- already unused by layout — delete after a week on the freeze tag: `jobs-visual-polish.css`, `jobs-visual-final.css`, `jobs-mobile-editorial-final.css`, `jobs-actions-spacing-fix.css`, `jobs-owner-minimal.css`, `jobs-owner-v1.css`, `job-mobile-fixes.css`, `owner-job-card-mobile-alignment.css`
 
 Method:
 
