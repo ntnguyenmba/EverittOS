@@ -9,6 +9,9 @@
 
 .eo-card {
   padding: var(--job-card-pad);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .eo-card .eo-btn {
@@ -21,14 +24,23 @@
 
 .eo-btn {
   min-height: var(--eo-tap);
+  min-width: 0;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 .eo-field {
   min-height: var(--eo-control);
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .eo-status {
@@ -46,6 +58,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--eo-space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .eo-visually-hidden {
@@ -75,6 +89,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .eo-action-grid > :last-child {
