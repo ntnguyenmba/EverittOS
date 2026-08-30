@@ -29,9 +29,15 @@ type OutboundHubProps = {
   footer?: React.ReactNode;
 };
 
+const JOB_GUIDANCE_REFRESH_EVENT = 'everittos:job-guidance-refresh';
+
 function safeReturnPath(value?: string): string {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return '';
   return value;
+}
+
+function refreshJobGuidance() {
+  window.dispatchEvent(new Event(JOB_GUIDANCE_REFRESH_EVENT));
 }
 
 export function OutboundHub({
@@ -102,14 +108,13 @@ export function OutboundHub({
       const result = await autosave.sendNow();
       if (!result) return;
       if (result.document?.status === 'failed' || result.deliveryNote) {
-        appFeedback.error(
-          result.deliveryNote || result.message || billingCopy.emailFailed
-        );
+        appFeedback.error(result.deliveryNote || result.message || billingCopy.emailFailed);
         setTab('failed');
         void loadDocuments();
         return;
       }
       appFeedback.sent();
+      refreshJobGuidance();
       if (resolvedReturnTo) {
         router.replace(resolvedReturnTo);
         return;
@@ -117,11 +122,7 @@ export function OutboundHub({
       setTab('sent');
       void loadDocuments();
     } catch (err) {
-      appFeedback.error(
-        err instanceof Error
-          ? resolveApiError({ error: err.message }, locale)
-          : billingCopy.sendFailed
-      );
+      appFeedback.error(err instanceof Error ? resolveApiError({ error: err.message }, locale) : billingCopy.sendFailed);
       setTab('failed');
       void loadDocuments();
     }
@@ -144,6 +145,7 @@ export function OutboundHub({
       return;
     }
     appFeedback.sent();
+    refreshJobGuidance();
     if (resolvedReturnTo) {
       router.replace(resolvedReturnTo);
       return;
@@ -164,6 +166,7 @@ export function OutboundHub({
       return;
     }
     appFeedback.deleted();
+    refreshJobGuidance();
     void loadDocuments();
   }
 
@@ -172,16 +175,11 @@ export function OutboundHub({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const historyTitle =
-    docType === 'invoice'
-      ? focusOutstanding
-        ? paymentFilter === 'overdue'
-          ? billingCopy.overdueInvoices
-          : billingCopy.whoStillOwesYou
-        : billingCopy.invoices
-      : docType === 'receipt'
-        ? billingCopy.receipts
-        : billingCopy.sentHistory;
+  const historyTitle = docType === 'invoice'
+    ? focusOutstanding
+      ? paymentFilter === 'overdue' ? billingCopy.overdueInvoices : billingCopy.whoStillOwesYou
+      : billingCopy.invoices
+    : docType === 'receipt' ? billingCopy.receipts : billingCopy.sentHistory;
 
   const composer = canManage && schemaReady ? (
     <OutboundComposer
@@ -203,21 +201,8 @@ export function OutboundHub({
     <div className="card outbound-history-card">
       <div className="outbound-history-head">
         <h3>{historyTitle}</h3>
-        {docType === 'invoice' && paymentFilter !== 'all' ? (
-          <p className="muted" style={{ margin: '6px 0 0' }}>
-            {focusOutstanding ? billingCopy.outstandingRowHint : billingCopy.paymentFilterHint}
-          </p>
-        ) : null}
-        {focusOutstanding ? (
-          <div className="inline-actions" style={{ marginTop: 12 }}>
-            <Link className="btn btn-sm" href="/jobs?status=completed">
-              {billingCopy.reviewUninvoicedJobs}
-            </Link>
-            <Link className="btn btn-sm" href="/invoices">
-              {billingCopy.createAnInvoice}
-            </Link>
-          </div>
-        ) : null}
+        {docType === 'invoice' && paymentFilter !== 'all' ? <p className="muted" style={{ margin: '6px 0 0' }}>{focusOutstanding ? billingCopy.outstandingRowHint : billingCopy.paymentFilterHint}</p> : null}
+        {focusOutstanding ? <div className="inline-actions" style={{ marginTop: 12 }}><Link className="btn btn-sm" href="/jobs?status=completed">{billingCopy.reviewUninvoicedJobs}</Link><Link className="btn btn-sm" href="/invoices">{billingCopy.createAnInvoice}</Link></div> : null}
       </div>
       <OutboundStatusTabs active={tab} onChange={setTab} />
       <OutboundDocumentList
@@ -230,22 +215,15 @@ export function OutboundHub({
         onSend={(id) => void handleSendExisting(id)}
         onRetry={(id) => void handleSendExisting(id)}
         onDelete={(id) => void handleDelete(id)}
-        onPaymentRecorded={() => void loadDocuments()}
+        onPaymentRecorded={() => { refreshJobGuidance(); void loadDocuments(); }}
       />
     </div>
   );
 
-  return (
-    <>
-      {!schemaReady ? (
-        <div className="card outbound-schema-notice" role="status">
-          <p>{billingCopy.schemaNotice}</p>
-        </div>
-      ) : null}
-
-      {focusOutstanding ? history : composer}
-      {focusOutstanding ? composer : history}
-      {footer}
-    </>
-  );
+  return <>
+    {!schemaReady ? <div className="card outbound-schema-notice" role="status"><p>{billingCopy.schemaNotice}</p></div> : null}
+    {focusOutstanding ? history : composer}
+    {focusOutstanding ? composer : history}
+    {footer}
+  </>;
 }
