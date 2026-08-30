@@ -44,11 +44,27 @@
 .dashboard-shell .team-member-card > .inline-actions .btn,
 .dashboard-shell .team-member-actions .btn,
 .dashboard-shell .customer-card-row .record-actions .btn,
+.dashboard-shell .customer-card-row .record-actions button,
+.dashboard-shell .customer-card-row .record-actions a,
 .dashboard-shell .team-directory-actions .btn {
   min-height: 42px !important;
   height: 42px !important;
   box-sizing: border-box !important;
   margin: 0 !important;
+}
+
+/* Customer action buttons must share one baseline and one height. */
+.dashboard-shell .customer-card-row .record-actions {
+  display: flex !important;
+  align-items: stretch !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.dashboard-shell .customer-card-row .record-actions > * {
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 @media (max-width: 680px) {
