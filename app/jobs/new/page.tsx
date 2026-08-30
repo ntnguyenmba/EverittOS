@@ -14,6 +14,7 @@ export default function NewJobPage() {
 
   return (
     <AppShell plan="free" role="owner">
+      <JobCreateI18nBind />
       <header className="page-header job-create-page-header">
         <div>
           <h1>{copy.pageTitle}</h1>
@@ -25,7 +26,6 @@ export default function NewJobPage() {
         <Suspense fallback={<p className="loading-state">Loading form…</p>}>
           <JobCreator onJobCreated={(jobId) => window.location.assign(`/jobs/${jobId}`)} />
         </Suspense>
-        <JobCreateI18nBind />
       </div>
     </AppShell>
   );
