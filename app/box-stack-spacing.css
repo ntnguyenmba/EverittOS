@@ -207,8 +207,9 @@
 .dashboard-shell :is(.card, .panel, .settings-card) > :last-child,
 .role-portal-shell :is(.card, .panel, .settings-card) > :last-child { margin-bottom: 0 !important; }
 
-.dashboard-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn),
-.role-portal-shell :is(.card, .panel, .settings-card) :is(button, .btn, a.btn) + :is(button, .btn, a.btn) {
+/* Loose direct-child buttons may stack vertically; grouped action rows use their container gap only. */
+.dashboard-shell :is(.card, .panel, .settings-card) > :is(button, .btn, a.btn) + :is(button, .btn, a.btn),
+.role-portal-shell :is(.card, .panel, .settings-card) > :is(button, .btn, a.btn) + :is(button, .btn, a.btn) {
   margin-top: var(--everitt-control-gap) !important;
 }
 
