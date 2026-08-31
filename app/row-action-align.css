@@ -1,6 +1,13 @@
-/* Universal list rows: text left, actions right, same top line.
-   Customer cards are intentionally excluded because their row is logo + content;
-   unified-record-cards.css owns that two-part layout. */
+/* Universal record and list action alignment.
+   This file is imported after the role/page styles, so owner, client, worker,
+   and shared pages all inherit one final alignment rule. */
+
+:root {
+  --eo-action-gap: 8px;
+  --eo-action-height: 42px;
+  --eo-action-min-width: 88px;
+}
+
 .dashboard-shell .list-row,
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-row,
@@ -15,6 +22,54 @@
   align-items: start !important;
   column-gap: 16px !important;
   text-align: left !important;
+}
+
+/* Every reusable action group gets one baseline, gap, and control height. */
+.record-actions,
+.inline-actions,
+.team-member-actions,
+.team-directory-actions,
+.button-row,
+.job-detail-actions {
+  align-items: stretch !important;
+  gap: var(--eo-action-gap) !important;
+}
+
+.record-actions-inline {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(var(--eo-action-min-width), max-content) !important;
+  justify-content: start !important;
+  align-items: stretch !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 12px !important;
+}
+
+.record-actions-stack {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+}
+
+.record-actions > .btn,
+.record-actions > button,
+.record-actions > a,
+.inline-actions > .btn,
+.team-member-actions > .btn,
+.team-directory-actions > .btn {
+  min-height: var(--eo-action-height) !important;
+  height: var(--eo-action-height) !important;
+  min-width: var(--eo-action-min-width) !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
 }
 
 .dashboard-shell .list-row > .inline-actions,
@@ -34,37 +89,34 @@
   align-self: start !important;
   display: flex !important;
   flex-wrap: nowrap !important;
-  align-items: center !important;
-  gap: 8px !important;
+  align-items: stretch !important;
+  gap: var(--eo-action-gap) !important;
   margin: 0 !important;
   padding-top: 0 !important;
 }
 
-.dashboard-shell .list-row > .inline-actions .btn,
-.dashboard-shell .team-member-card > .inline-actions .btn,
-.dashboard-shell .team-member-actions .btn,
-.dashboard-shell .customer-card-row .record-actions .btn,
-.dashboard-shell .customer-card-row .record-actions button,
-.dashboard-shell .customer-card-row .record-actions a,
-.dashboard-shell .team-directory-actions .btn {
-  min-height: 42px !important;
-  height: 42px !important;
-  box-sizing: border-box !important;
-  margin: 0 !important;
-}
-
-/* Customer action buttons must share one baseline and one height. */
-.dashboard-shell .customer-card-row .record-actions {
-  display: flex !important;
+/* Customer cards use the same shared RecordActions component. Keep the
+   Open / Edit / Remove row aligned regardless of label width. */
+.dashboard-shell .customer-card-row .record-actions,
+.customer-card-row .record-actions {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(var(--eo-action-min-width), max-content) !important;
+  justify-content: start !important;
   align-items: stretch !important;
-  flex-wrap: wrap !important;
-  gap: 8px !important;
+  gap: var(--eo-action-gap) !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 12px !important;
 }
 
-.dashboard-shell .customer-card-row .record-actions > * {
+.dashboard-shell .customer-card-row .record-actions > *,
+.customer-card-row .record-actions > * {
   align-self: stretch !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+  min-height: var(--eo-action-height) !important;
+  height: var(--eo-action-height) !important;
+  min-width: var(--eo-action-min-width) !important;
+  margin: 0 !important;
 }
 
 @media (max-width: 680px) {
@@ -79,5 +131,36 @@
     grid-column: 1 !important;
     justify-self: start !important;
     flex-wrap: wrap !important;
+  }
+
+  .record-actions-inline,
+  .dashboard-shell .customer-card-row .record-actions,
+  .customer-card-row .record-actions {
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .record-actions-count-1 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .record-actions-count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .record-actions > .btn,
+  .record-actions > button,
+  .record-actions > a {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .record-actions-inline,
+  .dashboard-shell .customer-card-row .record-actions,
+  .customer-card-row .record-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
