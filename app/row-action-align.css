@@ -70,6 +70,22 @@
   padding-bottom: 0 !important;
   line-height: 1 !important;
   white-space: nowrap !important;
+  position: relative !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+/* Higher-specificity reset for the global card spacing rule. Without this,
+   every action after the first can inherit a top margin and look crooked. */
+.dashboard-shell .card .record-actions > * + *,
+.dashboard-shell .panel .record-actions > * + *,
+.dashboard-shell .customer-card-row .record-actions > * + *,
+.role-portal-shell .card .record-actions > * + *,
+.role-portal-shell .panel .record-actions > * + *,
+.contractor-main .record-actions > * + *,
+.client-main .record-actions > * + * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .dashboard-shell .list-row > .inline-actions,
