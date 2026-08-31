@@ -96,11 +96,15 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                     .setProductList(products)
                     .build();
 
-            billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
+            billingClient.queryProductDetailsAsync(params, (billingResult, queryResult) -> {
                 if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                     onError.accept(billingResult.getDebugMessage());
                     return;
                 }
+                // Billing Library 9 returns QueryProductDetailsResult rather than a
+                // directly iterable List<ProductDetails>.
+                List<ProductDetails> productDetailsList = queryResult.getProductDetailsList();
+
                 // Merge into the cache instead of clearing it. The billing screen loads
                 // several plan cards in parallel, and clearing here made whichever query
                 // completed last the only plan that could still be purchased.
