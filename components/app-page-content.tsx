@@ -3,7 +3,6 @@
 import { Children, isValidElement } from 'react';
 import { AskEverittCommand } from '@/components/ask-everitt-command';
 import { JobGuidancePanel } from '@/components/job-guidance-panel';
-import { JobGuidanceActionBridge } from '@/components/job-guidance-action-bridge';
 import { JobsListNextActionHints } from '@/components/jobs-list-next-action-hints';
 
 type AppPageContentProps = {
@@ -36,7 +35,6 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
     >
       {chrome}
       <div className="app-page-stage">
-        <JobGuidanceActionBridge />
         <JobGuidancePanel />
         <JobsListNextActionHints />
         {page}
