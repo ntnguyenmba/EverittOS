@@ -1,6 +1,7 @@
-/* Universal record and list action alignment.
-   This file is imported after the role/page styles, so owner, client, worker,
-   and shared pages all inherit one final alignment rule. */
+/* Canonical record and list action alignment.
+   Keep all shared Open / Edit / Remove sizing, spacing and baselines here.
+   This file is imported after role/page styles so owner, client, worker and
+   shared pages inherit one final rule without page-specific overrides. */
 
 :root {
   --eo-action-gap: 8px;
@@ -24,7 +25,7 @@
   text-align: left !important;
 }
 
-/* Every reusable action group gets one baseline, gap, and control height. */
+/* Every reusable action group gets one baseline, gap and control height. */
 .record-actions,
 .inline-actions,
 .team-member-actions,
@@ -75,8 +76,7 @@
   transform: none !important;
 }
 
-/* Higher-specificity reset for the global card spacing rule. Without this,
-   every action after the first can inherit a top margin and look crooked. */
+/* Grouped actions never inherit vertical sibling spacing from a card. */
 .dashboard-shell .card .record-actions > * + *,
 .dashboard-shell .panel .record-actions > * + *,
 .dashboard-shell .customer-card-row .record-actions > * + *,
@@ -111,8 +111,8 @@
   padding-top: 0 !important;
 }
 
-/* Customer cards use the same shared RecordActions component. Keep the
-   Open / Edit / Remove row aligned regardless of label width. */
+/* Customer cards use the shared RecordActions component. This is the only
+   global owner of the action row divider, spacing and three-button baseline. */
 .dashboard-shell .customer-card-row .record-actions,
 .customer-card-row .record-actions {
   display: grid !important;
@@ -124,6 +124,8 @@
   width: fit-content !important;
   max-width: 100% !important;
   margin-top: 12px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #dbe3e8 !important;
 }
 
 .dashboard-shell .customer-card-row .record-actions > *,
