@@ -7,8 +7,13 @@ import SQLite3
 
 @objc(EverittSecureStorePlugin)
 public class EverittSecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier="EverittSecureStore"; public let jsName="EverittSecureStore"
-    public let pluginMethods=[CAPPluginMethod(name:"set",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"get",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"remove",returnType:CAPPluginReturnPromise)]
+    public let identifier = "EverittSecureStore"
+    public let jsName = "EverittSecureStore"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "set", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise)
+    ]
     private let service="com.everittventures.everittos.secure"
     private func query(_ key:String)->[String:Any]{[kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:key]}
     @objc func set(_ call:CAPPluginCall){guard let key=call.getString("key"),let value=call.getString("value"),let data=value.data(using:.utf8) else{call.reject("Invalid secure value.");return};let base=query(key);SecItemDelete(base as CFDictionary);var insert=base;insert[kSecValueData as String]=data;insert[kSecAttrAccessible as String]=kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;SecItemAdd(insert as CFDictionary,nil)==errSecSuccess ? call.resolve():call.reject("Could not save secure value.")}
@@ -18,16 +23,30 @@ public class EverittSecureStorePlugin: CAPPlugin, CAPBridgedPlugin {
 
 @objc(EverittBiometricPlugin)
 public class EverittBiometricPlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier="EverittBiometric"; public let jsName="EverittBiometric"
-    public let pluginMethods=[CAPPluginMethod(name:"isAvailable",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"verify",returnType:CAPPluginReturnPromise)]
+    public let identifier = "EverittBiometric"
+    public let jsName = "EverittBiometric"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "verify", returnType: CAPPluginReturnPromise)
+    ]
     @objc func isAvailable(_ call:CAPPluginCall){let context=LAContext();var error:NSError?;let available=context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,error:&error);let type:String=context.biometryType == .faceID ? "face" : context.biometryType == .touchID ? "fingerprint" : "none";call.resolve(["available":available,"type":type])}
     @objc func verify(_ call:CAPPluginCall){let context=LAContext();context.localizedCancelTitle="Use PIN";var error:NSError?;guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,error:&error) else{call.resolve(["verified":false,"unavailable":true]);return};context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,localizedReason:call.getString("reason") ?? "Unlock EverittOS"){success,authError in DispatchQueue.main.async{if success{call.resolve(["verified":true]);return};let code=(authError as? LAError)?.code;call.resolve(["verified":false,"canceled":code == .userCancel || code == .systemCancel || code == .appCancel])}}}
 }
 
 @objc(EverittFieldStorePlugin)
 public class EverittFieldStorePlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier="EverittFieldStore"; public let jsName="EverittFieldStore"
-    public let pluginMethods=[CAPPluginMethod(name:"putRecord",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"getRecord",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"queue",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"listOutbox",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"removeOutbox",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"savePhoto",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"readPhoto",returnType:CAPPluginReturnPromise),CAPPluginMethod(name:"deletePhoto",returnType:CAPPluginReturnPromise)]
+    public let identifier = "EverittFieldStore"
+    public let jsName = "EverittFieldStore"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "putRecord", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getRecord", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "queue", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "listOutbox", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeOutbox", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "savePhoto", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readPhoto", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "deletePhoto", returnType: CAPPluginReturnPromise)
+    ]
     private var db:OpaquePointer?
     public override func load(){super.load();openDatabase()}
     deinit{if db != nil{sqlite3_close(db)}}
