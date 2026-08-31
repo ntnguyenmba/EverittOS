@@ -37,9 +37,10 @@ export function RecordActions({
   const { locale } = useTranslation();
   const resolvedEditLabel = editLabel || copy[locale].edit;
   const btnClass = size === 'sm' ? 'btn btn-sm' : 'btn';
+  const actionCount = [Boolean(viewHref), Boolean(editHref || onEdit), Boolean(onRemove)].filter(Boolean).length;
 
   return (
-    <div className={`record-actions record-actions-${layout}`}>
+    <div className={`record-actions record-actions-${layout} record-actions-count-${actionCount}`}>
       {viewHref ? (
         <Link className={btnClass} href={viewHref} target="_blank" rel="noopener noreferrer">
           {viewLabel}
