@@ -7,7 +7,7 @@ import {
 } from '@/lib/profile-query';
 import { normalizeRole } from '@/lib/roles';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,15 +33,21 @@ export async function GET() {
   const rawProfilePlan = profile?.plan?.trim() || null;
   const rawSubscriptionStatus = profile?.subscription_status?.trim() || null;
 
-  const [profilePlan, subscriptionStatus, orgPlan, orgContext] = await Promise.all([
+  // Resolve the selected workspace from the secure active-org cookie first.
+  // This is critical for users who are Owner in their own company but Client
+  // or Worker in another company. The selected membership, not profile.role,
+  // must drive the signed-in shell and RoleHomeGuard.
+  const orgContext = await fetchOrganizationContextForRequest(supabase, user.id);
+  const selectedOrganizationId = orgContext?.organizationId || null;
+
+  const [profilePlan, subscriptionStatus, orgPlan] = await Promise.all([
     resolveProfilePlan(supabase, user.id, profile),
     resolveProfileSubscriptionStatus(supabase, user.id, profile),
-    resolveOrganizationPlan(supabase, user.id),
-    fetchOrganizationContextForUser(supabase, user.id)
+    resolveOrganizationPlan(supabase, user.id, selectedOrganizationId)
   ]);
 
-  // Authorization must fail closed. Never promote an unresolved membership to owner.
-  // The profile role is only a legacy hint; a real active organization membership wins.
+  // Authorization fails closed. A real selected organization membership wins;
+  // profile.role is only a legacy fallback when no workspace can be resolved.
   const workspaceRole = normalizeRole(orgContext?.role || profile?.role || 'employee');
   const billingPlan: EverittosPlan = normalizePlan(orgPlan.plan);
   const organizationPlan: EverittosPlan = normalizePlan(orgPlan.plan);
@@ -55,8 +61,8 @@ export async function GET() {
     role: workspaceRole,
     rawProfilePlan,
     rawSubscriptionStatus,
-    organizationId: orgPlan.organizationId,
-    ownerUserId: orgPlan.ownerUserId,
+    organizationId: selectedOrganizationId || orgPlan.organizationId,
+    ownerUserId: orgContext?.ownerUserId || orgPlan.ownerUserId,
     schemaFallback: profileRead.usedCoreSelect || undefined
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
