@@ -25,6 +25,11 @@
   text-align: left !important;
 }
 
+.dashboard-shell .finance-list-card > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
 /* Every reusable action group gets one baseline, gap and control height. */
 .record-actions,
 .inline-actions,
@@ -139,16 +144,42 @@
 
 @media (max-width: 680px) {
   .dashboard-shell .list-row,
-  .dashboard-shell .team-member-card {
+  .dashboard-shell .team-member-card,
+  .dashboard-shell .finance-list-card {
     grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 12px !important;
   }
 
   .dashboard-shell .list-row > .inline-actions,
   .dashboard-shell .team-member-card > .inline-actions,
-  .dashboard-shell .team-member-card > .team-member-actions {
+  .dashboard-shell .team-member-card > .team-member-actions,
+  .dashboard-shell .finance-list-card > .inline-actions,
+  .dashboard-shell .finance-list-card > .job-detail-actions {
     grid-column: 1 !important;
-    justify-self: start !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
     flex-wrap: wrap !important;
+  }
+
+  .dashboard-shell .finance-list-card > .job-detail-actions,
+  .dashboard-shell .finance-list-card .job-detail-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: var(--eo-action-gap) !important;
+  }
+
+  .dashboard-shell .finance-list-card .job-detail-actions > .btn,
+  .dashboard-shell .finance-list-card .job-detail-actions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .finance-list-card :is(strong,p,span,small) {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
   }
 
   .record-actions-inline,
