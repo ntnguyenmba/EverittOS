@@ -5,12 +5,11 @@
 
 :root {
   --eo-rhythm-label: 8px;
-  --eo-rhythm-control: 12px;
+  --eo-rhythm-control: 14px;
   --eo-rhythm-heading: 16px;
-  --eo-rhythm-section: 22px;
+  --eo-rhythm-section: 26px;
 }
 
-/* Every signed-in page stays inside the same width and box model. */
 .dashboard-shell .app-page-content,
 .dashboard-shell .app-page-stage,
 .role-portal-shell .app-page-content,
@@ -21,8 +20,6 @@
   box-sizing: border-box !important;
 }
 
-/* Direct page sections use one vertical relationship instead of accumulated
-   page-specific margins. */
 .dashboard-shell .app-page-stage > *,
 .role-portal-shell .app-page-stage > * {
   min-width: 0 !important;
@@ -34,8 +31,6 @@
   margin-top: var(--eo-rhythm-section) !important;
 }
 
-/* Long detail pages are explicit stacks. This removes the large blank areas
-   caused by child sections carrying their own outer margins. */
 .dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main),
 .role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) {
   display: grid !important;
@@ -55,7 +50,6 @@
   box-sizing: border-box !important;
 }
 
-/* Keep section headings tied to their supporting copy. */
 .dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4),
 .role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4) {
   margin-top: 0 !important;
@@ -66,7 +60,6 @@
   margin-top: var(--eo-rhythm-label) !important;
 }
 
-/* Forms use label -> field -> next control relationships consistently. */
 .dashboard-shell :is(form,.form,.form-grid,fieldset),
 .role-portal-shell :is(form,.form,.form-grid,fieldset) {
   min-width: 0 !important;
@@ -98,8 +91,6 @@
   box-sizing: border-box !important;
 }
 
-/* Action rows keep every control on one baseline. The component decides
-   whether the row is flex or grid; this layer only owns spacing/alignment. */
 .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions),
 .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) {
   align-items: center !important;
@@ -115,20 +106,32 @@
   box-sizing: border-box !important;
 }
 
-/* Buttons next to one another share a common height and vertical center. */
 .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn),
 .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn) {
   align-self: center !important;
 }
 
-/* Cards and panels in a stack do not contribute extra outside margins. */
+/* Text/count/status immediately followed by a control needs breathing room.
+   This catches pagination such as "Showing 10 / 16" + "Show 10 more" and
+   equivalent patterns across owner, client and worker pages. */
+.dashboard-shell :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) + :is(button,.btn,a.btn,.button-row,.inline-actions),
+.role-portal-shell :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) + :is(button,.btn,a.btn,.button-row,.inline-actions),
+.dashboard-shell :is(button,.btn,a.btn,.button-row,.inline-actions) + :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status),
+.role-portal-shell :is(button,.btn,a.btn,.button-row,.inline-actions) + :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) {
+  margin-top: var(--eo-rhythm-control) !important;
+}
+
+/* Direct stacked controls should never visually touch each other. */
+.dashboard-shell :is(button,.btn,a.btn) + :is(button,.btn,a.btn),
+.role-portal-shell :is(button,.btn,a.btn) + :is(button,.btn,a.btn) {
+  margin-top: var(--eo-rhythm-control);
+}
+
 .dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) > :is(.card,.panel,section,details),
 .role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) > :is(.card,.panel,section,details) {
   margin-block: 0 !important;
 }
 
-/* Photo/checklist and similar grouped content should not leave accidental
-   empty bands between the group and its next heading. */
 .dashboard-shell :is(.job-photos-card,.job-checklist,.job-workflow,.job-labor-section,.job-assignments,.record-sharing-panel) + *,
 .role-portal-shell :is(.job-photos-card,.job-checklist,.job-workflow,.job-labor-section,.job-assignments,.record-sharing-panel) + * {
   margin-top: var(--eo-rhythm-section) !important;
@@ -136,8 +139,8 @@
 
 @media (max-width: 680px) {
   :root {
-    --eo-rhythm-section: 20px;
-    --eo-rhythm-control: 10px;
+    --eo-rhythm-section: 24px;
+    --eo-rhythm-control: 14px;
   }
 
   .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions),
