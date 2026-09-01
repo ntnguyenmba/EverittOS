@@ -62,12 +62,13 @@ async function readWorkspaceBillingPlan(
   return null;
 }
 
-/** Billing limits follow the workspace billing records, then the organization owner profile. */
+/** Billing limits follow the selected workspace billing records, then the organization owner profile. */
 export async function resolveOrganizationPlan(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  preferredOrgId?: string | null
 ): Promise<{ plan: EverittosPlan; organizationId: string | null; ownerUserId: string | null }> {
-  const org = await fetchOrganizationContextForUser(supabase, userId);
+  const org = await fetchOrganizationContextForUser(supabase, userId, preferredOrgId);
   if (!org) {
     const { profile } = await fetchProfileByUserId(supabase, userId);
     return {
