@@ -178,10 +178,11 @@ export function JobGuidancePanel() {
       return;
     }
     if (action.direct === 'active' || action.direct === 'completed') {
-      const buttonText = action.direct === 'active' ? ['start job', 'iniciar trabajo', 'bắt đầu'] : ['mark completed', 'complete', 'completado', 'hoàn tất'];
-      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.job-detail-shell button'));
-      const button = buttons.find((item) => buttonText.some((text) => (item.textContent || '').toLowerCase().includes(text)));
-      button?.click();
+      const statusActionGroups = Array.from(document.querySelectorAll<HTMLElement>('.job-detail-shell .job-detail-actions'));
+      const statusGroup = statusActionGroups.find((group) => group.querySelector('.job-detail-danger'));
+      const buttons = statusGroup ? Array.from(statusGroup.querySelectorAll<HTMLButtonElement>(':scope > button')) : [];
+      const button = action.direct === 'active' ? buttons[0] : buttons[1];
+      if (button && !button.disabled) button.click();
       return;
     }
     scrollToSection(action.terms);
