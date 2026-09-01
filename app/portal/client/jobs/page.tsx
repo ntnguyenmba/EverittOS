@@ -141,6 +141,8 @@ export default function ClientPortalJobsPage() {
     }).sort((a, b) => operationalDate(b).localeCompare(operationalDate(a)));
   }, [jobs]);
 
+  const messageJob = nextVisit || upcomingVisits[0] || pastVisits[0] || jobs[0] || null;
+
   function statusLabel(job: ClientJob) {
     const key = normalizedStatus(job) as keyof typeof c.statuses;
     return c.statuses[key] || normalizedStatus(job).replace(/_/g, ' ');
@@ -166,19 +168,17 @@ export default function ClientPortalJobsPage() {
       <PortalClientNav active="appointments" overviewHref={CLIENT_PORTAL_HOME} appointmentsHref={clientPortalJobsPath()} accountHref={CLIENT_SETTINGS_PATH} />
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
       {empty ? <div className="card client-empty-state" role="status"><p>{c.noUpcoming}</p></div> : message ? <div className="card" role="alert"><p>{message}</p></div> : <>
-        {nextVisit ? <>
-          <section className="client-next-visit client-next-visit-paper">
-            <div className="client-next-visit-copy">
-              <p className="eyebrow">{c.nextVisit}</p><h1>{nextVisit.title}</h1>
-              <p className="client-next-visit-time">{[jobDate(nextVisit, localeCode), jobTime(nextVisit, localeCode)].filter(Boolean).join(' · ') || c.dateNotSet}</p>
-              {nextVisit.address ? <p className="muted">{nextVisit.address}</p> : null}
-              {Number(nextVisit.balanceDue || 0) > 0 ? <p className="client-next-balance"><span>{c.balanceDue}</span><strong>{formatMoney(nextVisit.balanceDue, localeCode)}</strong></p> : null}
-              <Link className="btn btn-primary" href={clientPortalJobsPath(nextVisit.id)}>{c.viewVisit}</Link>
-            </div>
-            <div className="client-next-visit-photos"><h2>{c.photos}</h2><PhotoGallery jobId={nextVisit.id} refreshKey={0} canView customerOnly /></div>
-          </section>
-          <ClientSendMessage jobId={nextVisit.id} />
-        </> : null}
+        {messageJob ? <ClientSendMessage jobId={messageJob.id} /> : null}
+        {nextVisit ? <section className="client-next-visit client-next-visit-paper">
+          <div className="client-next-visit-copy">
+            <p className="eyebrow">{c.nextVisit}</p><h1>{nextVisit.title}</h1>
+            <p className="client-next-visit-time">{[jobDate(nextVisit, localeCode), jobTime(nextVisit, localeCode)].filter(Boolean).join(' · ') || c.dateNotSet}</p>
+            {nextVisit.address ? <p className="muted">{nextVisit.address}</p> : null}
+            {Number(nextVisit.balanceDue || 0) > 0 ? <p className="client-next-balance"><span>{c.balanceDue}</span><strong>{formatMoney(nextVisit.balanceDue, localeCode)}</strong></p> : null}
+            <Link className="btn btn-primary" href={clientPortalJobsPath(nextVisit.id)}>{c.viewVisit}</Link>
+          </div>
+          <div className="client-next-visit-photos"><h2>{c.photos}</h2><PhotoGallery jobId={nextVisit.id} refreshKey={0} canView customerOnly /></div>
+        </section> : null}
         {upcomingVisits.length > 0 ? <section className="client-upcoming-simple" aria-labelledby="client-upcoming-title"><div className="client-section-heading"><h2 id="client-upcoming-title">{c.upcoming}</h2><span>{upcomingVisits.length}</span></div><div className="client-job-card-list">{upcomingVisits.map(renderVisit)}</div></section> : null}
         <details className="card client-more"><summary><strong>{c.more}</strong></summary><div className="client-more-body"><section aria-labelledby="client-history-title"><div className="client-section-heading"><h2 id="client-history-title">{c.completed}</h2><span>{pastVisits.length}</span></div>{pastVisits.length === 0 ? <p className="muted">{c.noCompleted}</p> : <div className="client-job-card-list">{pastVisits.map(renderVisit)}</div>}</section><div className="client-export-row"><span>{c.exportHistory}</span><ExportMenu endpoint="/api/exports/portal/client/jobs" locale={locale} labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }} disabled={loading || Boolean(message) || empty} onError={(error) => setExportError(error || exportCopy.exportFailed)} onSuccess={() => setExportError('')} /></div></div></details>
       </>}
