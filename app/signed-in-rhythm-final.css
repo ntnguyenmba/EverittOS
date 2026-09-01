@@ -109,6 +109,30 @@
 .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn),
 .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn) {
   align-self: center !important;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Related buttons share one height and width so action rows stay aligned.
+   Photo capture/library controls use a wider common size because their labels
+   are intentionally longer. This applies in every signed-in role view. */
+.dashboard-shell .photo-capture-buttons,
+.role-portal-shell .photo-capture-buttons {
+  align-items: stretch !important;
+}
+
+.dashboard-shell .photo-capture-buttons > .photo-capture-btn,
+.role-portal-shell .photo-capture-buttons > .photo-capture-btn {
+  width: 220px;
+  min-width: 220px;
+  min-height: 56px;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 /* Text/count/status immediately followed by a control needs breathing room.
@@ -146,5 +170,11 @@
   .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions),
   .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) {
     flex-wrap: wrap;
+  }
+
+  .dashboard-shell .photo-capture-buttons > .photo-capture-btn,
+  .role-portal-shell .photo-capture-buttons > .photo-capture-btn {
+    width: 100%;
+    min-width: 0;
   }
 }
