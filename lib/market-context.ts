@@ -27,47 +27,74 @@ const COUNTRY_ALIASES: Record<string, MarketCountry> = {
   'new zealand':{code:'NZ',label:'New Zealand',currency:'NZD'}, 'south africa':{code:'ZA',label:'South Africa',currency:'ZAR'}, 'united arab emirates':{code:'AE',label:'United Arab Emirates',currency:'AED'}, uae:{code:'AE',label:'United Arab Emirates',currency:'AED'}, 'saudi arabia':{code:'SA',label:'Saudi Arabia',currency:'SAR'}, israel:{code:'IL',label:'Israel',currency:'ILS'}, turkey:{code:'TR',label:'Turkey',currency:'TRY'}, türkiye:{code:'TR',label:'Türkiye',currency:'TRY'}
 };
 
-const EUROSTAT_COUNTRIES = new Set(['ES','IT','NL','BE','AT','IE','PT','FI','GR']);
+export const MARKET_COUNTRY_OPTIONS: MarketCountry[] = Array.from(new Map(Object.values(COUNTRY_ALIASES).map((country) => [country.code, country])).values()).sort((a,b)=>a.label.localeCompare(b.label));
 
-export const MARKET_COUNTRY_OPTIONS: MarketCountry[] = Array.from(
-  new Map(Object.values(COUNTRY_ALIASES).map((country) => [country.code, country])).values()
-).sort((a, b) => a.label.localeCompare(b.label));
+export const QUOTE_PROFESSIONS = ['Residential cleaning','Deep cleaning','Move-out cleaning','Move-in cleaning','Airbnb / vacation rental cleaning','Office cleaning','Lawn mowing','Landscaping','Handyman','Painting','Plumbing','Electrical','HVAC','Junk removal','Pressure washing'];
 
-export const QUOTE_PROFESSIONS = [
-  'Residential cleaning', 'Deep cleaning', 'Move-out cleaning', 'Move-in cleaning',
-  'Airbnb / vacation rental cleaning', 'Office cleaning', 'Lawn mowing', 'Landscaping',
-  'Handyman', 'Painting', 'Plumbing', 'Electrical', 'HVAC', 'Junk removal', 'Pressure washing'
-];
+const official = (country:string,countryCode:string,currency:string,source:string,url:string,note?:string): MarketSource => ({country,countryCode,currency,source,url,sourceType:'official_wage',rank:1,note:note || `Official public wage or labour-market reference for ${country}. Use occupation and regional detail when available. It is not a local customer price range.`});
 
 export const MARKET_SOURCES: MarketSource[] = [
-  { country:'United States',countryCode:'US',source:'U.S. Bureau of Labor Statistics, Occupational Employment and Wage Statistics',sourceType:'official_wage',rank:1,currency:'USD',url:'https://www.bls.gov/oes/',note:'Official U.S. occupation wage foundation. Use the selected profession and metro detail when available. This is not a customer price range.' },
-  { country:'United States',countryCode:'US',source:'U.S. Bureau of Labor Statistics / FRED, Producer Price Index',sourceType:'price_index',rank:2,currency:'USD',url:'https://fred.stlouisfed.org/series/PCU56172056172052',updatedAt:'2026-08-13',value:177.538,unit:'Index Jun 2003=100',note:'Official cleaning-industry cost trend reference. Shown only as context, not as a local quote or customer price range.' },
-  { country:'United Kingdom',countryCode:'GB',source:'Office for National Statistics, earnings and hours data',sourceType:'official_wage',rank:1,currency:'GBP',url:'https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours',note:'Official UK earnings foundation. Use occupation and regional detail when the source provides it.' },
-  { country:'Canada',countryCode:'CA',source:'Statistics Canada, labour and wage data',sourceType:'official_wage',rank:1,currency:'CAD',url:'https://www.statcan.gc.ca/',note:'Official Canadian labour and wage foundation. Prefer occupation and local detail when available.' },
-  { country:'Australia',countryCode:'AU',source:'Australian Bureau of Statistics, earnings and labour data',sourceType:'official_wage',rank:1,currency:'AUD',url:'https://www.abs.gov.au/',note:'Official Australian earnings and labour foundation. Prefer occupation and regional detail when available.' },
-  { country:'Germany',countryCode:'DE',source:'Statistisches Bundesamt (Destatis), earnings and labour costs',sourceType:'official_wage',rank:1,currency:'EUR',url:'https://www.destatis.de/EN/Themes/Labour/Earnings/_node.html',note:'Official German earnings and labour-cost foundation. It is not a local customer price range.' },
-  { country:'France',countryCode:'FR',source:'INSEE, wages and labour cost statistics',sourceType:'official_wage',rank:1,currency:'EUR',url:'https://www.insee.fr/en/statistiques',note:'Official French wage and labour-cost foundation. It is not a local customer price range.' },
-  { country:'European Union',countryCode:'EU',source:'Eurostat, earnings and labour cost data',sourceType:'official_wage',rank:2,currency:'EUR',url:'https://ec.europa.eu/eurostat/',note:'Official EU earnings and labour-cost foundation used when a stronger country-specific source is not configured.' },
-  { country:'Japan',countryCode:'JP',source:'Japan Ministry of Health, Labour and Welfare, Basic Survey on Wage Structure',sourceType:'official_wage',rank:1,currency:'JPY',url:'https://www.mhlw.go.jp/english/database/db-l/',note:'Official Japanese wage foundation. Prefer occupation detail when available. It is not a customer price range.' },
-  { country:'Vietnam',countryCode:'VN',source:'Vietnam Decree 293/2025/ND-CP, regional minimum hourly wages',sourceType:'official_wage',rank:1,currency:'VND',url:'https://vbpl.moj.gov.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=183939',updatedAt:'2026-01-01',note:'Official legal wage floor by region for covered employment. It is not a cleaning or customer price range.' },
-  { country:'Global',countryCode:'GLOBAL',source:'International Labour Organization, ILOSTAT wage and labour data',sourceType:'fallback',rank:10,currency:'USD',url:'https://ilostat.ilo.org/',note:'Official international fallback used only when a stronger country-specific public source is not configured.' }
+  official('United States','US','USD','U.S. Bureau of Labor Statistics, Occupational Employment and Wage Statistics','https://www.bls.gov/oes/','Official U.S. occupation wage foundation. Use the selected profession and metro detail when available. This is not a customer price range.'),
+  {country:'United States',countryCode:'US',source:'U.S. Bureau of Labor Statistics / FRED, Producer Price Index',sourceType:'price_index',rank:2,currency:'USD',url:'https://fred.stlouisfed.org/series/PCU56172056172052',note:'Official cleaning-industry cost trend reference. Context only, not a local quote or customer price range.'},
+  official('United Kingdom','GB','GBP','Office for National Statistics, earnings and hours data','https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours'),
+  official('Canada','CA','CAD','Statistics Canada, labour and wage data','https://www.statcan.gc.ca/'),
+  official('Australia','AU','AUD','Australian Bureau of Statistics, earnings and labour data','https://www.abs.gov.au/'),
+  official('Vietnam','VN','VND','Vietnam official regional minimum wage framework','https://vbpl.moj.gov.vn/','Official legal wage-floor reference by region. It is not a cleaning rate or customer price range.'),
+  official('Germany','DE','EUR','Statistisches Bundesamt (Destatis), earnings and labour costs','https://www.destatis.de/EN/Themes/Labour/Earnings/_node.html'),
+  official('France','FR','EUR','INSEE, wages and labour cost statistics','https://www.insee.fr/en/statistiques'),
+  official('Spain','ES','EUR','Instituto Nacional de Estadística (INE), labour costs and wages','https://www.ine.es/'),
+  official('Italy','IT','EUR','Istat, labour and earnings statistics','https://www.istat.it/en/'),
+  official('Netherlands','NL','EUR','Statistics Netherlands (CBS), wages and labour','https://www.cbs.nl/en-gb'),
+  official('Belgium','BE','EUR','Statbel, wages and labour market statistics','https://statbel.fgov.be/en'),
+  official('Austria','AT','EUR','Statistics Austria, earnings and labour costs','https://www.statistik.at/en/'),
+  official('Ireland','IE','EUR','Central Statistics Office Ireland, earnings and labour costs','https://www.cso.ie/en/'),
+  official('Portugal','PT','EUR','Statistics Portugal (INE), labour and earnings statistics','https://www.ine.pt/'),
+  official('Finland','FI','EUR','Statistics Finland, wages salaries and labour costs','https://stat.fi/en/'),
+  official('Greece','GR','EUR','Hellenic Statistical Authority (ELSTAT), labour and earnings','https://www.statistics.gr/en/home/'),
+  official('Sweden','SE','SEK','Statistics Sweden (SCB), wages and salaries','https://www.scb.se/en/finding-statistics/statistics-by-subject-area/labour-market/wages-salaries-and-labour-costs/'),
+  official('Norway','NO','NOK','Statistics Norway (SSB), earnings statistics','https://www.ssb.no/en/arbeid-og-lonn/lonn-og-arbeidskraftkostnader/statistikk/lonn'),
+  official('Denmark','DK','DKK','Statistics Denmark, earnings statistics','https://www.dst.dk/en/Statistik/emner/arbejde-og-indkomst/indkomst-og-loen'),
+  official('Switzerland','CH','CHF','Swiss Federal Statistical Office, wages and income from employment','https://www.bfs.admin.ch/bfs/en/home/statistics/work-income/wages-income-employment-labour-costs.html'),
+  official('Poland','PL','PLN','Statistics Poland, wages and salaries','https://stat.gov.pl/en/topics/labour-market/working-employed-wages-and-salaries-cost-of-labour/'),
+  official('Czechia','CZ','CZK','Czech Statistical Office, labour and earnings','https://csu.gov.cz/'),
+  official('Hungary','HU','HUF','Hungarian Central Statistical Office, earnings','https://www.ksh.hu/?lang=en'),
+  official('Romania','RO','RON','National Institute of Statistics Romania, earnings and labour','https://insse.ro/cms/en'),
+  official('Japan','JP','JPY','Ministry of Health, Labour and Welfare, wage statistics','https://www.mhlw.go.jp/english/database/db-l/'),
+  official('China','CN','CNY','National Bureau of Statistics of China, employment and wages','https://www.stats.gov.cn/english/'),
+  official('South Korea','KR','KRW','Korean Statistical Information Service (KOSIS), wages and labour','https://kosis.kr/eng/'),
+  official('India','IN','INR','Labour Bureau, Ministry of Labour and Employment, Indian Labour Statistics','https://labourbureau.gov.in/indian-labour-statistics'),
+  official('Singapore','SG','SGD','Ministry of Manpower, Occupational Wages','https://stats.mom.gov.sg/Pages/Occupational-Wages-Tables2025.aspx','Official Singapore occupational wage tables covering hundreds of occupations. This is a wage benchmark, not a customer price range.'),
+  official('Malaysia','MY','MYR','Department of Statistics Malaysia, salaries and wages statistics','https://www.dosm.gov.my/portal-main/release-content/employee-wages-statistics-formal-sector-q12026'),
+  official('Thailand','TH','THB','National Statistical Office of Thailand, labour statistics','https://www.nso.go.th/nsoweb/index?set_lang=en'),
+  official('Indonesia','ID','IDR','Statistics Indonesia (BPS), labour and wage statistics','https://www.bps.go.id/en'),
+  official('Philippines','PH','PHP','Philippine Statistics Authority, labour and wage statistics','https://psa.gov.ph/statistics/labor'),
+  official('Taiwan','TW','TWD','Taiwan Ministry of Labor, labour statistics','https://english.mol.gov.tw/'),
+  official('Mexico','MX','MXN','INEGI, labour and earnings statistics','https://www.inegi.org.mx/'),
+  official('Brazil','BR','BRL','IBGE, labour and earnings statistics','https://www.ibge.gov.br/en/statistics/social/labor.html'),
+  official('Argentina','AR','ARS','INDEC, labour market and income statistics','https://www.indec.gob.ar/'),
+  official('Chile','CL','CLP','Instituto Nacional de Estadísticas Chile, remunerations and labour','https://www.ine.gob.cl/'),
+  official('Colombia','CO','COP','DANE, labour market and income statistics','https://www.dane.gov.co/'),
+  official('Peru','PE','PEN','INEI, employment and labour income statistics','https://www.inei.gob.pe/'),
+  official('New Zealand','NZ','NZD','Stats NZ, earnings and employment statistics','https://www.stats.govt.nz/topics/income'),
+  official('South Africa','ZA','ZAR','Statistics South Africa, employment and earnings','https://www.statssa.gov.za/'),
+  official('United Arab Emirates','AE','AED','Federal Competitiveness and Statistics Centre, labour statistics','https://fcsc.gov.ae/en-us/Pages/Statistics/Statistics-by-Subject.aspx'),
+  official('Saudi Arabia','SA','SAR','General Authority for Statistics, labour market statistics','https://www.stats.gov.sa/en'),
+  official('Israel','IL','ILS','Central Bureau of Statistics Israel, wages and employment','https://www.cbs.gov.il/en/subjects/Pages/Labour-and-Wages.aspx'),
+  official('Türkiye','TR','TRY','Turkish Statistical Institute (TurkStat), labour and earnings','https://data.tuik.gov.tr/'),
+  {country:'Global',countryCode:'GLOBAL',source:'International Labour Organization, ILOSTAT wage and labour data',sourceType:'fallback',rank:10,currency:'USD',url:'https://ilostat.ilo.org/',note:'Official international fallback only when a country outside the configured checklist is entered.'}
 ];
 
 export function resolveMarketCountry(input: string): MarketCountry {
-  const raw = String(input || '').trim();
-  const normalized = raw.toLowerCase();
-  if (COUNTRY_ALIASES[normalized]) return COUNTRY_ALIASES[normalized];
-  const byCode = Object.values(COUNTRY_ALIASES).find((country) => country.code.toLowerCase() === normalized);
-  if (byCode) return byCode;
-  return { code: raw || 'GLOBAL', label: raw || 'Global', currency: 'USD' };
+  const raw=String(input||'').trim(); const normalized=raw.toLowerCase();
+  if(COUNTRY_ALIASES[normalized]) return COUNTRY_ALIASES[normalized];
+  const byCode=Object.values(COUNTRY_ALIASES).find((country)=>country.code.toLowerCase()===normalized);
+  if(byCode) return byCode;
+  return {code:raw||'GLOBAL',label:raw||'Global',currency:'USD'};
 }
 
-export function marketSourcesForCountry(countryInput: string) {
-  const country = resolveMarketCountry(countryInput);
-  const exact = MARKET_SOURCES.filter((source) => source.countryCode === country.code).sort((a,b)=>a.rank-b.rank);
-  if (exact.length) return exact;
-  if (EUROSTAT_COUNTRIES.has(country.code)) {
-    return MARKET_SOURCES.filter((source) => source.countryCode === 'EU').map((source) => ({...source,country:country.label,countryCode:country.code,currency:country.currency,note:`Official Eurostat earnings and labour-cost reference for ${country.label}. It is not a local customer price range.`}));
-  }
-  return MARKET_SOURCES.filter((source) => source.countryCode === 'GLOBAL').map((source) => ({...source,country:country.label,countryCode:country.code,currency:country.currency,note:`No stronger country-specific official source is configured yet for ${country.label}. ILOSTAT is shown as the official international fallback, not as a local customer price range.`}));
+export function marketSourcesForCountry(countryInput:string) {
+  const country=resolveMarketCountry(countryInput);
+  const exact=MARKET_SOURCES.filter((source)=>source.countryCode===country.code).sort((a,b)=>a.rank-b.rank);
+  if(exact.length) return exact;
+  return MARKET_SOURCES.filter((source)=>source.countryCode==='GLOBAL').map((source)=>({...source,country:country.label,countryCode:country.code,currency:country.currency,note:`No country-specific source is configured for ${country.label}. ILOSTAT is shown as an official international fallback, not as a local customer price range.`}));
 }
