@@ -37,7 +37,7 @@ export function ContractorSendWord({ jobId }: { jobId: string }) {
   return (
     <div className="contractor-job-block">
       <strong>Send update</strong>
-      <p className="muted">Send a short job update.</p>
+      <p className="muted">Send a job update.</p>
       {!open ? <button type="button" className="btn" onClick={() => setOpen(true)}>Send update</button> : (
         <div className="form">
           <div className="button-row" style={{ flexWrap: 'wrap' }}>
