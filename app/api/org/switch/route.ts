@@ -25,29 +25,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from('organization_members')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('organization_id', organizationId)
-    .eq('active', true)
-    .maybeSingle();
+  const [{ data: membership, error: membershipError }, { data: organization, error: organizationError }] = await Promise.all([
+    supabase
+      .from('organization_members')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('organization_id', organizationId)
+      .eq('active', true)
+      .maybeSingle(),
+    supabase
+      .from('organizations')
+      .select('owner_user_id')
+      .eq('id', organizationId)
+      .maybeSingle()
+  ]);
 
-  if (membershipError) {
-    return NextResponse.json({ error: membershipError.message }, { status: 500 });
+  if (membershipError || organizationError) {
+    return NextResponse.json({ error: membershipError?.message || organizationError?.message }, { status: 500 });
   }
-  if (!membership) {
+  if (!membership || !organization) {
     return NextResponse.json({ error: 'You are not a member of this organization' }, { status: 403 });
   }
 
-  const role = normalizeRole(membership.role);
+  // Ownership is authoritative even if an old organization_members row still
+  // contains client/contractor from a prior relationship or migration.
+  const role = organization.owner_user_id === user.id ? 'owner' : normalizeRole(membership.role);
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
 
-  // The active workspace belongs in the signed cookie, not in the user's base
-  // profile. A person can be an owner in one workspace and a client/worker in
-  // another. Mutating profiles.role or profiles.organization_id during a view
-  // switch collapses those separate memberships and can grant or deny the
-  // wrong workspace permissions.
   await logActivityServer({
     organizationId,
     userId: user.id,
