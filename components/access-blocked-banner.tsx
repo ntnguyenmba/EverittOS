@@ -23,6 +23,7 @@ export function AccessBlockedBanner({
   const c = getAccessBlockedCopy(locale);
   const [showDetails, setShowDetails] = useState(false);
   const resolvedActionLabel = actionLabel ?? c.openBilling;
+  const allowInternalDetails = process.env.NODE_ENV === 'development';
 
   return (
     <div className="access-blocked-banner" role="alert">
@@ -34,13 +35,13 @@ export function AccessBlockedBanner({
             {resolvedActionLabel}
           </a>
         ) : null}
-        {details ? (
+        {allowInternalDetails && details ? (
           <button type="button" className="btn" onClick={() => setShowDetails((open) => !open)}>
             {showDetails ? c.hideDetails : c.details}
           </button>
         ) : null}
       </div>
-      {showDetails && details ? <pre className="auth-message-details">{details}</pre> : null}
+      {allowInternalDetails && showDetails && details ? <pre className="auth-message-details">{details}</pre> : null}
     </div>
   );
 }
