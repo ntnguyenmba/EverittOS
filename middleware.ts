@@ -6,6 +6,8 @@ import { mapAccessError } from '@/lib/auth-errors';
 import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { canAccessNavHref, canAccessSettingsPath } from '@/lib/nav-access';
+import { ACTIVE_ORG_COOKIE } from '@/lib/org-context-cookie';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { hasPermission } from '@/lib/permissions';
 import {
@@ -68,8 +70,8 @@ export async function middleware(request: NextRequest) {
   }) });
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (pathname === '/') { if (user) { const profileRead = await fetchProfileByUserId(supabase, user.id); const onboarding = await resolveOnboardingAccessState(supabase, profileRead.profile?.organization_id); const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); } return redirectWithCookies(new URL('/login', request.url), supabaseResponse); }
-  if (user && isLoggedOutOnlyPath(pathname)) { const profileRead = await fetchProfileByUserId(supabase, user.id); const onboarding = await resolveOnboardingAccessState(supabase, profileRead.profile?.organization_id); const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); }
+  if (pathname === '/') { if (user) { const profileRead = await fetchProfileByUserId(supabase, user.id); const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null; const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); } return redirectWithCookies(new URL('/login', request.url), supabaseResponse); }
+  if (user && isLoggedOutOnlyPath(pathname)) { const profileRead = await fetchProfileByUserId(supabase, user.id); const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null; const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); }
 
   if (isSessionApiPath(pathname)) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -84,19 +86,27 @@ export async function middleware(request: NextRequest) {
   if (!user) { const login = new URL('/login', request.url); login.searchParams.set('next', pathname); login.searchParams.set('reason', 'session'); login.searchParams.set('detail', mapAccessError('session').message); return redirectWithCookies(login, supabaseResponse); }
   const idleRedirect = await enforceIdleSession(request, supabase, supabaseResponse); if (idleRedirect) return idleRedirect;
   const profileRead = await fetchProfileByUserId(supabase, user.id); const profile = profileRead.profile;
-  const onboarding = await resolveOnboardingAccessState(supabase, profile?.organization_id);
-  if (shouldRedirectToOnboarding(profile?.role, onboarding.completed, pathname) && pathname !== '/onboarding' && !pathname.startsWith('/onboarding/')) return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
-  if ((pathname === '/onboarding' || pathname.startsWith('/onboarding/')) && onboarding.skipped && onboarding.completed) return redirectWithCookies(new URL(postAuthRedirectPath(profile?.role, '/dashboard', true, true), request.url), supabaseResponse);
+  const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null;
+  const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null;
+  const contextOrgId = activeOrg?.organizationId || profile?.organization_id;
+  const contextRole = activeOrg?.role || profile?.role;
+  const onboarding = await resolveOnboardingAccessState(supabase, contextOrgId);
+  if (shouldRedirectToOnboarding(contextRole, onboarding.completed, pathname) && pathname !== '/onboarding' && !pathname.startsWith('/onboarding/')) return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
+  if ((pathname === '/onboarding' || pathname.startsWith('/onboarding/')) && onboarding.skipped && onboarding.completed) return redirectWithCookies(new URL(postAuthRedirectPath(contextRole, '/dashboard', true, true), request.url), supabaseResponse);
   if (isAccountDeleted(profile?.deleted_at)) { const withinRecovery = profile?.deletion_scheduled_at && new Date(profile.deletion_scheduled_at) > new Date(); const recoveryPath = isPortalPersonalSettingsPath(pathname) || pathname.startsWith('/portal/contractor/settings') || pathname.startsWith('/portal/client/settings') || pathname.startsWith('/api/account/restore') || pathname.startsWith('/api/account/profile'); if (!withinRecovery || !recoveryPath) { await supabase.auth.signOut(); const login = new URL('/login', request.url); login.searchParams.set('reason', 'deleted'); login.searchParams.set('detail', withinRecovery ? 'This account is scheduled for deletion. Sign in again to restore it from Account settings.' : 'This account has been deleted. Contact support if you need help.'); const deletedRedirect = redirectWithCookies(login, supabaseResponse); clearSessionMarkers(deletedRedirect); return deletedRedirect; } }
   if (!isAccountActive(profile?.account_status)) { await supabase.auth.signOut(); const login = new URL('/login', request.url); login.searchParams.set('reason', 'disabled'); login.searchParams.set('detail', mapAccessError('disabled').message); const disabledRedirect = redirectWithCookies(login, supabaseResponse); clearSessionMarkers(disabledRedirect); return disabledRedirect; }
-  const workspace = await resolveWorkspaceDeletionState(supabase, user.id, profile?.organization_id);
+  const workspace = await resolveWorkspaceDeletionState(supabase, user.id, contextOrgId);
   if (workspace.blocked && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) { await supabase.auth.signOut(); const login = new URL('/login', request.url); login.searchParams.set('reason', 'workspace_deleted'); login.searchParams.set('detail', 'This workspace is scheduled for deletion and is no longer available.'); return redirectWithCookies(login, supabaseResponse); }
-  let role = normalizeRole(profile?.role || 'owner');
-  const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
+  let role = normalizeRole(contextRole || 'owner');
+  const userPlan = activeOrg ? normalizePlan((await resolveOrganizationPlan(supabase, user.id, activeOrg.organizationId)).plan) : profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
   if (isTeamInviteAcceptPath(pathname)) return supabaseResponse;
-  const repair = await resolveMiddlewareClientRepair(supabase, user.id, role, pathname); role = repair.role;
-  if (repair.redirectToClientJobs) return redirectWithCookies(new URL(clientPortalJobsPath(), request.url), supabaseResponse);
+  // A valid selected workspace is authoritative. Legacy client repair is only for accounts
+  // that do not yet have an explicit active workspace selection.
+  if (!activeOrg) {
+    const repair = await resolveMiddlewareClientRepair(supabase, user.id, role, pathname); role = repair.role;
+    if (repair.redirectToClientJobs) return redirectWithCookies(new URL(clientPortalJobsPath(), request.url), supabaseResponse);
+  }
   if (isClientRole(role)) { if (!isClientAllowedPath(pathname)) return redirectWithCookies(new URL(CLIENT_PORTAL_HOME, request.url), supabaseResponse); return supabaseResponse; }
   if (isContractorRole(role)) { if (!isContractorAllowedPath(pathname)) return redirectWithCookies(new URL(CONTRACTOR_PORTAL_HOME, request.url), supabaseResponse); return supabaseResponse; }
   if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) return roleBlockedRedirect(request, supabaseResponse, role, pathname, 'Platform admin access is limited to authorized Everitt Ventures operators.');
@@ -104,7 +114,7 @@ export async function middleware(request: NextRequest) {
   for (const rule of ROLE_BLOCKED_PREFIXES) { if (pathMatchesPrefix(pathname, rule.prefix) && !hasPermission(role, rule.permission)) return roleBlockedRedirect(request, supabaseResponse, role, pathname, `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`); }
   if (pathname.startsWith('/settings') && !canAccessSettingsPath(role, pathname, userPlan)) { const fallback = canAccessSettingsPath(role, '/settings/account', userPlan) ? '/settings/account' : defaultPathForRole(role, '/dashboard'); return redirectWithCookies(new URL(fallback, request.url), supabaseResponse); }
   const matchedNav = matchedMainNavPath(pathname); if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) return roleBlockedRedirect(request, supabaseResponse, role, pathname, `Your role (${role}) cannot access ${matchedNav}.`);
-  const requiredPlan = minimumPlanForPath(pathname); if (requiredPlan) { const { plan } = await resolveOrganizationPlan(supabase, user.id); const effectivePlan = normalizePlan(plan || userPlan); if (!meetsMinimumPlan(effectivePlan, requiredPlan)) { const billing = new URL('/settings/billing', request.url); billing.searchParams.set('upgrade', requiredPlan); billing.searchParams.set('reason', 'plan'); billing.searchParams.set('detail', `${requiredPlan} plan required for ${pathname}.`); return redirectWithCookies(billing, supabaseResponse); } }
+  const requiredPlan = minimumPlanForPath(pathname); if (requiredPlan) { const { plan } = await resolveOrganizationPlan(supabase, user.id, activeOrg?.organizationId || null); const effectivePlan = normalizePlan(plan || userPlan); if (!meetsMinimumPlan(effectivePlan, requiredPlan)) { const billing = new URL('/settings/billing', request.url); billing.searchParams.set('upgrade', requiredPlan); billing.searchParams.set('reason', 'plan'); billing.searchParams.set('detail', `${requiredPlan} plan required for ${pathname}.`); return redirectWithCookies(billing, supabaseResponse); } }
   return supabaseResponse;
 }
 
