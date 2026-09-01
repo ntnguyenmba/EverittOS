@@ -7,10 +7,6 @@ import type { OrgMembership } from '@/lib/os-types';
 import { roleDisplayName } from '@/lib/role-routes';
 import { normalizeRole } from '@/lib/roles';
 
-type SwitchOrganizationResponse = {
-  destination?: string;
-};
-
 export function OrgSwitcher() {
   const pathname = usePathname() || '';
   const { locale } = useTranslation();
@@ -25,7 +21,7 @@ export function OrgSwitcher() {
   const [switching, setSwitching] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/org/memberships', { cache: 'no-store' });
+    const res = await fetch('/api/org/memberships', { cache: 'no-store', credentials: 'same-origin' });
     if (!res.ok) {
       setLoading(false);
       return;
@@ -40,7 +36,7 @@ export function OrgSwitcher() {
     void load();
   }, [load]);
 
-  async function switchOrg(organizationId: string) {
+  function switchOrg(organizationId: string) {
     if (organizationId === '__create_company__') {
       const settingsPath = pathname.startsWith('/portal/contractor')
         ? '/portal/contractor/settings#create-company'
@@ -51,22 +47,13 @@ export function OrgSwitcher() {
       return;
     }
     if (organizationId === activeId || switching) return;
+
     setSwitching(true);
-
-    const res = await fetch('/api/org/switch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ organizationId })
-    });
-
-    if (!res.ok) {
-      setSwitching(false);
-      return;
-    }
-
-    const json = (await res.json().catch(() => ({}))) as SwitchOrganizationResponse;
     setActiveId(organizationId);
-    window.location.assign(json.destination || '/dashboard');
+    // Make the workspace cookie change and role-aware redirect one server
+    // navigation. This prevents portal middleware from seeing the old worker or
+    // client workspace between the switch response and the next page request.
+    window.location.assign(`/api/org/switch?organizationId=${encodeURIComponent(organizationId)}`);
   }
 
   if (loading || memberships.length === 0) return null;
@@ -79,11 +66,11 @@ export function OrgSwitcher() {
         className="input org-switcher-select"
         value={activeId}
         disabled={switching}
-        onChange={(event) => void switchOrg(event.target.value)}
+        onChange={(event) => switchOrg(event.target.value)}
         aria-label={copy.switchLabel}
       >
         {memberships.map((membership) => {
-          const role = normalizeRole(membership.role);
+          const role = membership.isOwner ? 'owner' : normalizeRole(membership.role);
           const roleName = role === 'contractor'
             ? locale === 'es' ? 'Trabajador' : locale === 'vi' ? 'Nhân viên' : 'Worker'
             : role === 'client'
