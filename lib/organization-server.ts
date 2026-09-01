@@ -41,10 +41,12 @@ export async function fetchOrganizationContextForUser(
 
   if (!org || !member) return null;
 
+  const role: UserRole = org.owner_user_id === userId ? 'owner' : normalizeRole(member.role);
+
   return {
     organizationId: org.id,
     organizationName: org.name,
-    role: normalizeRole(member.role),
+    role,
     ownerUserId: org.owner_user_id
   };
 }
