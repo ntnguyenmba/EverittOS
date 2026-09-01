@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
+import { ACTIVE_ORG_COOKIE } from '@/lib/org-context-cookie';
 import type { OrgMembership } from '@/lib/os-types';
 import { normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -7,7 +8,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createServerSupabase();
   const {
     data: { user }
@@ -36,16 +37,25 @@ export async function GET() {
 
   const memberships: OrgMembership[] = (rows || []).map((row) => {
     const org = Array.isArray(row.organizations) ? row.organizations[0] : row.organizations;
+    const isOwner = (org as { owner_user_id?: string } | null)?.owner_user_id === user.id;
     return {
       organizationId: row.organization_id as string,
       organizationName: (org as { name?: string } | null)?.name || 'Workspace',
-      role: row.role as string,
-      isOwner: (org as { owner_user_id?: string } | null)?.owner_user_id === user.id
+      role: isOwner ? 'owner' : (row.role as string),
+      isOwner
     };
   });
 
-  const activeOrganizationId = profile?.organization_id || memberships[0]?.organizationId || null;
-  const activeMembership = memberships.find((membership) => membership.organizationId === activeOrganizationId) || null;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const activeCookie = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ACTIVE_ORG_COOKIE}=`));
+  const cookieOrganizationId = activeCookie ? decodeURIComponent(activeCookie.slice(ACTIVE_ORG_COOKIE.length + 1)) : null;
+  const cookieMembership = memberships.find((membership) => membership.organizationId === cookieOrganizationId) || null;
+  const profileMembership = memberships.find((membership) => membership.organizationId === profile?.organization_id) || null;
+  const activeMembership = cookieMembership || profileMembership || memberships[0] || null;
+  const activeOrganizationId = activeMembership?.organizationId || null;
   const activeRole = activeMembership ? normalizeRole(activeMembership.role) : null;
 
   return NextResponse.json({
@@ -53,5 +63,5 @@ export async function GET() {
     activeRole,
     destination: activeRole ? dashboardPathForRole(activeRole) : '/dashboard',
     memberships
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
