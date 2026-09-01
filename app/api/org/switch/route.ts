@@ -3,8 +3,7 @@ import { logActivityServer } from '@/lib/activity-server';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
 import { ACTIVE_ORG_COOKIE } from '@/lib/org-context-cookie';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { normalizeRole, roleToDb } from '@/lib/roles';
-import { createAdminSupabase } from '@/lib/supabase-admin';
+import { normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
@@ -42,20 +41,13 @@ export async function POST(request: Request) {
   }
 
   const role = normalizeRole(membership.role);
-  const admin = createAdminSupabase();
-  if (!admin) {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
-  }
-
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
-  const { error } = await admin
-    .from('profiles')
-    .update({ organization_id: organizationId, role: roleToDb(role) })
-    .eq('id', user.id);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 
+  // The active workspace belongs in the signed cookie, not in the user's base
+  // profile. A person can be an owner in one workspace and a client/worker in
+  // another. Mutating profiles.role or profiles.organization_id during a view
+  // switch collapses those separate memberships and can grant or deny the
+  // wrong workspace permissions.
   await logActivityServer({
     organizationId,
     userId: user.id,
