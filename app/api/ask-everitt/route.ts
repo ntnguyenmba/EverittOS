@@ -180,10 +180,10 @@ export async function POST(request: Request) {
     const unpaidInvoices = natural.intent === 'unpaid_invoices'
       ? await queryUnpaidInvoices(activeSupabase, activeOrg.organizationId)
       : null;
-    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(activeSupabase, activeOrg.organizationId, activePrompt, locale, pageContext);
-    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
-    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
-    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
+    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(activeSupabase, activeOrg.organizationId, prompt: activePrompt, locale, pageContext);
+    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
+    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
+    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
     const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(activePrompt) ? await queryNextJob(activeSupabase, activeOrg.organizationId, locale) : null);
     const searchResult = directResult || await runAskEverittSearchEngine(activeSupabase, activeOrg.organizationId, natural.searchQuery || activePrompt);
 
@@ -191,7 +191,7 @@ export async function POST(request: Request) {
       searchResult.suggestions = await buildSmartAskSuggestions(activeSupabase, activeOrg.organizationId, locale, pageContext);
     }
 
-    await recordAiUsage(activeAdmin, searchUsageEvent({ workspaceId: activeOrg.organizationId, userId: activeUser.id, userRole: normalizeRole(activeOrg.role), activePrompt }));
+    await recordAiUsage(activeAdmin, searchUsageEvent({ workspaceId: activeOrg.organizationId, userId: activeUser.id, userRole: normalizeRole(activeOrg.role), prompt: activePrompt }));
     return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
@@ -213,8 +213,8 @@ export async function POST(request: Request) {
   if (!result.ok) return NextResponse.json({ error: result.message, code: result.code, mode: 'ai', searchAvailable: true }, { status: result.code === 'rate_limited' ? 429 : 503 });
 
   const { cleanReply, action } = parseProposedAction(result.reply);
-  await logAiGeneration(activeAdmin, { organizationId: gate.org.organizationId, userId: activeUser.id, activePrompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
-  await recordAiUsage(activeAdmin, { workspaceId: gate.org.organizationId, userId: activeUser.id, userRole: normalizeRole(gate.org.role), feature: 'ask_everitt', mode: 'ai', activePrompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
+  await logAiGeneration(activeAdmin, { organizationId: gate.org.organizationId, userId: activeUser.id, prompt: activePrompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
+  await recordAiUsage(activeAdmin, { workspaceId: gate.org.organizationId, userId: activeUser.id, userRole: normalizeRole(gate.org.role), feature: 'ask_everitt', mode: 'ai', prompt: activePrompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
 
   return NextResponse.json({ mode: 'ai', reply: cleanReply, model: result.model, provider: result.provider, action, prefetchedSummary: prefetched.summary, usage: { monthlyUsed: gate.monthlyUsed + 1, monthlyCap: gate.monthlyCap, unlimited: gate.unlimited } });
 }
