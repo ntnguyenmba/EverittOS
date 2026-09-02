@@ -44,6 +44,10 @@ const frozenLayoutCss = [
   'everitt-login-look.css',
   'final-layout-guard.css',
   'view-center-final.css',
+  'unified-record-cards.css',
+  'row-action-align.css',
+  'form-field-spacing.css',
+  'signed-in-rhythm-final.css',
 ];
 
 const allowedExtra = new Set(['design/tokens.css', 'design/primitives.css']);
