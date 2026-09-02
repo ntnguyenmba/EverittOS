@@ -88,7 +88,7 @@ export function QuotesInputPolish() {
 
     async function saveQuote() {
       if (!pricingData) return;
-      const payload = quotePayload(root, pricingData);
+      const payload = quotePayload(root as Element, pricingData);
       if (payload.price == null) { status.textContent = 'Choose a final price first.'; return; }
       save.disabled = true; status.textContent = 'Saving quote…';
       const response = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
