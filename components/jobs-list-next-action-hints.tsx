@@ -71,7 +71,7 @@ export function JobsListNextActionHints() {
         const assigned = cellText(row, '.jobs-col-assigned');
         const date = cellText(row, '.jobs-col-date');
 
-        let action = c.open;
+        let action: string = c.open;
         if (!closed && isMissingMoney(customerPay)) action = c.clientPay;
         else if (!closed && /unassigned|sin asignar|chưa phân công|—/.test(assigned)) action = c.worker;
         else if (!closed && isMissingMoney(workerPay)) action = c.workerPay;
