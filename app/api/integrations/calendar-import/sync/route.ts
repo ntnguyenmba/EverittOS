@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPrimaryCalendarImportConnection } from '@/lib/calendar-import/connections';
 import { fetchPublicCalendarFeed } from '@/lib/calendar-import/feed-security';
 import { looksLikeIcsCalendar, parseIcsCalendar } from '@/lib/calendar-import/ical-parser';
@@ -17,12 +18,7 @@ type ApplyRequest = {
   eventUids?: string[];
 };
 
-type CalendarImportAdmin = Awaited<ReturnType<typeof requireCalendarImportManager>> extends {
-  ok: true;
-  admin: infer T;
-}
-  ? T
-  : never;
+type CalendarImportAdmin = SupabaseClient;
 
 async function markEventHandled(
   admin: CalendarImportAdmin,
