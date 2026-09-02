@@ -26,7 +26,7 @@ function bytesToBase64(bytes: Uint8Array): string { let binary = ''; const chunk
 function base64ToBytes(base64: string): Uint8Array { const binary = atob(base64); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i); return bytes; }
 
 export async function fileToBase64(file: File): Promise<string> { return bytesToBase64(new Uint8Array(await file.arrayBuffer())); }
-export function base64ToFile(base64: string, name: string, type: string): File { return new File([base64ToBytes(base64)], name, { type: type || 'image/jpeg' }); }
+export function base64ToFile(base64: string, name: string, type: string): File { const bytes = base64ToBytes(base64); return new File([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer], name, { type: type || 'image/jpeg' }); }
 
 export async function putFieldRecord<T>(kind: FieldRecordKind, key: string, value: T): Promise<void> {
   const json = JSON.stringify(value);
