@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -13,6 +14,12 @@ type Method = '' | 'stripe' | 'square' | 'paypal' | 'venmo' | 'zelle' | 'cash_ap
 
 export default function InvoicePaymentSettingsPage() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const copy = {
+    en: { saving: 'Saving…', save: 'Save payment preference' },
+    es: { saving: 'Guardando…', save: 'Guardar preferencia de pago' },
+    vi: { saving: 'Đang lưu…', save: 'Lưu phương thức thanh toán' }
+  }[locale];
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [loading, setLoading] = useState(true);
@@ -55,7 +62,7 @@ export default function InvoicePaymentSettingsPage() {
       <p className="muted">Paste the HTTPS link customers should open. Leave this blank for Zelle if you only want to show payment instructions.</p>
       <label htmlFor="payment-instructions">Payment instructions</label><textarea id="payment-instructions" className="input" rows={4} placeholder="Example: Zelle to billing@example.com. Include your invoice number in the memo." value={instructions} onChange={(e) => setInstructions(e.target.value)} />
       {message ? <p role="status">{message}</p> : null}
-      <div className="button-row" style={{ flexWrap: 'wrap' }}><button className="btn btn-primary" type="button" onClick={() => void save()} disabled={saving}>{saving ? 'Saving…' : 'Save payment preference'}</button><Link className="btn" href="/invoices">Back to invoices</Link></div>
+      <div className="button-row" style={{ flexWrap: 'wrap' }}><button className="btn btn-primary" type="button" onClick={() => void save()} disabled={saving}>{saving ? copy.saving : copy.save}</button><Link className="btn" href="/invoices">Back to invoices</Link></div>
     </section>}
   </SettingsShell>;
 }

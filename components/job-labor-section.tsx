@@ -56,6 +56,11 @@ export function JobLaborSection({
 }: JobLaborSectionProps) {
   const { locale } = useTranslation();
   const pageCopy = getDashboardFinanceCopy(locale).contractorPayPage;
+  const copy = {
+    en: { deletePrompt: (amount: string, name: string) => `Delete the ${amount} contractor pay entry for ${name}? This cannot be undone.` },
+    es: { deletePrompt: (amount: string, name: string) => `¿Eliminar el pago al contratista de ${amount} para ${name}? Esta acción no se puede deshacer.` },
+    vi: { deletePrompt: (amount: string, name: string) => `Xóa khoản trả nhà thầu ${amount} cho ${name}? Không thể hoàn tác.` }
+  }[locale];
   const financeCopy = getJobFinanceCopy(locale);
   const appFeedback = useAppFeedback();
 
@@ -284,7 +289,7 @@ export function JobLaborSection({
   async function deleteLabor(entry: JobLaborRecord) {
     if (saving || updatingPaymentId) return;
     const label = entry.worker_name || pageCopy.unnamed;
-    const confirmed = window.confirm(`Delete the ${formatCurrency(Number(entry.total_cost || 0))} contractor pay entry for ${label}? This cannot be undone.`);
+    const confirmed = window.confirm(copy.deletePrompt(formatCurrency(Number(entry.total_cost || 0)), label));
     if (!confirmed) return;
 
     setUpdatingPaymentId(entry.id);

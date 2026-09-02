@@ -77,7 +77,13 @@ function redirectExpiredSession() {
   clearNativeStepUp();
   clearTabSessionId();
   try { window.localStorage.removeItem('everittos_last_activity_client'); } catch {}
-  const params = new URLSearchParams({ reason: 'session', detail: 'Your session ended or was revoked. Sign in again to continue.' });
+  const locale = document.documentElement.lang.startsWith('es') ? 'es' : document.documentElement.lang.startsWith('vi') ? 'vi' : 'en';
+  const copy = {
+    en: { detail: 'Your session ended or was revoked. Sign in again to continue.' },
+    es: { detail: 'Tu sesión terminó o fue revocada. Inicia sesión de nuevo para continuar.' },
+    vi: { detail: 'Phiên đăng nhập đã kết thúc hoặc bị thu hồi. Hãy đăng nhập lại để tiếp tục.' }
+  }[locale];
+  const params = new URLSearchParams({ reason: 'session', detail: copy.detail });
   window.location.assign(`/login?${params.toString()}`);
 }
 

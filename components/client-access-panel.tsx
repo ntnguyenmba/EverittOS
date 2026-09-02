@@ -6,12 +6,19 @@ import { appUrl } from '@/lib/app-url';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { JobEmailComposer } from '@/components/job-email-composer';
+import { useTranslation } from '@/components/locale-provider';
 import { supabase } from '@/lib/supabase';
 
 type AccessRow = { client_user_id: string; portal_token: string | null; granted_at: string | null; email: string | null };
 type Props = { jobId: string; plan: EverittosPlan; canManage: boolean; customerName?: string | null; customerEmail?: string | null; onCustomerEmailChange?: (email: string) => void; onSaveCustomerEmail?: (email: string) => Promise<boolean> | boolean };
 
 export function ClientAccessPanel({ jobId, plan, canManage, customerName = null, customerEmail = null, onCustomerEmailChange, onSaveCustomerEmail }: Props) {
+  const { locale } = useTranslation();
+  const copy = {
+    en: { scheduleChange: 'Schedule change' },
+    es: { scheduleChange: 'Cambio de horario' },
+    vi: { scheduleChange: 'Thay đổi lịch' }
+  }[locale];
   const [emailDraft, setEmailDraft] = useState(customerEmail || '');
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [message, setMessage] = useState('');
@@ -69,7 +76,7 @@ export function ClientAccessPanel({ jobId, plan, canManage, customerName = null,
   const reviewBody = `Hi ${customerName || 'there'},\n\nThank you for choosing us. If you have a moment, we would appreciate your review:\n${reviewUrl}\n\nThank you.`;
   const workerTemplates = [
     { label: 'Job assigned', subject: 'Job assigned', body: `Hi ${workerName || 'there'},\n\nYou have been assigned to this job. Please reply to this email if you have any questions.` },
-    { label: 'Schedule change', subject: 'Job schedule change', body: `Hi ${workerName || 'there'},\n\nThe schedule for this job has changed. Please check the job details and reply to confirm.` },
+    { label: copy.scheduleChange, subject: 'Job schedule change', body: `Hi ${workerName || 'there'},\n\nThe schedule for this job has changed. Please check the job details and reply to confirm.` },
     { label: 'Need photos', subject: 'Photos needed for job', body: `Hi ${workerName || 'there'},\n\nPlease upload the required job photos when you are on site. Reply here if you have any questions.` }
   ];
 
