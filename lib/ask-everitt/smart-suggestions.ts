@@ -278,5 +278,5 @@ export async function buildSmartAskSuggestions(
     } satisfies AskEverittSuggestion;
   }));
 
-  return resolved.filter((suggestion): suggestion is AskEverittSuggestion => Boolean(suggestion)).slice(0, 6);
+  return resolved.filter((suggestion) => suggestion !== null).slice(0, 6);
 }
