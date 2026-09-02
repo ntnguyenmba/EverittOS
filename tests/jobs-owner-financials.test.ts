@@ -12,7 +12,7 @@ function read(path: string) {
 }
 
 describe('owner-only job pay and profit columns', () => {
-  const page = read('app/jobs/page.tsx');
+  const page = read('components/jobs-list.tsx');
   const jobsApi = read('app/api/jobs/route.ts');
   const ownerApi = read('app/api/jobs/owner-financials/route.ts');
   const query = read('lib/jobs-org-query.ts');

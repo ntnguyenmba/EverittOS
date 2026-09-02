@@ -10,7 +10,7 @@ function jobNeedsWorker(job: { status?: string | null; assigned_to?: string | nu
 }
 
 describe('jobs list overview', () => {
-  const page = readFileSync('app/jobs/page.tsx', 'utf8');
+  const page = readFileSync('components/jobs-list.tsx', 'utf8');
   const api = readFileSync('app/api/jobs/route.ts', 'utf8');
   const query = readFileSync('lib/jobs-org-query.ts', 'utf8');
 

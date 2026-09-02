@@ -172,7 +172,7 @@ describe('role-based exports', () => {
     assert.equal(filters.assignedTo, 'w1');
     assert.equal(filters.createdFrom, '2026-07-01');
 
-    const jobsPage = readFileSync('app/jobs/page.tsx', 'utf8');
+    const jobsPage = readFileSync('components/jobs-list.tsx', 'utf8');
     assert.match(jobsPage, /period=today/);
     assert.match(jobsPage, /status=finished/);
     assert.match(jobsPage, /filter=unassigned/);
@@ -252,7 +252,7 @@ describe('role-based exports', () => {
     assert.match(menu, /shareByEmail/);
     assert.match(menu, /\/api\/exports\/share/);
 
-    const page = readFileSync('app/jobs/page.tsx', 'utf8');
+    const page = readFileSync('components/jobs-list.tsx', 'utf8');
     assert.match(page, /jobs-shell-minimal/);
     assert.match(page, /jobs-filter-tab/);
     assert.match(page, /jobs-menu-trigger/);

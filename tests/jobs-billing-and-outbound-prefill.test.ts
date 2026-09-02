@@ -121,7 +121,7 @@ describe('Invoice and receipt prefill helpers', () => {
 
 describe('Jobs operations UI and permissions', () => {
   it('jobs page includes create invoice action, filters, and compact mobile table', () => {
-    const source = readFileSync('app/jobs/page.tsx', 'utf8');
+    const source = readFileSync('components/jobs-list.tsx', 'utf8');
     assert.doesNotMatch(source, /billingCopy\.billingStatus/);
     assert.doesNotMatch(source, /jobs-billing-pill/);
     assert.match(source, /createInvoice/);
