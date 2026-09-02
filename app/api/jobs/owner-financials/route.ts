@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 
   if (jobsRes.error) {
     return NextResponse.json({ error: 'Unable to load owner financials.' }, { status: 500 });
-v  }
+  }
 
   const invoiceByJob = new Map<string, { amount: number; amountPaid: number }>();
   for (const row of (invoicesRes.data || []) as InvoiceRow[]) {
