@@ -67,7 +67,7 @@ function CustomersPageContent() {
     else query = query.eq('record_type', 'customer').neq('pipeline_stage', 'archived');
     const [{ data, error }, orgIsDemo] = await Promise.all([query, fetchOrganizationIsDemo(supabase, org?.organizationId)]);
     if (error) { setLoading(false); appFeedback.error(formatSupabaseError(error)); return; }
-    const visible = filterDemoSeedCustomers(data || [], orgIsDemo);
+    const visible = filterDemoSeedCustomers(data || [], orgIsDemo) as CustomerRecord[];
     setCustomers(visible); setVisibleCount(CUSTOMER_PAGE_SIZE);
     const ids = visible.map((customer) => customer.id).filter(Boolean);
     if (ids.length) {

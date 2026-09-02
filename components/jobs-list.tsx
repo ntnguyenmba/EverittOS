@@ -105,7 +105,7 @@ export function JobsList() {
     setLoadError('');
     setLoading(true);
     try {
-      const { data: { user } } = await withTimeout(supabase.auth.getUser(), LOAD_TIMEOUT_MS);
+      const { data: { user } } = await withTimeout(Promise.resolve(supabase.auth.getUser()), LOAD_TIMEOUT_MS);
       if (!user) {
         router.push('/login');
         setLoading(false);

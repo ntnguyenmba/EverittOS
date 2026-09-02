@@ -104,7 +104,7 @@ export function JobGuidancePanel() {
       amount_paid: sourceInvoice.amount_paid,
       status: sourceInvoice.payment_status || sourceInvoice.status
     } : null;
-    const directPaymentTotal = (jobPaymentsRes.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const directPaymentTotal = ((jobPaymentsRes.data || []) as Array<{ amount: number | null }>).reduce((sum: number, row) => sum + Number(row.amount || 0), 0);
 
     setState({
       job: job as JobRow,
@@ -132,22 +132,24 @@ export function JobGuidancePanel() {
 
   if (!jobId || !state) return null;
 
-  const clientPaySet = state.financials?.customerPay != null;
-  const workerPaySet = state.financials?.contractorPay != null;
-  const scheduleSet = Boolean(state.job.scheduled_start || state.job.start_date);
-  const invoiceExists = Boolean(state.invoice);
-  const invoiceAmount = Number(state.invoice?.amount || 0);
-  const invoiceLedgerPaid = Number(state.invoice?.amount_paid || 0);
-  const amountPaid = Math.max(invoiceLedgerPaid, state.directPaymentTotal);
-  const invoiceStatus = String(state.invoice?.status || '').toLowerCase();
+  const currentState = state;
+  const currentJobId = jobId;
+  const clientPaySet = currentState.financials?.customerPay != null;
+  const workerPaySet = currentState.financials?.contractorPay != null;
+  const scheduleSet = Boolean(currentState.job.scheduled_start || currentState.job.start_date);
+  const invoiceExists = Boolean(currentState.invoice);
+  const invoiceAmount = Number(currentState.invoice?.amount || 0);
+  const invoiceLedgerPaid = Number(currentState.invoice?.amount_paid || 0);
+  const amountPaid = Math.max(invoiceLedgerPaid, currentState.directPaymentTotal);
+  const invoiceStatus = String(currentState.invoice?.status || '').toLowerCase();
   const paymentPaid = invoiceExists && (invoiceStatus === 'paid' || (invoiceAmount > 0 && amountPaid >= invoiceAmount));
-  const status = String(state.job.status || '').toLowerCase();
-  const scheduledAt = state.job.scheduled_start ? new Date(state.job.scheduled_start) : null;
+  const status = String(currentState.job.status || '').toLowerCase();
+  const scheduledAt = currentState.job.scheduled_start ? new Date(currentState.job.scheduled_start) : null;
   const pastDue = Boolean(scheduledAt && !Number.isNaN(scheduledAt.getTime()) && scheduledAt.getTime() < Date.now() && !['active', 'in_progress', 'completed', 'cancelled'].includes(status));
 
-  let action = { label: c.review, terms: ['overview'], direct: '' };
+  let action: { label: string; terms: string[]; direct: string } = { label: c.review, terms: ['overview'], direct: '' };
   if (!clientPaySet) action = { label: c.setClientPay, terms: ['money', 'profit'], direct: '' };
-  else if (!state.assigned) action = { label: c.assignWorker, terms: ['assigned', 'worker', 'contractor'], direct: '' };
+  else if (!currentState.assigned) action = { label: c.assignWorker, terms: ['assigned', 'worker', 'contractor'], direct: '' };
   else if (!workerPaySet) action = { label: c.setWorkerPay, terms: ['money', 'labor', 'worker'], direct: '' };
   else if (!scheduleSet) action = { label: c.setSchedule, terms: ['schedule'], direct: '' };
   else if (pastDue || ['scheduled', 'new', 'pending'].includes(status)) action = { label: c.startJob, terms: [], direct: 'active' };
@@ -159,10 +161,10 @@ export function JobGuidancePanel() {
   async function updateStatusDirect(nextStatus: 'active' | 'completed') {
     if (busy) return;
     setBusy(true);
-    const previous = state.job.status;
+    const previous = currentState.job.status;
     setState((current) => current ? { ...current, job: { ...current.job, status: nextStatus } } : current);
     try {
-      const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+      const response = await fetch(`/api/jobs/${encodeURIComponent(currentJobId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus })
@@ -181,11 +183,11 @@ export function JobGuidancePanel() {
   async function runAction() {
     if (busy) return;
     if (action.direct === 'create_invoice') {
-      window.location.href = `/invoices?jobId=${jobId}&action=new`;
+      window.location.href = `/invoices?jobId=${currentJobId}&action=new`;
       return;
     }
     if (action.direct === 'record_payment') {
-      window.location.href = `/invoices?jobId=${jobId}&payment=unpaid`;
+      window.location.href = `/invoices?jobId=${currentJobId}&payment=unpaid`;
       return;
     }
     if (action.direct === 'active' || action.direct === 'completed') {

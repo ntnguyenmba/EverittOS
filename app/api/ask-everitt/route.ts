@@ -155,7 +155,11 @@ export async function POST(request: Request) {
   if (!org) return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
   if (isClientRole(org.role)) return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
 
-  const { plan } = await resolveOrganizationPlan(supabase, user.id);
+  const activeSupabase = supabase;
+  const activeUser = user;
+  const activeOrg = org;
+
+  const { plan } = await resolveOrganizationPlan(activeSupabase, activeUser.id);
   const natural = parseNaturalAskEverittQuery(prompt);
   const detectedMode = detectAskEverittMode(prompt);
   const mode = body.forceMode || (natural.preferSearch ? 'search' : detectedMode);
@@ -163,7 +167,7 @@ export async function POST(request: Request) {
   const contextualPrompt = pageAwarePrompt(prompt, pageContext);
 
   async function runStructuredSearch() {
-    const searchAccess = await assertAskEverittSearchAccess(admin, user.id, org.role, org.organizationId, plan);
+    const searchAccess = await assertAskEverittSearchAccess(admin, activeUser.id, activeOrg.role, activeOrg.organizationId, plan);
     if (!searchAccess.ok) {
       return NextResponse.json(
         { error: searchAccess.message, code: searchAccess.code, mode: 'search' },
@@ -172,43 +176,43 @@ export async function POST(request: Request) {
     }
 
     const unpaidInvoices = natural.intent === 'unpaid_invoices'
-      ? await queryUnpaidInvoices(supabase, org.organizationId)
+      ? await queryUnpaidInvoices(activeSupabase, activeOrg.organizationId)
       : null;
-    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(supabase, org.organizationId, prompt, locale, pageContext);
-    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(supabase, org.organizationId, user.id, prompt, locale);
-    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(supabase, org.organizationId, user.id, prompt, locale);
-    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(supabase, org.organizationId, user.id, prompt, locale);
-    const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(supabase, org.organizationId, locale) : null);
-    const searchResult = directResult || await runAskEverittSearchEngine(supabase, org.organizationId, natural.searchQuery || prompt);
+    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(activeSupabase, activeOrg.organizationId, prompt, locale, pageContext);
+    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(activeSupabase, activeOrg.organizationId, activeUser.id, prompt, locale);
+    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(activeSupabase, activeOrg.organizationId, activeUser.id, prompt, locale);
+    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(activeSupabase, activeOrg.organizationId, activeUser.id, prompt, locale);
+    const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(activeSupabase, activeOrg.organizationId, locale) : null);
+    const searchResult = directResult || await runAskEverittSearchEngine(activeSupabase, activeOrg.organizationId, natural.searchQuery || prompt);
 
     if (searchResult.results.length === 0) {
-      searchResult.suggestions = await buildSmartAskSuggestions(supabase, org.organizationId, locale, pageContext);
+      searchResult.suggestions = await buildSmartAskSuggestions(activeSupabase, activeOrg.organizationId, locale, pageContext);
     }
 
-    await recordAiUsage(admin, searchUsageEvent({ workspaceId: org.organizationId, userId: user.id, userRole: normalizeRole(org.role), prompt }));
+    await recordAiUsage(admin, searchUsageEvent({ workspaceId: activeOrg.organizationId, userId: activeUser.id, userRole: normalizeRole(activeOrg.role), prompt }));
     return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
   if (mode === 'search') return runStructuredSearch();
 
-  const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
+  const gate = await verifyAiRequest(activeSupabase, admin, activeUser.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
     if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) return runStructuredSearch();
     const status = gate.code === 'plan_required' || gate.code === 'subscription_inactive' ? 403 : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted' || gate.code === 'staff_daily_limit' || gate.code === 'staff_monthly_limit' ? 429 : 503;
     return NextResponse.json({ error: gate.message, code: gate.code, mode: 'ai', searchAvailable: true, locked: gate.code === 'plan_required', requiredPlan: gate.requiredPlan || 'business' }, { status });
   }
 
-  const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, contextualPrompt);
+  const prefetched = await prefetchAskEverittContextForAi(activeSupabase, activeOrg.organizationId, contextualPrompt);
   const dataContext = formatPrefetchedContextForAi(prefetched);
-  const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
-  const messages: AiChatMessage[] = [{ role: 'user', content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}` }];
+  const orgContext = await buildOrganizationAiContext(admin, gate.activeOrg.organizationId);
+  const messages: AiChatMessage[] = [{ role: 'activeUser', content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}` }];
   const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, { feature: 'ask_everitt' });
 
   if (!result.ok) return NextResponse.json({ error: result.message, code: result.code, mode: 'ai', searchAvailable: true }, { status: result.code === 'rate_limited' ? 429 : 503 });
 
   const { cleanReply, action } = parseProposedAction(result.reply);
-  await logAiGeneration(admin, { organizationId: gate.org.organizationId, userId: user.id, prompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
-  await recordAiUsage(admin, { workspaceId: gate.org.organizationId, userId: user.id, userRole: normalizeRole(gate.org.role), feature: 'ask_everitt', mode: 'ai', prompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
+  await logAiGeneration(admin, { organizationId: gate.activeOrg.organizationId, userId: activeUser.id, prompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
+  await recordAiUsage(admin, { workspaceId: gate.activeOrg.organizationId, userId: activeUser.id, userRole: normalizeRole(gate.activeOrg.role), feature: 'ask_everitt', mode: 'ai', prompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
 
   return NextResponse.json({ mode: 'ai', reply: cleanReply, model: result.model, provider: result.provider, action, prefetchedSummary: prefetched.summary, usage: { monthlyUsed: gate.monthlyUsed + 1, monthlyCap: gate.monthlyCap, unlimited: gate.unlimited } });
 }

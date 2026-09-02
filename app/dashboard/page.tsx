@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     setLoading(true); setLoadError(false);
-    const auth = await withTimeout<{ data: { user: { id: string } | null }; error: Error | null }>(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') });
+    const auth = await withTimeout(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') }) as { data: { user: { id: string } | null }; error: unknown };
     let userId = auth.data.user?.id || null;
     if (!userId) {
       const session = await withTimeout(supabase.auth.getSession(), { data: { session: null }, error: new Error('Session timed out') });
