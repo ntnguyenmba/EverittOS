@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Billing regression tests
+        run: npm run test:purchases
+
       - name: Verify types, languages, and tests
         run: npm run verify
 
