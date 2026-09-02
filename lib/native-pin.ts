@@ -17,7 +17,7 @@ function bytesToBase64(bytes: Uint8Array): string { let binary = ''; for (const 
 function base64ToBytes(value: string): Uint8Array { const binary = atob(value); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i); return bytes; }
 async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
   const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 120000 }, material, 256);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer, iterations: 120000 }, material, 256);
   return bytesToBase64(new Uint8Array(bits));
 }
 function nativeSecureStoreAvailable(): boolean { return Capacitor.isNativePlatform(); }
