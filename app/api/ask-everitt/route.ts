@@ -180,10 +180,10 @@ export async function POST(request: Request) {
     const unpaidInvoices = natural.intent === 'unpaid_invoices'
       ? await queryUnpaidInvoices(activeSupabase, activeOrg.organizationId)
       : null;
-    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(activeSupabase, activeOrg.organizationId, prompt: activePrompt, locale, pageContext);
-    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
-    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
-    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(activeSupabase, activeOrg.organizationId, activeUser.id, prompt: activePrompt, locale);
+    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(activeSupabase, activeOrg.organizationId, activePrompt, locale, pageContext);
+    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
+    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
+    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(activeSupabase, activeOrg.organizationId, activeUser.id, activePrompt, locale);
     const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(activePrompt) ? await queryNextJob(activeSupabase, activeOrg.organizationId, locale) : null);
     const searchResult = directResult || await runAskEverittSearchEngine(activeSupabase, activeOrg.organizationId, natural.searchQuery || activePrompt);
 
