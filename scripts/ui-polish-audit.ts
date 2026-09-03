@@ -3,7 +3,6 @@ import { join } from 'node:path';
 
 const ROOT = process.cwd();
 const layoutPath = join(ROOT, 'app', 'layout.tsx');
-
 const failures: string[] = [];
 
 if (!existsSync(layoutPath)) failures.push('Missing app/layout.tsx');
@@ -11,9 +10,11 @@ if (!existsSync(layoutPath)) failures.push('Missing app/layout.tsx');
 const layout = existsSync(layoutPath) ? readFileSync(layoutPath, 'utf8') : '';
 const cssImports = [...layout.matchAll(/import '\.\/(.+\.css)';/g)].map((match) => match[1]);
 
-/** Frozen cascade from app/layout.tsx at the 2026-08-30 visual freeze. */
-const frozenLayoutCss = [
+/** Approved cascade after the 2026-09-03 mechanical consolidation. */
+const approvedLayoutCss = [
   'globals.css',
+  'design/tokens.css',
+  'design/primitives.css',
   'everitt-theme.css',
   'typography.css',
   'nav.css',
@@ -28,44 +29,18 @@ const frozenLayoutCss = [
   'contractor-portal.css',
   'quote-workspace.css',
   'role-home-structure.css',
-  'signed-in-canvas.css',
-  'jobs-filter-mobile-alignment.css',
-  'jobs-mobile-layout-hotfix.css',
-  'word-spacing-fix.css',
-  'top-chrome-align.css',
-  'ask-everitt-overlay-fix.css',
-  'job-card-spacing.css',
-  'one-nav.css',
-  'box-stack-spacing.css',
-  'signed-in-stability.css',
-  'hero-last.css',
-  'visual-unify.css',
-  'readability-last.css',
-  'everitt-login-look.css',
-  'final-layout-guard.css',
-  'view-center-final.css',
-  'unified-record-cards.css',
-  'row-action-align.css',
-  'form-field-spacing.css',
-  'signed-in-rhythm-final.css',
+  'legacy-signed-in.css',
+  'global-content-rhythm.css',
 ];
 
-const allowedExtra = new Set(['design/tokens.css', 'design/primitives.css', 'global-content-rhythm.css']);
-
-if (cssImports[0] !== 'globals.css') {
-  failures.push('app/layout.tsx must keep globals.css as the first stylesheet import');
-}
-
-const extras = cssImports.filter((name) => !frozenLayoutCss.includes(name) && !allowedExtra.has(name));
-if (extras.length) {
-  failures.push('New global CSS imports are blocked during the freeze. Allowed extras: app/design/tokens.css, app/design/primitives.css, app/global-content-rhythm.css.');
-  for (const file of extras) failures.push(`  extra import: ${file}`);
-}
-
-const missing = frozenLayoutCss.filter((name) => !cssImports.includes(name));
-if (missing.length) {
-  failures.push('Do not drop frozen layout stylesheets until they have been harvested into primitives.');
-  for (const file of missing) failures.push(`  missing import: ${file}`);
+if (cssImports.join('|') !== approvedLayoutCss.join('|')) {
+  failures.push('app/layout.tsx global CSS imports must match the approved cascade and order.');
+  const max = Math.max(cssImports.length, approvedLayoutCss.length);
+  for (let index = 0; index < max; index += 1) {
+    if (cssImports[index] !== approvedLayoutCss[index]) {
+      failures.push(`  position ${index + 1}: expected ${approvedLayoutCss[index] ?? '(none)'}, found ${cssImports[index] ?? '(none)'}`);
+    }
+  }
 }
 
 if (layout.includes("import './release-polish.css'")) {
@@ -73,9 +48,9 @@ if (layout.includes("import './release-polish.css'")) {
 }
 
 if (failures.length) {
-  console.error('UI freeze audit failed:\n');
+  console.error('UI cascade audit failed:\n');
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
-console.log(`UI freeze audit passed: ${cssImports.length} layout stylesheets match the frozen cascade.`);
+console.log(`UI cascade audit passed: ${cssImports.length} stylesheets match the approved consolidated order.`);
