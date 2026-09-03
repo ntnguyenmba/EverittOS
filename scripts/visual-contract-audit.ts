@@ -25,6 +25,9 @@ const primitives = read('app/design/primitives.css');
 const legacy = read('app/legacy-signed-in.css');
 const rhythm = read('app/global-content-rhythm.css');
 const shell = read('components/app-shell.tsx');
+const clientLayout = read('app/portal/client/layout.tsx');
+const workerLayout = read('app/portal/contractor/layout.tsx');
+const ownerPage = read('app/jobs/new/page.tsx');
 
 const cssImports = [...layout.matchAll(/import '\.\/(.+\.css)';/g)].map((match) => match[1]);
 const canonicalOrder = ['globals.css', 'design/tokens.css', 'design/primitives.css'];
@@ -81,6 +84,10 @@ requireText(rhythm, 'app/global-content-rhythm.css', [
   'var(--eo-color-surface)',
 ]);
 
+requireText(clientLayout, 'app/portal/client/layout.tsx', ['<AppShell role="client"']);
+requireText(workerLayout, 'app/portal/contractor/layout.tsx', ['<AppShell role="contractor"']);
+requireText(ownerPage, 'app/jobs/new/page.tsx', ['<AppShell plan="free" role="owner"']);
+
 requireText(shell, 'components/app-shell.tsx', [
   "type RoleBannerKind = 'owner' | 'client' | 'worker';",
   "en: { context: 'Signed in as'",
@@ -91,7 +98,24 @@ requireText(shell, 'components/app-shell.tsx', [
   'app-role-banner',
   'var(--eo-color-brand)',
   'var(--eo-radius-card)',
+  '@media(max-width:640px)',
+  '@media(max-width:760px)',
+  '@media(max-width:480px)',
 ]);
+
+const legacySections = [...legacy.matchAll(/\/\* BEGIN ([^*]+\.css) \*\//g)].map((match) => match[1]);
+if (legacySections.length !== 20) {
+  failures.push(`app/legacy-signed-in.css must retain all 20 source sections; found ${legacySections.length}.`);
+}
+if (new Set(legacySections).size !== legacySections.length) {
+  failures.push('app/legacy-signed-in.css contains duplicate source sections.');
+}
+if (!legacy.includes('@media (max-width: 680px)') && !legacy.includes('@media(max-width:680px)')) {
+  failures.push('app/legacy-signed-in.css must retain the compact record-card breakpoint.');
+}
+if (!rhythm.includes('@media (max-width: 640px)')) {
+  failures.push('app/global-content-rhythm.css must retain its mobile control breakpoint.');
+}
 
 for (const [path, source] of [
   ['app/design/tokens.css', tokens],
