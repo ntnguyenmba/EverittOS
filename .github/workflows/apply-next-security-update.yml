@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: apply-next-security-update
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -28,7 +32,7 @@ jobs:
           cache: npm
 
       - name: Install patched framework versions
-        run: npm install --save-exact next@15.5.24 react@19.1.2 react-dom@19.1.2
+        run: npm install --no-audit --no-fund --save-exact next@15.5.24 react@19.1.2 react-dom@19.1.2
 
       - name: Remove temporary updater
         run: rm .github/workflows/apply-next-security-update.yml
