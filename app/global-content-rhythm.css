@@ -37,9 +37,8 @@
   overflow-wrap: break-word;
 }
 
-/* Top-level page stacks use one compact gap. Reset old sibling margins so
-   spacing cannot double, and pin distribution to the start so tall stages
-   never turn normal gaps into large empty bands. */
+/* Top-level page stacks use one compact gap and clear older sibling
+   margins without changing their display, sizing, or table behavior. */
 :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-stage,
   .jobs-list-page,
@@ -53,8 +52,6 @@
   .client-main
 ) {
   gap: var(--eo-content-section-gap) !important;
-  justify-content: flex-start !important;
-  align-content: start !important;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -71,23 +68,6 @@
 ) > * {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
-}
-
-/* Lists and tables must remain content-sized inside a tall page stage. */
-:is(.dashboard-shell, .role-portal-shell) :is(
-  .jobs-table-card,
-  .jobs-mobile-table-wrap,
-  .jobs-operations-table,
-  .jobs-list,
-  .record-list,
-  .customer-list,
-  .client-jobs-list,
-  .contractor-jobs-list
-) {
-  flex: none !important;
-  align-self: start !important;
-  width: 100% !important;
-  min-height: 0 !important;
 }
 
 /* Text inside a surface stays close enough to belong together without touching. */
