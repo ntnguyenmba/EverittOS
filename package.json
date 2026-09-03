@@ -17,7 +17,7 @@
     "i18n:check": "npm run i18n:audit && npm run i18n:ui-audit",
     "ui:polish-audit": "tsx scripts/ui-polish-audit.ts",
     "ui:style-sprawl": "tsx scripts/style-sprawl-guard.ts",
-    "verify": "npm run typecheck && npm run i18n:check && npm run ui:polish-audit && npm run ui:style-sprawl && npm test && npm run test:purchases",
+    "verify": "npm run typecheck && npm run i18n:check && npm run ui:polish-audit && npm run ui:style-sprawl && npm run ui:visual-contract && npm test && npm run test:purchases",
     "mobile:icons": "node scripts/generate-mobile-icons.mjs",
     "mobile:validate-env": "tsx scripts/validate-mobile-env.ts",
     "mobile:validate-release": "tsx scripts/validate-mobile-release.ts && npm run test:purchases",
@@ -26,7 +26,8 @@
     "ios:open": "npx cap open ios",
     "android:open": "npx cap open android",
     "ios:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync ios",
-    "android:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync android"
+    "android:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync android",
+    "ui:visual-contract": "tsx scripts/visual-contract-audit.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
