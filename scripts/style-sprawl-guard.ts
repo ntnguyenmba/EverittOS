@@ -59,6 +59,7 @@ const frozenRootCss = new Set([
   'job-instructions-context-link.css',
   'job-mobile-fixes.css',
   'job-visit-layout-override.css',
+  'legacy-signed-in.css',
   'jobs-actions-spacing-fix.css',
   'jobs-filter-mobile-alignment.css',
   'jobs-mobile-editorial-final.css',
