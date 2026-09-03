@@ -50,6 +50,7 @@ const frozenRootCss = new Set([
   'form-alignment-fixes.css',
   'form-field-spacing.css',
   'globals.css',
+  'global-content-rhythm.css',
   'hero-background-visibility.css',
   'hero-last.css',
   'job-card-spacing.css',
