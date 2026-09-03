@@ -28,6 +28,7 @@ const shell = read('components/app-shell.tsx');
 const clientLayout = read('app/portal/client/layout.tsx');
 const workerLayout = read('app/portal/contractor/layout.tsx');
 const ownerPage = read('app/jobs/new/page.tsx');
+const pageHeader = read('components/page-header.tsx');
 
 const cssImports = [...layout.matchAll(/import '\.\/(.+\.css)';/g)].map((match) => match[1]);
 const canonicalOrder = ['globals.css', 'design/tokens.css', 'design/primitives.css'];
@@ -82,6 +83,11 @@ requireText(rhythm, 'app/global-content-rhythm.css', [
   'var(--eo-content-section-gap)',
   'var(--eo-radius-card)',
   'var(--eo-color-surface)',
+]);
+
+requireText(pageHeader, 'components/page-header.tsx', [
+  'subtitle: string;',
+  '<p className="page-subtitle">{subtitle}</p>',
 ]);
 
 requireText(clientLayout, 'app/portal/client/layout.tsx', ['<AppShell role="client"']);

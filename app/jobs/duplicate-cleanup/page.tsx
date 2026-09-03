@@ -11,10 +11,17 @@ import { normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
+const duplicateCleanupPageCopy = {
+  en: { subtitle: 'Review and remove duplicate recurring jobs without affecting the originals.' },
+  es: { subtitle: 'Revisa y elimina trabajos recurrentes duplicados sin afectar los originales.' },
+  vi: { subtitle: 'Kiểm tra và xóa công việc định kỳ trùng lặp mà không ảnh hưởng bản gốc.' }
+} as const;
+
 type DuplicateSeries = { jobId: string; date: string; title: string; address: string };
 
 export default function DuplicateCleanupPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const pageCopy = duplicateCleanupPageCopy[locale];
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -76,6 +83,7 @@ export default function DuplicateCleanupPage() {
       <div className="page-stack">
         <PageHeader
           title={t('pages.duplicateCleanup.title')}
+          subtitle={pageCopy.subtitle}
           action={
             <Link className="btn btn-secondary" href="/jobs">
               {t('pages.duplicateCleanup.back')}

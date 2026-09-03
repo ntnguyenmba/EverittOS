@@ -40,9 +40,9 @@ const JOB_SELECT = 'id, title, customer_name, address, status, assigned_to, assi
 const LOAD_TIMEOUT_MS = 8000;
 
 const jobsCopy = {
-  en: { newJob:'New job', all:'All', today:'Today', active:'Active', finished:'Finished', loading:'Loading…', tryAgain:'Try again', date:'Date', address:'Address', assignedTo:'Assigned to', customerPay:'Customer Pay', status:'Status', details:'Details', open:'Open', unassigned:'Unassigned', unscheduled:'Unscheduled', job:'Job' },
-  es: { newJob:'Nuevo trabajo', all:'Todos', today:'Hoy', active:'Activos', finished:'Terminados', loading:'Cargando…', tryAgain:'Intentar de nuevo', date:'Fecha', address:'Dirección', assignedTo:'Asignado a', customerPay:'Pago del cliente', status:'Estado', details:'Detalles', open:'Abrir', unassigned:'Sin asignar', unscheduled:'Sin programar', job:'Trabajo' },
-  vi: { newJob:'Công việc mới', all:'Tất cả', today:'Hôm nay', active:'Đang làm', finished:'Đã xong', loading:'Đang tải…', tryAgain:'Thử lại', date:'Ngày', address:'Địa chỉ', assignedTo:'Giao cho', customerPay:'Khách trả', status:'Trạng thái', details:'Chi tiết', open:'Mở', unassigned:'Chưa giao', unscheduled:'Chưa lịch', job:'Công việc' }
+  en: { subtitle:'Plan, assign, and track every job in one place.', newJob:'New job', all:'All', today:'Today', active:'Active', finished:'Finished', loading:'Loading…', tryAgain:'Try again', date:'Date', address:'Address', assignedTo:'Assigned to', customerPay:'Customer Pay', status:'Status', details:'Details', open:'Open', unassigned:'Unassigned', unscheduled:'Unscheduled', job:'Job' },
+  es: { subtitle:'Planifica, asigna y controla cada trabajo en un solo lugar.', newJob:'Nuevo trabajo', all:'Todos', today:'Hoy', active:'Activos', finished:'Terminados', loading:'Cargando…', tryAgain:'Intentar de nuevo', date:'Fecha', address:'Dirección', assignedTo:'Asignado a', customerPay:'Pago del cliente', status:'Estado', details:'Detalles', open:'Abrir', unassigned:'Sin asignar', unscheduled:'Sin programar', job:'Trabajo' },
+  vi: { subtitle:'Lập lịch, giao việc và theo dõi mọi công việc tại một nơi.', newJob:'Công việc mới', all:'Tất cả', today:'Hôm nay', active:'Đang làm', finished:'Đã xong', loading:'Đang tải…', tryAgain:'Thử lại', date:'Ngày', address:'Địa chỉ', assignedTo:'Giao cho', customerPay:'Khách trả', status:'Trạng thái', details:'Chi tiết', open:'Mở', unassigned:'Chưa giao', unscheduled:'Chưa lịch', job:'Công việc' }
 } as const;
 
 function jobNeedsWorker(job: Job) {
@@ -199,6 +199,7 @@ export function JobsList() {
       <div className="jobs-list-page">
         <PageHeader
           title={t('nav.jobs')}
+          subtitle={c.subtitle}
           action={managerView ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
         />
         <div className="jobs-filter-tabs" aria-label={t('nav.jobs')}>

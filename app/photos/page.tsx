@@ -28,9 +28,9 @@ type Job = {
 type PhotoFilter = 'needs' | 'has' | 'all';
 
 const copy = {
-  en: { noPhotosYet: 'No photos yet', addPhotos: 'Add photos', viewPhotos: 'View photos' },
-  es: { noPhotosYet: 'Aún no hay fotos', addPhotos: 'Agregar fotos', viewPhotos: 'Ver fotos' },
-  vi: { noPhotosYet: 'Chưa có ảnh', addPhotos: 'Thêm ảnh', viewPhotos: 'Xem ảnh' }
+  en: { title: 'Photos', subtitle: 'Review job photos and see which jobs still need documentation.', noPhotosYet: 'No photos yet', addPhotos: 'Add photos', viewPhotos: 'View photos' },
+  es: { title: 'Fotos', subtitle: 'Revisa las fotos y detecta qué trabajos aún necesitan documentación.', noPhotosYet: 'Aún no hay fotos', addPhotos: 'Agregar fotos', viewPhotos: 'Ver fotos' },
+  vi: { title: 'Ảnh', subtitle: 'Xem ảnh công việc và biết công việc nào vẫn cần ghi nhận.', noPhotosYet: 'Chưa có ảnh', addPhotos: 'Thêm ảnh', viewPhotos: 'Xem ảnh' }
 } as const;
 
 export default function PhotosPage() {
@@ -91,7 +91,8 @@ export default function PhotosPage() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="Photos"
+        title={c.title}
+        subtitle={c.subtitle}
         action={
           <Link className="btn btn-primary" href="/jobs">
             Choose job

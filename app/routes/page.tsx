@@ -12,6 +12,12 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
+const routesPageCopy = {
+  en: { subtitle: 'Build efficient daily routes from scheduled jobs and saved addresses.' },
+  es: { subtitle: 'Crea rutas diarias eficientes con trabajos programados y direcciones guardadas.' },
+  vi: { subtitle: 'Tạo lộ trình hằng ngày hiệu quả từ công việc và địa chỉ đã lưu.' }
+} as const;
+
 type RouteRun = {
   id: string;
   service_date: string;
@@ -22,7 +28,8 @@ type RouteRun = {
 
 export default function RoutesPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const pageCopy = routesPageCopy[locale];
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -108,7 +115,7 @@ export default function RoutesPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title={t('pages.routes.title')} />
+      <PageHeader title={t('pages.routes.title')} subtitle={pageCopy.subtitle} />
 
       {canManage ? (
         <section className="card" style={{ marginBottom: 16 }}>

@@ -22,6 +22,12 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+const analyticsPageCopy = {
+  en: { title: 'Business numbers', subtitle: 'Understand revenue, activity, growth, and the work that needs attention.' },
+  es: { title: 'Números del negocio', subtitle: 'Comprende los ingresos, la actividad, el crecimiento y el trabajo que requiere atención.' },
+  vi: { title: 'Số liệu kinh doanh', subtitle: 'Theo dõi doanh thu, hoạt động, tăng trưởng và công việc cần chú ý.' }
+} as const;
+
 type AnalyticsSummary = {
   adoptionMetrics: { label: string; value: number }[];
   growthMetrics: { label: string; value: number }[];
@@ -37,6 +43,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const copy = getDashboardFinanceCopy(locale);
+  const pageCopy = analyticsPageCopy[locale];
   const exportCopy = getExportCopy(locale);
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -91,7 +98,8 @@ export default function AnalyticsPage() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="Business numbers"
+        title={pageCopy.title}
+        subtitle={pageCopy.subtitle}
         action={
           canAccessFinancials(role, plan) ? (
             <ExportMenu

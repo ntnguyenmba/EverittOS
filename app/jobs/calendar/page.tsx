@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
 import { ScheduleCalendarConnections } from '@/components/schedule-calendar-connections';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { combineDateAndTime } from '@/lib/schedule-times';
@@ -19,6 +20,12 @@ import { logClientActivity } from '@/lib/activity';
 import { TIME_ZONE_OPTIONS, normalizeTimeZone } from '@/lib/time-zones';
 import { supabase } from '@/lib/supabase';
 import { buildAssignmentWorkerIdsByJob, isJobAssignedToWorker } from '@/lib/worker-assignment';
+
+const calendarPageCopy = {
+  en: { title: 'Jobs calendar', subtitle: 'Start with today, then review upcoming work and jobs that still need a date.' },
+  es: { title: 'Calendario de trabajos', subtitle: 'Comienza con hoy y revisa próximos trabajos y los que aún necesitan fecha.' },
+  vi: { title: 'Lịch công việc', subtitle: 'Bắt đầu với hôm nay, rồi xem việc sắp tới và việc chưa có ngày.' }
+} as const;
 
 type ScheduleFilter = 'today' | 'upcoming' | 'needs_schedule' | 'all';
 
@@ -32,6 +39,8 @@ function JobsCalendarContent() {
   const rangeFilter = searchParams.get('range');
   const memberFilter = searchParams.get('member');
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const pageCopy = calendarPageCopy[locale];
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
@@ -198,8 +207,7 @@ function JobsCalendarContent() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title="Jobs calendar" action={<div className="settings-actions"><Link className="btn" href="/jobs">List view</Link><Link className="btn btn-primary" href="/jobs/new">New job</Link></div>} />
-      <p className="muted">Start with today, then upcoming work and anything that still needs a date.</p>
+      <PageHeader title={pageCopy.title} subtitle={pageCopy.subtitle} action={<div className="settings-actions"><Link className="btn" href="/jobs">List view</Link><Link className="btn btn-primary" href="/jobs/new">New job</Link></div>} />
 
       <div className="job-detail-actions" style={{ marginTop: 16, marginBottom: 16, gap: 8, flexWrap: 'wrap' }}>
         {filters.map((filter) => (
