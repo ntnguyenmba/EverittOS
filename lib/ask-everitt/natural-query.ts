@@ -67,8 +67,12 @@ function canonicalizeLanguage(text: string): string {
     [/\b(seguimiento)\b/gi, 'follow up'],
     [/\b(libre|libres|disponible|disponibles)\b/gi, 'free'],
     [/\b(sin asignar)\b/gi, 'unassigned'],
+    [/\b(quién|quien)\b/gi, 'who'],
+    [/\b(está|esta|están|estan)\b/gi, 'is'],
 
-    // Vietnamese
+    // Vietnamese phrases ending in accented characters cannot rely on ASCII word boundaries.
+    [/báo giá/gi, 'estimates'],
+    [/đang mở/gi, 'open'],
     [/\b(công việc|việc làm|lịch hẹn|dịch vụ)\b/gi, 'jobs'],
     [/\b(khách hàng|chủ nhà)\b/gi, 'customers'],
     [/\b(nhân viên|người làm|đội ngũ|kỹ thuật viên)\b/gi, 'workers'],
@@ -154,12 +158,12 @@ export function parseNaturalAskEverittQuery(input: string): NaturalAskQuery {
     return make('customers who owe money', 'customers_owe');
   }
 
-  if (/\b(open|pending|sent|draft|big|large)?\s*estimates?\b|\bestimates?\b.*\b(open|pending|sent|draft|this week|this month|over|above)\b/.test(q)) {
-    return make(original, 'open_estimates');
-  }
-
   if (/\b(leads?|requests?)\b.*\b(waiting|need|needs|pending)\b.*\bestimate\b|\bwaiting for (?:an )?estimate\b/.test(q)) {
     return make(original, 'requests_waiting_estimate');
+  }
+
+  if (/\b(open|pending|sent|draft|big|large)?\s*estimates?\b|\bestimates?\b.*\b(open|pending|sent|draft|this week|this month|over|above)\b/.test(q)) {
+    return make(original, 'open_estimates');
   }
 
   if (/\bwho(?:'s| is)?\s+free\b|\bfree\s+(?:workers?|staff|team)\b|\b(worker|workers|staff|team)\b.*\bavailability\b/.test(q)) {
