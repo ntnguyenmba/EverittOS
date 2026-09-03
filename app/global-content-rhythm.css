@@ -1,12 +1,12 @@
 /* Final shared content rhythm for owner, client, and worker views.
    Loaded last so older page-specific patches cannot collapse or inflate spacing. */
 :root {
-  --eo-content-label-gap: 8px;
-  --eo-content-control-gap: 12px;
+  --eo-content-label-gap: var(--eo-label-gap);
+  --eo-content-control-gap: var(--eo-control-gap);
   --eo-content-text-gap: 10px;
-  --eo-content-heading-gap: 16px;
-  --eo-content-section-gap: 20px;
-  --eo-content-card-padding: 20px;
+  --eo-content-heading-gap: var(--eo-heading-gap);
+  --eo-content-section-gap: var(--eo-section-gap);
+  --eo-content-card-padding: var(--eo-card-padding);
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -35,6 +35,73 @@
 :is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) {
   padding: var(--eo-content-card-padding) !important;
   overflow-wrap: break-word;
+}
+
+
+/* Established page components inherit the same visual primitives. Structural
+   table/list wrappers are intentionally excluded so layout behavior is unchanged. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .settings-card,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .role-summary-card,
+  .contractor-metric,
+  .dashboard-metric-card,
+  .job-detail-shell > .card,
+  .job-detail-shell > section
+) {
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head, .dashboard-header) {
+  gap: var(--eo-heading-gap) !important;
+  color: var(--eo-color-text) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head, .dashboard-header) :is(h1, h2, h3) {
+  color: var(--eo-color-text) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.btn, button.btn, a.btn) {
+  min-height: var(--eo-tap);
+  border-radius: var(--eo-radius-control) !important;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.btn-primary, button[type='submit']) {
+  border-color: var(--eo-color-accent) !important;
+  background: var(--eo-color-accent) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(input.input, select.input, textarea.input) {
+  border-color: var(--eo-color-border-strong) !important;
+  border-radius: var(--eo-radius-control) !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  -webkit-text-fill-color: var(--eo-color-text) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(input.input, select.input, textarea.input):focus {
+  border-color: var(--eo-color-accent) !important;
+  outline: 3px solid var(--eo-color-focus) !important;
+  outline-offset: 1px;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.status, .status-pill, .status-badge, .badge) {
+  border-color: var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-pill) !important;
+  color: var(--eo-color-text-secondary) !important;
 }
 
 /* Top-level page stacks use one compact gap and clear older sibling
@@ -168,10 +235,6 @@
 }
 
 @media (max-width: 640px) {
-  :root {
-    --eo-content-section-gap: 16px;
-    --eo-content-card-padding: 16px;
-  }
 
   :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions, .page-actions, .settings-actions) {
     row-gap: var(--eo-content-control-gap) !important;
