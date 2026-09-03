@@ -22,6 +22,7 @@ function requireText(source: string, path: string, values: string[]) {
 const layout = read('app/layout.tsx');
 const tokens = read('app/design/tokens.css');
 const primitives = read('app/design/primitives.css');
+const legacy = read('app/legacy-signed-in.css');
 const rhythm = read('app/global-content-rhythm.css');
 const shell = read('components/app-shell.tsx');
 
@@ -33,8 +34,8 @@ if (cssImports.slice(0, canonicalOrder.length).join('|') !== canonicalOrder.join
 if (cssImports.at(-1) !== 'global-content-rhythm.css') {
   failures.push('global-content-rhythm.css must remain the final stylesheet so shared visual rules win the cascade.');
 }
-if (cssImports.length > 38) {
-  failures.push(`Global stylesheet count grew from the approved 38 to ${cssImports.length}.`);
+if (cssImports.length > 19) {
+  failures.push(`Global stylesheet count grew from the approved 19 to ${cssImports.length}.`);
 }
 
 requireText(tokens, 'app/design/tokens.css', [
@@ -60,6 +61,12 @@ requireText(primitives, 'app/design/primitives.css', [
   'var(--eo-radius-card)',
   'var(--eo-radius-control)',
   'var(--eo-color-accent)',
+]);
+
+requireText(legacy, 'app/legacy-signed-in.css', [
+  'BEGIN signed-in-canvas.css',
+  'BEGIN unified-record-cards.css',
+  'BEGIN signed-in-rhythm-final.css',
 ]);
 
 requireText(rhythm, 'app/global-content-rhythm.css', [
