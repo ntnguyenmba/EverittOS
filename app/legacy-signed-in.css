@@ -1,0 +1,3173 @@
+/* Consolidated legacy signed-in cascade.
+   Source order is intentionally preserved so this mechanical cleanup does not alter rendering.
+   New shared visual work belongs in design/tokens.css, design/primitives.css, or global-content-rhythm.css. */
+
+/* BEGIN signed-in-canvas.css */
+/* Legacy token compatibility only.
+   This file must not create hero overlays, page-header cards, outer canvases,
+   frosted wrappers, or role-specific stages. The shared stage/footer system
+   owns signed-in layout and hero-last/mobile-readability own the raw backdrop. */
+
+:root {
+  --paper: #ffffff;
+  --paper-solid: #ffffff;
+  --ink: #132433;
+  --ink-2: #31495b;
+  --ink-3: #526777;
+  --line: #d5dee5;
+  --accent: #285d78;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --text: #132433;
+  --text-secondary: #31495b;
+  --muted: #526777;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.dashboard-shell .app-page-content,
+.contractor-main,
+.client-main,
+.role-portal-shell .app-page-content {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dashboard-shell .app-page-content,
+.role-portal-shell .app-page-content,
+.contractor-main .app-page-content,
+.client-main .app-page-content {
+  padding: 0 !important;
+  color: var(--ink) !important;
+}
+
+/* Structural list/grid holders stay invisible. */
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .dashboard-revenue-grid,
+.dashboard-shell .metric-grid,
+.dashboard-shell .stats-grid,
+.dashboard-shell .team-command-grid,
+.dashboard-shell .role-summary-grid,
+.dashboard-shell .list-group,
+.dashboard-shell .jobs-list,
+.dashboard-shell .customer-list,
+.dashboard-shell .customers-list,
+.dashboard-shell .record-list,
+.dashboard-shell .cards-grid,
+.dashboard-shell .section-grid,
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .contractor-jobs-list,
+.contractor-main .job-visits-list,
+.client-main .client-upcoming-simple,
+.client-main .client-job-card-list,
+.client-main .client-jobs-list {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.contractor-main .contractor-content-card {
+  padding: 0 !important;
+}
+
+/* Controls remain readable; large surfaces are handled by the shared stage. */
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.contractor-main input,
+.contractor-main select,
+.contractor-main textarea,
+.client-main input,
+.client-main select,
+.client-main textarea {
+  background: #fff !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+}
+
+.dashboard-shell .btn.btn-primary,
+.dashboard-shell button[type='submit'],
+.contractor-main .btn.btn-primary,
+.client-main .btn.btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* Ask Everitt must stay above the shared page stage and receive pointer events. */
+.dashboard-shell .everitt-cmd-trigger,
+.role-portal-shell .everitt-cmd-trigger,
+.contractor-main .everitt-cmd-trigger {
+  position: relative !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  cursor: pointer !important;
+}
+
+/* Ask Everitt modal keeps its own readable surface and must sit over every app layer. */
+.everitt-cmd-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  background: rgba(19,36,51,.36) !important;
+}
+
+.everitt-cmd-palette {
+  position: relative !important;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
+}
+
+.everitt-cmd-palette,
+.everitt-cmd-bar,
+.everitt-cmd-results,
+.everitt-cmd-result,
+.everitt-cmd-suggestions,
+.everitt-cmd-suggestion,
+.everitt-cmd-section,
+.everitt-cmd-usage,
+.everitt-cmd-palette input,
+.everitt-cmd-palette textarea {
+  background: #fff !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+}
+
+.everitt-cmd-palette button,
+.everitt-cmd-palette input,
+.everitt-cmd-palette a {
+  pointer-events: auto !important;
+}
+/* END signed-in-canvas.css */
+
+/* BEGIN jobs-filter-mobile-alignment.css */
+/* Final Jobs action and filter geometry. Shared across signed-in views. */
+
+@media (max-width: 760px) {
+  .dashboard-shell .jobs-list-page > .page-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .dashboard-shell .jobs-list-page > .page-header h1 {
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+
+  .dashboard-shell .jobs-list-page .page-header-action {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .jobs-header-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 48px 48px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :first-child {
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0 !important;
+    padding-inline: 8px !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :last-child {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :first-child {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .dashboard-shell .jobs-filter-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 16px 0 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell .jobs-filter-tab,
+  .dashboard-shell .jobs-filter-tabs > .jobs-filter-tab:nth-child(5) {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    margin: 0 !important;
+    padding: 0 13px !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters {
+    display: block !important;
+    width: 100% !important;
+    margin: 16px 0 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell .jobs-filter-heading {
+    display: none !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control,
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
+    grid-column: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control > span {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > details {
+    width: 100% !important;
+    margin: 12px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell .jobs-list-more {
+    width: auto !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    margin: 16px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #526777 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+
+  .dashboard-shell .jobs-list-more > .muted {
+    color: #526777 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+
+  .dashboard-shell .jobs-operations-row {
+    min-height: 72px !important;
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 350px) {
+  .dashboard-shell .jobs-header-actions {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(3, 48px) !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :last-child,
+  .dashboard-shell .jobs-header-actions > :first-child,
+  .dashboard-shell .jobs-header-actions > :nth-child(2) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+/* END jobs-filter-mobile-alignment.css */
+
+/* BEGIN jobs-mobile-layout-hotfix.css */
+/* Canonical signed-in layout. Login is the visual master: floating chrome + one white page card. */
+:root{--eo-gutter:16px;--eo-gap:16px;--eo-radius:26px;--eo-max:720px;--eo-paper:#fff;--eo-ink:#132433;--eo-muted:#526777;--eo-line:#d5dee5;--eo-accent:#285d78}
+.dashboard-shell,.dashboard-shell *{box-sizing:border-box}
+.dashboard-shell .app-page-top,.dashboard-shell .app-page-content{width:min(var(--eo-max),calc(100% - 32px))!important;max-width:var(--eo-max)!important;margin-left:auto!important;margin-right:auto!important}
+.dashboard-shell .app-page-content{display:flex!important;flex-direction:column!important;gap:12px!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.dashboard-shell .everitt-cmd-trigger,.dashboard-shell .ask-everitt-trigger,.dashboard-shell [data-ask-everitt-trigger]{width:100%!important;min-height:48px!important;margin:0!important;border:1px solid rgba(255,255,255,.62)!important;border-radius:14px!important;background:#fff!important;color:var(--eo-ink)!important;box-shadow:0 12px 30px rgba(11,29,42,.17)!important}
+.dashboard-shell .app-page-stage{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:24px!important;border:1px solid rgba(255,255,255,.85)!important;border-radius:var(--eo-radius)!important;background:#fff!important;color:var(--eo-ink)!important;box-shadow:0 34px 90px rgba(9,24,35,.24)!important;overflow:visible!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.dashboard-shell .app-page-stage>*+*{margin-top:var(--eo-gap)!important}
+.dashboard-shell .app-page-stage h1,.dashboard-shell .app-page-stage h2,.dashboard-shell .app-page-stage h3,.dashboard-shell .app-page-stage p,.dashboard-shell .app-page-stage label,.dashboard-shell .app-page-stage summary{color:var(--eo-ink)!important;opacity:1!important}
+.dashboard-shell .app-page-stage .muted,.dashboard-shell .app-page-stage .page-subtitle,.dashboard-shell .app-page-stage small{color:var(--eo-muted)!important;opacity:1!important}
+.dashboard-shell .app-page-stage .page-header,.dashboard-shell .app-page-stage .page-head,.dashboard-shell .app-page-stage .quote-page-head,.dashboard-shell .app-page-stage>header.card,.dashboard-shell .app-page-stage>header,.dashboard-shell .app-page-stage .panel,.dashboard-shell .app-page-stage .card:not(.job-card):not(.client-job-card):not(.role-summary-card):not(.record-card){width:100%!important;margin-left:0!important;margin-right:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.dashboard-shell .app-page-stage .page-header,.dashboard-shell .app-page-stage .page-head,.dashboard-shell .app-page-stage .quote-page-head,.dashboard-shell .app-page-stage>header.card,.dashboard-shell .app-page-stage>header{margin-top:0!important;padding:0!important;color:var(--eo-ink)!important}
+.dashboard-shell .app-page-stage h1{margin:0!important;text-align:left!important}.dashboard-shell .quote-page-head .eyebrow{display:none!important}.dashboard-shell .page-subtitle{margin:6px 0 0!important;font-size:13px!important;line-height:1.45!important}
+.dashboard-shell .app-page-stage .jobs-table-card,.dashboard-shell .app-page-stage .jobs-mobile-table-wrap,.dashboard-shell .app-page-stage .jobs-filter-tabs,.dashboard-shell .app-page-stage .jobs-advanced-filters,.dashboard-shell .app-page-stage .jobs-filter-grid,.dashboard-shell .app-page-stage .quote-compose-grid,.dashboard-shell .app-page-stage .quote-compose,.dashboard-shell .app-page-stage .quote-saved,.dashboard-shell .app-page-stage .quote-list,.dashboard-shell .app-page-stage .customer-list,.dashboard-shell .app-page-stage .customers-list,.dashboard-shell .app-page-stage .record-list,.dashboard-shell .app-page-stage .role-summary-grid,.dashboard-shell .app-page-stage .metric-grid{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.dashboard-shell .app-page-stage .quote-compose{padding-left:0!important;padding-right:0!important}
+.dashboard-shell .app-page-stage .jobs-operations-row,.dashboard-shell .app-page-stage .job-card,.dashboard-shell .app-page-stage .customer-card-row,.dashboard-shell .app-page-stage .client-job-card,.dashboard-shell .app-page-stage .list-row,.dashboard-shell .app-page-stage .record-card,.dashboard-shell .app-page-stage .quote-row,.dashboard-shell .app-page-stage .role-summary-card{min-height:64px!important;margin:0!important;padding:14px 0!important;border:0!important;border-bottom:1px solid var(--eo-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.dashboard-shell .app-page-stage input:not([type=checkbox]):not([type=radio]),.dashboard-shell .app-page-stage select,.dashboard-shell .app-page-stage textarea{width:100%!important;min-width:0!important;min-height:48px!important;border:1px solid rgba(19,36,51,.18)!important;border-radius:12px!important;background:#fff!important;color:var(--eo-ink)!important}.dashboard-shell .app-page-stage textarea{min-height:112px!important}
+.dashboard-shell .app-page-stage .btn,.dashboard-shell .app-page-stage button:not(.unstyled-button){min-height:44px!important;height:auto!important;padding:10px 14px!important;border-radius:12px!important;writing-mode:horizontal-tb!important;text-orientation:mixed!important;white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;line-height:1.2!important}
+.dashboard-shell .app-page-stage .empty-state{padding:16px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--eo-ink)!important}.dashboard-shell .app-page-stage .empty-state p{color:var(--eo-muted)!important}
+.dashboard-shell .app-stage-copyright{margin:24px 0 0!important;padding-top:16px!important;border-top:1px solid var(--eo-line)!important;color:var(--eo-muted)!important;font-size:12px!important;font-weight:400!important;line-height:1.4!important;text-align:center!important}
+.role-portal-shell .app-page-stage .role-dashboard>header.card,.role-portal-shell .app-page-stage .contractor-dashboard>header.card,.role-portal-shell .app-page-stage .portal-page>header.card,.role-portal-shell .app-page-stage .role-dashboard-topbar,.role-portal-shell .app-page-stage .portal-client-nav{margin:0!important;padding-left:0!important;padding-right:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.role-portal-shell .app-page-stage .role-summary-grid,.role-portal-shell .app-page-stage .metric-grid{gap:0!important}
+.role-portal-shell .app-page-stage .portal-client-nav{display:flex!important;flex-wrap:wrap!important;gap:8px!important}.role-portal-shell .app-page-stage .portal-client-nav a,.role-portal-shell .app-page-stage .portal-client-nav button{flex:1 1 120px!important;min-width:0!important;min-height:44px!important}.role-portal-shell .app-page-stage .button-row{gap:12px!important}
+.dashboard-shell .jobs-list-page .page-header-action{display:block!important;width:100%!important;max-width:none!important;margin:16px 0 0!important;position:static!important;transform:none!important}.dashboard-shell .jobs-header-actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:48px 48px!important;gap:12px!important;width:100%!important;margin:0!important}.dashboard-shell .jobs-header-actions>*{width:100%!important;min-width:0!important;max-width:none!important;height:48px!important;margin:0!important}.dashboard-shell .jobs-header-actions>:last-child{grid-column:1/-1!important;grid-row:1!important}.dashboard-shell .jobs-header-actions>:first-child{grid-column:1!important;grid-row:2!important}.dashboard-shell .jobs-header-actions>:nth-child(2){grid-column:2!important;grid-row:2!important}.dashboard-shell .jobs-header-actions a,.dashboard-shell .jobs-header-actions button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:48px!important;margin:0!important;white-space:nowrap!important}
+.dashboard-shell .jobs-filter-tabs{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:0!important;padding:0!important}.dashboard-shell .jobs-filter-tab{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:36px!important;padding:7px 13px!important;border:1px solid rgba(19,36,51,.14)!important;border-radius:999px!important;background:#fff!important;color:var(--eo-muted)!important;white-space:nowrap!important}.dashboard-shell .jobs-filter-tab-active{color:var(--eo-accent)!important;border-color:rgba(40,93,120,.32)!important}
+.dashboard-shell .jobs-filter-grid{display:grid!important;grid-template-columns:1fr!important;gap:12px!important;margin:0!important;padding:0!important}.dashboard-shell .jobs-filter-control{grid-column:1!important;width:100%!important}.dashboard-shell .jobs-filter-control select{height:48px!important}
+.dashboard-shell .record-count,.dashboard-shell .jobs-count,.dashboard-shell .showing-count{display:block!important;width:auto!important;margin:12px 0 0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--eo-muted)!important;font-size:13px!important;font-weight:400!important;line-height:1.4!important}
+.dashboard-shell .quote-workspace{max-width:100%!important;padding:0!important;margin:0!important}.dashboard-shell .quote-compose-grid{display:block!important}.dashboard-shell .quote-letter{display:none!important}.dashboard-shell .quote-saved{margin-top:20px!important}.dashboard-shell .quote-section-head{margin:0 0 10px!important;padding:0!important;border:0!important;background:transparent!important}
+@media(max-width:1279px){.dashboard-shell>.main{padding-left:0!important;padding-right:0!important;padding-bottom:calc(144px + env(safe-area-inset-bottom,0px))!important}}
+@media(max-width:560px){.dashboard-shell .app-page-top,.dashboard-shell .app-page-content{width:calc(100% - 32px)!important}.dashboard-shell .app-page-stage{padding:22px!important;border-radius:22px!important}.role-portal-shell .app-page-stage .role-summary-grid,.role-portal-shell .app-page-stage .metric-grid{grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav{display:grid!important;grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav a,.role-portal-shell .app-page-stage .portal-client-nav button{width:100%!important}}
+@media(max-width:350px){.dashboard-shell .jobs-header-actions{grid-template-columns:1fr!important;grid-template-rows:repeat(3,48px)!important}.dashboard-shell .jobs-header-actions>:last-child,.dashboard-shell .jobs-header-actions>:first-child,.dashboard-shell .jobs-header-actions>:nth-child(2){grid-column:1!important;grid-row:auto!important}}
+/* END jobs-mobile-layout-hotfix.css */
+
+/* BEGIN word-spacing-fix.css */
+/* Global readable type. Visual only. Owner, worker, client. */
+
+.dashboard-shell,
+.role-portal-shell {
+  color: #132433;
+}
+
+.dashboard-shell,
+.dashboard-shell *,
+.role-portal-shell,
+.role-portal-shell * {
+  word-spacing: normal;
+  overflow-wrap: break-word;
+}
+
+.dashboard-shell .muted,
+.role-portal-shell .muted,
+.dashboard-shell small,
+.role-portal-shell small {
+  color: #31495b !important;
+  -webkit-text-fill-color: #31495b !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .app-page-stage,
+.dashboard-shell .bookkeeping-ledger,
+.dashboard-shell .bookkeeping-metric-card {
+  color: #132433 !important;
+  background: #fff !important;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell button.btn-primary,
+.dashboard-shell .bookkeeping-range.is-active,
+.role-portal-shell .btn-primary {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: #243f53 !important;
+}
+
+.dashboard-shell .btn:not(.btn-primary),
+.dashboard-shell .bookkeeping-range:not(.is-active) {
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
+  background: #fff !important;
+}
+
+.status-badge + .portal-finance-empty::before,
+.status-badge + .portal-finance-amount::before {
+  content: ' \00b7\00a0';
+}
+
+.portal-job-finance,
+.job-card-meta,
+.client-job-card-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 12px !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span > strong,
+.dashboard-shell .bookkeeping-ledger-summary > span > small,
+.dashboard-shell .bookkeeping-ledger-total {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span > small::before {
+  content: none;
+}
+/* END word-spacing-fix.css */
+
+/* BEGIN top-chrome-align.css */
+/* Visual only: one aligned chrome row on every signed-in view. */
+.dashboard-shell .org-switcher-label,
+.org-switcher-label {
+  display: none !important;
+}
+
+.dashboard-shell .app-page-top,
+.dashboard-shell .app-page-top-portal,
+.dashboard-shell .app-page-top-branded {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+}
+
+.dashboard-shell .app-page-top-lead,
+.dashboard-shell .app-page-top-workspace,
+.dashboard-shell .app-page-top-portal-workspace {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.dashboard-shell .app-page-top-workspace,
+.dashboard-shell .app-page-top-portal-workspace {
+  flex: 1 1 auto !important;
+  justify-content: flex-end !important;
+}
+
+.dashboard-shell .app-page-top-portal-org,
+.dashboard-shell .org-switcher {
+  min-width: 0 !important;
+  width: auto !important;
+  flex: 1 1 auto !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .org-switcher-select,
+.dashboard-shell .app-home-button,
+.dashboard-shell .app-back-button {
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: 12px !important;
+}
+
+.dashboard-shell .org-switcher-select {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 12px !important;
+  background: #fff !important;
+  color: #132433 !important;
+  border: 1px solid #d5dee5 !important;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell .app-page-top-language,
+  .dashboard-shell .app-page-top-logo {
+    display: none !important;
+  }
+
+  .dashboard-shell-header {
+    padding-bottom: 4px !important;
+  }
+}
+/* END top-chrome-align.css */
+
+/* BEGIN ask-everitt-overlay-fix.css */
+/* Keep Ask Everitt above every app shell/header layer and make its input reachable. */
+.everitt-cmd-trigger {
+  position: relative !important;
+  z-index: 8 !important;
+  pointer-events: auto !important;
+}
+
+.everitt-cmd-overlay {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  min-height: 100dvh;
+  height: 100dvh;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  align-items: flex-start;
+  overflow: hidden;
+  pointer-events: auto !important;
+  background: rgba(18, 37, 50, 0.42) !important;
+}
+
+body:has(.everitt-cmd-overlay) .dashboard-shell > .main,
+body:has(.everitt-cmd-overlay) .main {
+  z-index: 2147482999 !important;
+}
+
+body:has(.everitt-cmd-overlay) .dashboard-shell-mobile,
+body:has(.everitt-cmd-overlay) .mobile-nav,
+body:has(.everitt-cmd-overlay) .mobile-nav-bar {
+  z-index: 1 !important;
+}
+
+body:has(.everitt-cmd-overlay) {
+  overflow: hidden !important;
+}
+
+.everitt-cmd-palette {
+  position: relative !important;
+  z-index: 2147483001 !important;
+  width: min(680px, 100%);
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 32px));
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+  pointer-events: auto !important;
+  background: #fff !important;
+}
+
+.everitt-cmd-bar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--surface, #fff);
+  padding-top: 2px;
+}
+
+.everitt-cmd-input {
+  min-width: 0;
+  min-height: 52px;
+  font-size: 16px;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.everitt-cmd-close {
+  z-index: 8;
+  pointer-events: auto !important;
+}
+
+.everitt-cmd-footer {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .everitt-cmd-overlay {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: 10px;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100dvh - max(20px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 20px));
+    border-radius: 18px;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .everitt-cmd-overlay {
+    min-height: 100vh;
+    height: 100vh;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100vh - 32px);
+  }
+}
+/* END ask-everitt-overlay-fix.css */
+
+/* BEGIN job-card-spacing.css */
+/* Shared visual spacing for job cards and job detail packets across Owner, Worker, and Client views. */
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card),
+.role-portal-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) {
+  --job-label-gap: 4px;
+  --job-block-gap: 16px;
+  --job-action-gap: 22px;
+  --job-button-gap: 12px;
+  --job-card-pad: 22px;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) :where(h1,h2,h3) + :where(.muted,.meta,.page-subtitle,p),
+.role-portal-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) :where(h1,h2,h3) + :where(.muted,.meta,.page-subtitle,p) {
+  margin-top: 8px !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-packet-head,
+.role-portal-shell .contractor-job-packet-card .contractor-job-packet-head {
+  margin-bottom: var(--job-block-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-packet-details,
+.role-portal-shell .contractor-job-packet-card .contractor-job-packet-details {
+  display: grid !important;
+  gap: var(--job-block-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-block,
+.dashboard-shell .contractor-job-packet-card .contractor-job-pay,
+.role-portal-shell .contractor-job-packet-card .contractor-job-block,
+.role-portal-shell .contractor-job-packet-card .contractor-job-pay {
+  display: grid !important;
+  gap: var(--job-label-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-block > p,
+.dashboard-shell .contractor-job-packet-card .contractor-job-pay > p,
+.role-portal-shell .contractor-job-packet-card .contractor-job-block > p,
+.role-portal-shell .contractor-job-packet-card .contractor-job-pay > p {
+  margin: 0 !important;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card) :where(.inline-actions,.button-row,.actions,.jobs-actions,.contractor-photo-actions),
+.dashboard-shell .contractor-job-packet-card .contractor-field-actions,
+.role-portal-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card) :where(.inline-actions,.button-row,.actions,.jobs-actions,.contractor-photo-actions),
+.role-portal-shell .contractor-job-packet-card .contractor-field-actions {
+  gap: var(--job-button-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-field-actions,
+.role-portal-shell .contractor-job-packet-card .contractor-field-actions {
+  display: grid !important;
+  justify-items: start !important;
+  margin-top: var(--job-action-gap) !important;
+  margin-bottom: var(--job-action-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-primary-field-action,
+.role-portal-shell .contractor-job-packet-card .contractor-primary-field-action {
+  margin: 0 !important;
+  min-height: 44px !important;
+}
+
+/* Worker photo actions are one four-column control group on wider screens.
+   Every button owns the same cell, width and height regardless of label length. */
+.dashboard-shell .contractor-job-packet-card .contractor-photo-actions,
+.role-portal-shell .contractor-job-packet-card .contractor-photo-actions,
+.contractor-dashboard .contractor-job-packet-card .contractor-photo-actions {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: var(--job-button-gap, 12px) !important;
+  width: min(100%, 1080px) !important;
+  max-width: 100% !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-photo-actions > .btn,
+.role-portal-shell .contractor-job-packet-card .contractor-photo-actions > .btn,
+.contractor-dashboard .contractor-job-packet-card .contractor-photo-actions > .btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 56px !important;
+  height: 56px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+  white-space: normal !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-finish-label,
+.role-portal-shell .contractor-job-packet-card .contractor-finish-label {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-pay,
+.role-portal-shell .contractor-job-packet-card .contractor-job-pay {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.job-pay,.contractor-job-pay,.client-job-pay,.pay-row,.money-row,.portal-finance-row),
+.role-portal-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.job-pay,.contractor-job-pay,.client-job-pay,.pay-row,.money-row,.portal-finance-row) {
+  margin-top: var(--job-block-gap) !important;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.inline-actions,.button-row,.actions,.jobs-actions),
+.role-portal-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.inline-actions,.button-row,.actions,.jobs-actions) {
+  margin-top: var(--job-action-gap) !important;
+  margin-bottom: var(--job-block-gap) !important;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.btn,button),
+.role-portal-shell :where(.job-card,.contractor-job-card,.client-job-card) :where(.btn,button) {
+  min-height: 44px !important;
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell .contractor-job-packet-card .contractor-photo-actions,
+  .role-portal-shell .contractor-job-packet-card .contractor-photo-actions,
+  .contractor-dashboard .contractor-job-packet-card .contractor-photo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card),
+  .role-portal-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) {
+    --job-action-gap: 20px;
+    --job-card-pad: 20px;
+    --job-button-gap: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-shell .contractor-job-packet-card .contractor-photo-actions,
+  .role-portal-shell .contractor-job-packet-card .contractor-photo-actions,
+  .contractor-dashboard .contractor-job-packet-card .contractor-photo-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+}
+/* END job-card-spacing.css */
+
+/* BEGIN one-nav.css */
+/* Shared navigation: hamburger + drawer for owner, worker, and client. */
+.dashboard-shell > .sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.dashboard-shell-header {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: sticky;
+  top: 0;
+  z-index: 100 !important;
+}
+
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar,
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-language,
+.dashboard-shell-header .mobile-nav-language select,
+.dashboard-shell-header .mobile-nav-language button {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  position: relative;
+  z-index: 100 !important;
+}
+
+.dashboard-shell-header .mobile-nav-menu-btn {
+  position: relative;
+  z-index: 101 !important;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.mobile-nav-overlay-portal {
+  pointer-events: auto !important;
+}
+
+.mobile-nav-drawer,
+.mobile-nav-drawer * {
+  pointer-events: auto;
+}
+/* END one-nav.css */
+
+/* BEGIN box-stack-spacing.css */
+/* Canonical signed-in spacing system.
+   Use these four relationship tokens on every Owner, Worker, Client, desktop,
+   mobile, and native-web surface. Do not add page-specific spacing scales. */
+
+:root {
+  --everitt-label-gap: 8px;
+  --everitt-control-gap: 12px;
+  --everitt-heading-gap: 16px;
+  --everitt-section-gap: 22px;
+  --everitt-space-in: 20px;
+
+  /* Legacy aliases point to the same scale so older components cannot drift. */
+  --eo-space-xs: var(--everitt-label-gap);
+  --eo-space-sm: var(--everitt-control-gap);
+  --eo-space-md: var(--everitt-heading-gap);
+  --eo-space-lg: var(--everitt-section-gap);
+  --section-gap: var(--everitt-section-gap);
+  --card-pad: var(--everitt-space-in);
+}
+
+.dashboard-shell .page-actions,
+.dashboard-shell .page-header-action,
+.dashboard-shell .inline-actions,
+.dashboard-shell .button-row,
+.dashboard-shell .settings-actions,
+.dashboard-shell .record-actions,
+.dashboard-shell .owner-home-actions,
+.dashboard-shell .finance-filter-bar,
+.dashboard-shell .portal-job-finance,
+.dashboard-shell .filter-row,
+.dashboard-shell .status-tabs,
+.dashboard-shell .segmented-control,
+.dashboard-shell .jobs-header-actions,
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .jobs-filter-grid,
+.dashboard-shell .jobs-advanced-filters > .jobs-filter-grid,
+.role-portal-shell .page-actions,
+.role-portal-shell .inline-actions,
+.role-portal-shell .button-row,
+.role-portal-shell .filter-row,
+.role-portal-shell .status-tabs,
+.role-portal-shell .segmented-control {
+  gap: var(--everitt-control-gap) !important;
+}
+
+/* Labels own the small relationship to their field. */
+.dashboard-shell label,
+.role-portal-shell label {
+  min-width: 0;
+}
+
+.dashboard-shell label > :is(input, select, textarea, .input),
+.role-portal-shell label > :is(input, select, textarea, .input) {
+  display: block;
+  width: 100%;
+  margin-top: var(--everitt-label-gap) !important;
+}
+
+.dashboard-shell label + input,
+.dashboard-shell label + select,
+.dashboard-shell label + textarea,
+.dashboard-shell label + .input,
+.role-portal-shell label + input,
+.role-portal-shell label + select,
+.role-portal-shell label + textarea,
+.role-portal-shell label + .input {
+  margin-top: var(--everitt-label-gap) !important;
+}
+
+.dashboard-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.dashboard-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h1 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h2 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h3 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control),
+.role-portal-shell h4 + :is(button, a.btn, input, select, textarea, .input, .page-actions, .button-row, .inline-actions, .filter-row, .status-tabs, .segmented-control) {
+  margin-top: var(--everitt-heading-gap) !important;
+}
+
+.dashboard-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label,
+.role-portal-shell :is(button, a.btn, input, select, textarea, .input, .button-row, .inline-actions, .page-actions, .segmented-control) + label,
+.dashboard-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions),
+.role-portal-shell :is(input, select, textarea, .input) + :is(.segmented-control, .status-tabs, .filter-row, .button-row, .inline-actions) {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .page-actions + *,
+.dashboard-shell .page-header-action + *,
+.dashboard-shell .inline-actions + *,
+.dashboard-shell .button-row + *,
+.dashboard-shell .filter-row + *,
+.dashboard-shell .status-tabs + *,
+.dashboard-shell .segmented-control + *,
+.dashboard-shell .jobs-header-actions + *,
+.dashboard-shell .jobs-filter-tabs + *,
+.dashboard-shell .jobs-filter-grid + *,
+.dashboard-shell .jobs-advanced-filters + *,
+.role-portal-shell .page-actions + *,
+.role-portal-shell .inline-actions + *,
+.role-portal-shell .button-row + *,
+.role-portal-shell .filter-row + *,
+.role-portal-shell .status-tabs + *,
+.role-portal-shell .segmented-control + * {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .jobs-filter-tabs { margin-bottom: var(--everitt-section-gap) !important; }
+.dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .jobs-filter-tabs + .jobs-filter-grid,
+.dashboard-shell .jobs-filter-tabs + .jobs-filter-control,
+.dashboard-shell .jobs-filter-tabs ~ .jobs-filter-grid,
+.dashboard-shell .jobs-filter-tabs ~ .jobs-advanced-filters {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .page-actions > * + *,
+.dashboard-shell .page-header-action > * + *,
+.dashboard-shell .inline-actions > * + *,
+.dashboard-shell .button-row > * + *,
+.dashboard-shell .settings-actions > * + *,
+.dashboard-shell .record-actions > * + *,
+.dashboard-shell .owner-home-actions > * + *,
+.dashboard-shell .filter-row > * + *,
+.dashboard-shell .status-tabs > * + *,
+.dashboard-shell .segmented-control > * + *,
+.dashboard-shell .jobs-header-actions > * + *,
+.dashboard-shell .jobs-filter-tabs > * + *,
+.dashboard-shell .jobs-filter-grid > * + *,
+.role-portal-shell .page-actions > * + *,
+.role-portal-shell .inline-actions > * + *,
+.role-portal-shell .button-row > * + *,
+.role-portal-shell .filter-row > * + *,
+.role-portal-shell .status-tabs > * + *,
+.role-portal-shell .segmented-control > * + * {
+  margin-top: 0 !important;
+}
+
+.dashboard-shell .jobs-filter-control,
+.dashboard-shell .jobs-filter-control select,
+.dashboard-shell .jobs-filter-tab { margin-bottom: 0 !important; }
+
+.dashboard-shell .app-page-stage form,
+.dashboard-shell .app-page-stage .form,
+.dashboard-shell .app-page-stage fieldset,
+.role-portal-shell form,
+.role-portal-shell .form,
+.role-portal-shell fieldset {
+  row-gap: var(--everitt-control-gap);
+}
+
+.dashboard-shell .app-page-stage form > * + *,
+.dashboard-shell .app-page-stage .form > * + *,
+.dashboard-shell .app-page-stage fieldset > * + *,
+.role-portal-shell form > * + *,
+.role-portal-shell .form > * + *,
+.role-portal-shell fieldset > * + * {
+  margin-top: var(--everitt-control-gap) !important;
+}
+
+.dashboard-shell .app-page-stage form > label + :is(input, select, textarea, .input),
+.dashboard-shell .app-page-stage .form > label + :is(input, select, textarea, .input),
+.dashboard-shell .app-page-stage fieldset > label + :is(input, select, textarea, .input),
+.role-portal-shell form > label + :is(input, select, textarea, .input),
+.role-portal-shell .form > label + :is(input, select, textarea, .input),
+.role-portal-shell fieldset > label + :is(input, select, textarea, .input) {
+  margin-top: var(--everitt-label-gap) !important;
+}
+
+.dashboard-shell .app-page-stage > * + *,
+.dashboard-shell .app-page-content > * + *,
+.dashboard-shell .contractor-main > * + *,
+.dashboard-shell .client-main > * + *,
+.role-portal-shell .app-page-stage > * + * {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .app-page-content > .card + .card,
+.dashboard-shell .app-page-stage > .card + .card,
+.dashboard-shell .contractor-main > .card + .card,
+.dashboard-shell .client-main > .card + .card,
+.role-portal-shell .card + .card {
+  margin-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell :is(.page-actions, .page-header-action, .inline-actions, .button-row, .filter-row, .status-tabs, .segmented-control, .jobs-filter-grid, form, .form, fieldset),
+.role-portal-shell :is(.page-actions, .inline-actions, .button-row, .filter-row, .status-tabs, .segmented-control, form, .form, fieldset) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell :is(input, select, textarea, button, .btn, .input),
+.role-portal-shell :is(input, select, textarea, button, .btn, .input) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card),
+.role-portal-shell :is(.card, .panel, .settings-card) {
+  padding: var(--everitt-space-in) !important;
+  box-sizing: border-box;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card) > :first-child,
+.role-portal-shell :is(.card, .panel, .settings-card) > :first-child { margin-top: 0 !important; }
+.dashboard-shell :is(.card, .panel, .settings-card) > :last-child,
+.role-portal-shell :is(.card, .panel, .settings-card) > :last-child { margin-bottom: 0 !important; }
+
+/* Loose direct-child buttons may stack vertically; grouped action rows use their container gap only. */
+.dashboard-shell :is(.card, .panel, .settings-card) > :is(button, .btn, a.btn) + :is(button, .btn, a.btn),
+.role-portal-shell :is(.card, .panel, .settings-card) > :is(button, .btn, a.btn) + :is(button, .btn, a.btn) {
+  margin-top: var(--everitt-control-gap) !important;
+}
+
+.dashboard-shell .settings-card [role='region'] > div > div,
+.role-portal-shell .settings-card [role='region'] > div > div {
+  display: grid;
+  gap: var(--everitt-control-gap) !important;
+  padding-top: var(--everitt-section-gap) !important;
+}
+
+.dashboard-shell .settings-card [role='region'] :is(input, select, textarea, button, .btn, .input),
+.role-portal-shell .settings-card [role='region'] :is(input, select, textarea, button, .btn, .input) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-shell .settings-card [role='region'] :is(input, select, textarea, .input) + :is(button, .btn),
+.role-portal-shell .settings-card [role='region'] :is(input, select, textarea, .input) + :is(button, .btn) {
+  margin-top: 0 !important;
+}
+
+/* People is made of four groups, not one accidental stack. */
+.dashboard-shell .team-directory-card { display: grid; gap: 0 !important; }
+.dashboard-shell .team-directory-header { margin-bottom: var(--everitt-section-gap) !important; }
+.dashboard-shell .team-directory-header .team-directory-actions { margin-top: var(--everitt-heading-gap) !important; }
+.dashboard-shell .team-directory-filters {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--everitt-control-gap) !important;
+  margin: 0 0 var(--everitt-section-gap) !important;
+}
+.dashboard-shell .team-directory-filters label { margin: 0 !important; }
+.dashboard-shell .team-directory-card > .segmented-control {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  gap: var(--everitt-control-gap) !important;
+  margin: 0 0 var(--everitt-section-gap) !important;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.86);
+}
+.dashboard-shell .team-directory-card > .segmented-control .btn {
+  width: auto !important;
+  min-width: 88px;
+  margin: 0 !important;
+  box-shadow: none;
+}
+.dashboard-shell .team-directory-state { margin: 0 0 var(--everitt-section-gap) !important; }
+.dashboard-shell .team-member-list { display: grid; gap: var(--everitt-control-gap) !important; }
+.dashboard-shell .team-directory-list-toggle { margin-top: var(--everitt-heading-gap) !important; }
+
+@media (max-width: 640px) {
+  :root { --everitt-space-in: 16px; }
+  .dashboard-shell .team-directory-filters { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-shell .team-directory-header .team-directory-actions { display: grid !important; grid-template-columns: minmax(0,1fr); }
+  .dashboard-shell .team-directory-header .team-directory-actions .btn { width: 100%; }
+  .dashboard-shell .team-directory-card > .segmented-control { width: 100%; display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .dashboard-shell .team-directory-card > .segmented-control .btn { min-width: 0; width: 100% !important; }
+}
+/* END box-stack-spacing.css */
+
+/* BEGIN signed-in-stability.css */
+/* Shared signed-in stability rule.
+   Prevents body-level horizontal drift without changing page visuals or behavior. */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  touch-action: pan-y;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.app-shell,
+.app-page-shell,
+.app-page-stage,
+.app-page-content,
+.contractor-main,
+.client-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.dashboard-shell *,
+.role-portal-shell *,
+.app-shell *,
+.app-page-shell * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.dashboard-shell img,
+.role-portal-shell img,
+.app-shell img,
+.app-page-shell img,
+.dashboard-shell video,
+.role-portal-shell video,
+.app-shell video,
+.app-page-shell video,
+.dashboard-shell canvas,
+.role-portal-shell canvas,
+.app-shell canvas,
+.app-page-shell canvas,
+.dashboard-shell svg,
+.role-portal-shell svg,
+.app-shell svg,
+.app-page-shell svg {
+  max-width: 100%;
+}
+
+.dashboard-shell .card,
+.dashboard-shell form,
+.dashboard-shell fieldset,
+.dashboard-shell input,
+.dashboard-shell textarea,
+.dashboard-shell select,
+.dashboard-shell button,
+.dashboard-shell table,
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-mobile-table-wrap,
+.dashboard-shell .jobs-filter-control,
+.dashboard-shell .jobs-advanced-filters,
+.role-portal-shell .card,
+.role-portal-shell form,
+.role-portal-shell fieldset,
+.role-portal-shell input,
+.role-portal-shell textarea,
+.role-portal-shell select,
+.role-portal-shell button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell .hero,
+.dashboard-shell .signed-in-hero,
+.dashboard-shell .app-hero,
+.dashboard-shell .hero-background,
+.role-portal-shell .hero,
+.role-portal-shell .signed-in-hero,
+.role-portal-shell .app-hero,
+.role-portal-shell .hero-background {
+  pointer-events: none;
+}
+
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .chip-row,
+.dashboard-shell .filter-chip-row,
+.dashboard-shell .jobs-mobile-table-wrap {
+  max-width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .role-portal-shell,
+  .app-shell,
+  .app-page-shell {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .dashboard-shell .app-page-stage,
+  .dashboard-shell .app-page-content,
+  .role-portal-shell .app-page-stage,
+  .role-portal-shell .app-page-content,
+  .dashboard-shell .contractor-main,
+  .dashboard-shell .client-main {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+/* END signed-in-stability.css */
+
+/* BEGIN hero-last.css */
+/* Exact AuthShell / login backdrop. */
+.dashboard-shell,
+.dashboard-shell.role-portal-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell {
+  background: #e9eef2 !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background-color: #e9eef2 !important;
+  background-image: url('/hero.jpg') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.62 !important;
+  filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
+  -webkit-filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
+  transform: scale(1.015) !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  background:
+    linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
+    linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3)) !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell-background,
+  .contractor-background {
+    background-position: 56% center !important;
+  }
+
+  .dashboard-shell-overlay,
+  .contractor-overlay {
+    background: linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48)) !important;
+  }
+}
+/* END hero-last.css */
+
+/* BEGIN visual-unify.css */
+/* Last visual pass: type, color, inner spacing. No route or data changes. */
+:root {
+  --eo-ink: #132433;
+  --eo-muted: #31495b;
+  --eo-line: #c9d4dc;
+  --eo-accent: #243f53;
+  --eo-paper: #ffffff;
+}
+
+html,
+body,
+.dashboard-shell,
+.dashboard-shell *,
+.role-portal-shell,
+.role-portal-shell *,
+.app-footer,
+.mobile-nav,
+.mobile-nav * {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.dashboard-shell .app-page-stage,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card {
+  background: var(--eo-paper) !important;
+  color: var(--eo-ink) !important;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell button[type='submit'],
+.role-portal-shell .btn-primary {
+  background: var(--eo-accent) !important;
+  border-color: var(--eo-accent) !important;
+  color: #fff !important;
+}
+
+.dashboard-shell .btn:not(.btn-primary),
+.role-portal-shell .btn:not(.btn-primary) {
+  background: #fff !important;
+  color: var(--eo-ink) !important;
+  border: 1px solid var(--eo-line) !important;
+}
+
+.dashboard-shell .team-directory-card {
+  display: grid !important;
+  gap: 20px !important;
+}
+
+.dashboard-shell .team-directory-header {
+  display: grid !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .team-directory-actions,
+.dashboard-shell .inline-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+}
+
+.dashboard-shell .team-directory-filters {
+  display: grid !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .team-directory-card > .segmented-control {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .team-directory-card > .segmented-control .btn {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .team-member-list {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell .team-directory-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-shell .team-directory-actions .btn {
+    width: 100% !important;
+  }
+}
+/* END visual-unify.css */
+
+/* BEGIN readability-last.css */
+/* Final signed-in readability guardrail.
+   Applies after visual-unify.css. No feature, route, role, or workflow changes. */
+
+:root {
+  --everitt-readable-ink: #102b3d;
+  --everitt-readable-muted: #31495b;
+  --everitt-readable-surface: #ffffff;
+  --everitt-readable-accent: #243f53;
+  --everitt-readable-on-accent: #ffffff;
+  --everitt-inline-gap: 8px;
+  --everitt-control-gap: 12px;
+}
+
+/* Preserve real word/element separation in compact summary rows. */
+.dashboard-shell :is(.bookkeeping-ledger-summary, .summary-row, .metric-summary, .record-summary, .status-summary),
+.role-portal-shell :is(.bookkeeping-ledger-summary, .summary-row, .metric-summary, .record-summary, .status-summary) {
+  column-gap: var(--everitt-inline-gap) !important;
+  row-gap: var(--everitt-inline-gap) !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary > span,
+.role-portal-shell .bookkeeping-ledger-summary > span {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: var(--everitt-inline-gap) !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-summary,
+.role-portal-shell .bookkeeping-ledger-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  gap: var(--everitt-control-gap) !important;
+  align-items: center !important;
+}
+
+.dashboard-shell .bookkeeping-ledger-total,
+.role-portal-shell .bookkeeping-ledger-total {
+  margin-left: var(--everitt-inline-gap) !important;
+}
+
+/* Light cards/panels always use dark readable ink. */
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card),
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) {
+  color: var(--everitt-readable-ink) !important;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) :is(h1, h2, h3, h4, strong, label, summary),
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) :is(h1, h2, h3, h4, strong, label, summary) {
+  color: var(--everitt-readable-ink) !important;
+}
+
+.dashboard-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) .muted,
+.role-portal-shell :is(.card, .panel, .settings-card, .bookkeeping-ledger, .bookkeeping-metric-card) .muted {
+  color: var(--everitt-readable-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Filled Everitt actions always use a light foreground. */
+.dashboard-shell :is(.btn-primary, .is-active, [aria-pressed='true']),
+.role-portal-shell :is(.btn-primary, .is-active, [aria-pressed='true']) {
+  background-color: var(--everitt-readable-accent) !important;
+  border-color: var(--everitt-readable-accent) !important;
+  color: var(--everitt-readable-on-accent) !important;
+}
+
+.dashboard-shell :is(.btn-primary, .is-active, [aria-pressed='true']) *,
+.role-portal-shell :is(.btn-primary, .is-active, [aria-pressed='true']) * {
+  color: var(--everitt-readable-on-accent) !important;
+}
+
+/* Unfilled controls remain dark on light surfaces. */
+.dashboard-shell :is(button, .btn, input, select, textarea):not(.btn-primary):not(.is-active):not([aria-pressed='true']),
+.role-portal-shell :is(button, .btn, input, select, textarea):not(.btn-primary):not(.is-active):not([aria-pressed='true']) {
+  color: var(--everitt-readable-ink);
+}
+
+/* Common adjacent inline pieces must never visually concatenate. */
+.dashboard-shell :is(summary, .summary-row, .metric-summary, .record-summary, .status-summary) > * + *,
+.role-portal-shell :is(summary, .summary-row, .metric-summary, .record-summary, .status-summary) > * + * {
+  margin-left: var(--everitt-inline-gap);
+}
+
+/* On narrow screens, wrapping is preferred over crushed text. */
+@media (max-width: 640px) {
+  .dashboard-shell .bookkeeping-ledger-summary,
+  .role-portal-shell .bookkeeping-ledger-summary {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .dashboard-shell .bookkeeping-ledger-summary::after,
+  .role-portal-shell .bookkeeping-ledger-summary::after {
+    grid-column: 2 !important;
+  }
+
+  .dashboard-shell .bookkeeping-ledger-total,
+  .role-portal-shell .bookkeeping-ledger-total {
+    grid-column: 1 !important;
+    margin-left: 0 !important;
+  }
+}
+/* END readability-last.css */
+
+/* BEGIN everitt-login-look.css */
+/* Keep login type/color. Backdrop is owned by hero-last + AppShell overlay. */
+html,
+body,
+.dashboard-shell,
+.dashboard-shell *,
+.role-portal-shell,
+.role-portal-shell *,
+.mobile-nav,
+.sidebar,
+.app-footer {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .app-page-stage,
+.dashboard-shell .bookkeeping-metric-card,
+.dashboard-shell .bookkeeping-ledger {
+  background: #ffffff !important;
+  color: #132433 !important;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell button[type='submit'],
+.dashboard-shell .bookkeeping-range.is-active {
+  background: #243f53 !important;
+  border-color: #243f53 !important;
+  color: #ffffff !important;
+}
+/* END everitt-login-look.css */
+
+/* BEGIN final-layout-guard.css */
+/* Final responsive layout guard.
+   This file must remain a late global stylesheet import so authenticated pages
+   cannot inherit stale desktop offsets when the sidebar is replaced by mobile navigation. */
+
+.dashboard-shell,
+.dashboard-shell > .main,
+.app-page-content,
+.page-content,
+.dashboard-content,
+.today-page,
+.dashboard-home {
+  min-width: 0;
+}
+
+.main {
+  max-width: none;
+}
+
+.app-page-top-language {
+  display: none !important;
+}
+
+/* Never animate structural layout properties. This prevents the page from visibly
+   sliding after hydration, workspace loading, or native-platform detection. */
+.dashboard-shell,
+.dashboard-shell > .main,
+.dashboard-shell-header,
+.dashboard-shell-mobile,
+.sidebar,
+.app-page-content,
+.today-page,
+.dashboard-home {
+  transition-property: none !important;
+  animation-name: none !important;
+}
+
+/* Owner, worker, and client all use the worker chrome: no left sidebar, hamburger top right. */
+.dashboard-shell {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.dashboard-shell > .sidebar,
+.dashboard-shell .sidebar {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.dashboard-shell-header,
+.dashboard-shell-mobile {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: sticky !important;
+  top: 0;
+  z-index: 100;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 10px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)) !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-top-logo {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.dashboard-shell > .main,
+.main {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  inset: auto !important;
+  translate: none !important;
+  transform: none !important;
+  padding-left: clamp(16px, 3vw, 30px) !important;
+  padding-right: clamp(16px, 3vw, 30px) !important;
+}
+
+.main > .app-page-top,
+.main > .app-page-content,
+.app-page-content,
+.page-content,
+.dashboard-content,
+.app-authenticated-header,
+.app-authenticated-header-search,
+.app-authenticated-header-search-only,
+body:has(.today-page) .app-page-content,
+body:has(.today-page) .today-page,
+.today-page,
+.dashboard-home {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-inline: 0 !important;
+  inset: auto !important;
+  translate: none !important;
+  transform: none !important;
+}
+
+.app-page-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.today-page,
+.dashboard-home {
+  justify-self: stretch !important;
+  align-self: stretch !important;
+}
+
+.today-page > *,
+.dashboard-home > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell > .main,
+  .main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* Customers / CRM page polish */
+.customer-card-row {
+  min-width: 0;
+  padding: 20px !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  border: 1px solid #c5d1d9 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f7fafb 100%) !important;
+  box-shadow: 0 8px 22px rgba(23, 44, 59, 0.07) !important;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.customer-card-row:hover {
+  transform: translateY(-2px);
+  border-color: #8ea3b1 !important;
+  box-shadow: 0 14px 32px rgba(23, 44, 59, 0.12) !important;
+}
+
+.customer-card-row > div:last-child {
+  min-width: 0;
+}
+
+.customer-card-row h3 {
+  margin: 0 0 4px;
+  color: #162b3b;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.customer-card-row p {
+  margin: 4px 0;
+  color: #536979;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.customer-card-row .muted {
+  margin-bottom: 10px;
+  color: #3d6073;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.customer-card-row .record-actions {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #dbe3e8;
+}
+
+.customer-logo-preview {
+  border: 1px solid #c4d0d8;
+  border-radius: 14px;
+  background: #ffffff;
+  object-fit: cover;
+  box-shadow: 0 5px 14px rgba(23, 44, 59, 0.08);
+}
+
+.app-page-content > .card.form {
+  padding: clamp(20px, 3vw, 28px) !important;
+  border: 1px solid #c3d0d8 !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(23, 44, 59, 0.07) !important;
+}
+
+.app-page-content > .card.form h3 {
+  margin-bottom: 4px;
+  color: #172b3a;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.app-page-content > .card.form .btn-primary {
+  justify-self: start;
+  min-width: 170px;
+}
+
+.app-page-content > .job-detail-actions {
+  padding: 8px 0 2px;
+}
+
+.app-page-content > .job-detail-actions .btn {
+  min-height: 42px;
+  padding-inline: 15px;
+  border-radius: 999px;
+}
+
+@media (min-width: 760px) {
+  .app-page-content > .card:last-child:has(.customer-card-row) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px !important;
+  }
+
+  .app-page-content > .card:last-child:has(.customer-card-row) > .customer-card-row {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .customer-card-row {
+    grid-template-columns: 1fr;
+    padding: 18px !important;
+  }
+
+  .customer-card-row .customer-logo,
+  .customer-card-row img {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .app-page-content > .card.form .btn-primary {
+    width: 100%;
+  }
+
+  .app-page-content > .job-detail-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-page-content > .job-detail-actions .btn {
+    width: 100%;
+  }
+}
+/* END final-layout-guard.css */
+
+/* BEGIN view-center-final.css */
+/* Last-loaded alignment lock.
+   One centered column. Equal left/right inset. Cards, search, and footer share width.
+   Navigation is the worker hamburger, not a left sidebar. */
+
+:root {
+  --eo-view-inset: clamp(14px, 4.2vw, 28px);
+  --eo-view-max: 760px;
+  --eo-box-gap: 16px;
+}
+
+@media (min-width: 900px) {
+  :root { --eo-view-max: 920px; }
+}
+
+@media (min-width: 1200px) {
+  :root { --eo-view-max: 1080px; }
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.contractor-main,
+.client-main {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.role-portal-shell .main,
+.contractor-main,
+.client-main,
+.app-page-content,
+.app-page-stage,
+.page-content,
+.dashboard-content,
+.today-page,
+.dashboard-home,
+.owner-home-sheet,
+.contractor-dashboard,
+.client-upcoming-simple {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-stage,
+.role-portal-shell .app-page-content,
+.contractor-main .app-page-content,
+.client-main .app-page-content,
+.today-page,
+.dashboard-home {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+}
+
+.dashboard-shell .app-page-content > *,
+.dashboard-shell .app-page-stage > *,
+.role-portal-shell .app-page-content > *,
+.contractor-main > *,
+.client-main > *,
+.today-page > *,
+.dashboard-home > *,
+.owner-home-sheet,
+.owner-home-sheet > *,
+.dashboard-shell .everitt-cmd-trigger,
+.role-portal-shell .everitt-cmd-trigger,
+.contractor-main .everitt-cmd-trigger,
+.dashboard-shell .app-footer,
+.role-portal-shell .app-footer,
+.app-footer,
+.dashboard-shell .page-header,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .settings-card,
+.dashboard-shell .role-summary-card,
+.dashboard-shell .client-job-card,
+.dashboard-shell .quote-workspace,
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-shell-minimal {
+  width: min(100%, var(--eo-view-max)) !important;
+  max-width: var(--eo-view-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-authenticated-header,
+.dashboard-shell .dashboard-shell-mobile,
+.dashboard-shell .app-page-top {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.dashboard-shell .app-authenticated-header > *,
+.dashboard-shell .dashboard-shell-mobile > *,
+.dashboard-shell .app-page-top > *:not(.sidebar) {
+  width: min(100%, calc(var(--eo-view-max) + (var(--eo-view-inset) * 2))) !important;
+  max-width: calc(var(--eo-view-max) + (var(--eo-view-inset) * 2)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--eo-view-inset) !important;
+  padding-right: var(--eo-view-inset) !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .everitt-cmd-trigger {
+  display: block !important;
+}
+
+.dashboard-shell .app-footer,
+.app-footer {
+  width: min(100%, var(--eo-view-max)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 640px) {
+  :root { --eo-view-inset: 16px; --eo-view-max: 100%; }
+
+  .dashboard-shell .app-page-content,
+  .dashboard-shell .app-page-stage,
+  .today-page,
+  .dashboard-home {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .dashboard-shell .app-page-content > *,
+  .dashboard-shell .app-page-stage > *,
+  .today-page > *,
+  .dashboard-home > *,
+  .dashboard-shell .everitt-cmd-trigger,
+  .dashboard-shell .app-footer,
+  .app-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* One nav rule for every view: worker chrome.
+   No left sidebar. Logo left, 3-stripe menu top right. */
+.dashboard-shell {
+  display: block !important;
+}
+
+.dashboard-shell > .sidebar,
+.dashboard-shell .sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
+
+.dashboard-shell-header,
+.dashboard-shell > .dashboard-shell-header {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  width: 100% !important;
+}
+
+.dashboard-shell-header .mobile-nav,
+.dashboard-shell-header .mobile-nav-bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell-header .mobile-nav-menu-btn,
+.dashboard-shell-header .mobile-nav-top-logo {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.mobile-nav-drawer {
+  background: #eef3f6 !important;
+  color: #173044 !important;
+}
+
+.mobile-nav-drawer-link,
+.mobile-nav-drawer .nav-item {
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: #173044 !important;
+}
+
+/* Universal: boxes, buttons, pills, and cards never touch. */
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-shell-minimal,
+.role-portal-shell .jobs-list-page {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: var(--eo-box-gap) !important;
+}
+
+.dashboard-shell .page-header,
+.role-portal-shell .page-header,
+.contractor-main .page-header,
+.client-main .page-header {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .page-header + *,
+.dashboard-shell .jobs-list-page > * + *,
+.dashboard-shell .app-page-stage > * + *,
+.dashboard-shell .app-page-content > * + *,
+.role-portal-shell .page-header + *,
+.role-portal-shell .app-page-content > * + *,
+.contractor-main > * + *,
+.client-main > * + * {
+  margin-top: var(--eo-box-gap) !important;
+}
+
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .chip-row,
+.dashboard-shell .filter-chip-row,
+.dashboard-shell .status-tabs,
+.dashboard-shell .segmented-control,
+.role-portal-shell .status-tabs,
+.role-portal-shell .segmented-control {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.dashboard-shell .card + .card,
+.dashboard-shell .panel + .panel,
+.dashboard-shell .settings-card + .settings-card,
+.role-portal-shell .card + .card,
+.contractor-main .card + .card,
+.client-main .card + .card {
+  margin-top: var(--eo-box-gap) !important;
+}
+/* END view-center-final.css */
+
+/* BEGIN unified-record-cards.css */
+/* Shared floating card treatment based on the finished Team page. */
+
+:root {
+  --eo-record-surface: var(--eo-color-surface);
+  --eo-record-border: var(--eo-color-border);
+  --eo-record-shadow: var(--eo-shadow-card);
+  --eo-record-text: var(--eo-color-text);
+  --eo-record-muted: var(--eo-color-muted);
+}
+
+/* Customers */
+.customer-card-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--eo-space-4) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.customer-card-row + .customer-card-row {
+  margin-top: var(--eo-space-4) !important;
+}
+
+.customer-card-row > div:last-child {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.customer-card-row h3 {
+  margin: 0 0 4px !important;
+  font-size: 1.04rem !important;
+  color: var(--eo-record-text) !important;
+}
+
+.customer-card-row p {
+  margin: 0 0 3px !important;
+  color: var(--eo-color-text-secondary) !important;
+  overflow-wrap: anywhere !important;
+}
+
+.customer-card-row .muted {
+  color: var(--eo-record-muted) !important;
+}
+
+.customer-card-row .record-actions {
+  margin-top: var(--eo-space-2) !important;
+}
+
+/* Schedule */
+.schedule-views > section > div[style*='display: grid'] {
+  gap: var(--eo-space-4) !important;
+}
+
+.schedule-views article.card {
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.schedule-views article.card > div:first-child {
+  align-items: center !important;
+}
+
+.schedule-views article.card h3 {
+  margin-bottom: var(--eo-space-1) !important;
+  font-size: 1.04rem !important;
+  color: var(--eo-record-text) !important;
+}
+
+.schedule-views article.card p {
+  margin-top: 0 !important;
+  margin-bottom: var(--eo-space-1) !important;
+  color: var(--eo-color-text-secondary) !important;
+}
+
+.schedule-views article.card .muted {
+  color: var(--eo-record-muted) !important;
+}
+
+.schedule-views article.card .button-row {
+  margin-top: var(--eo-space-3) !important;
+}
+
+.schedule-views article.card details {
+  margin-top: var(--eo-space-3) !important;
+  padding-top: var(--eo-space-2) !important;
+  border-top: 1px solid var(--eo-color-border) !important;
+}
+
+/* Team members */
+.team-member-list {
+  display: grid !important;
+  gap: var(--eo-space-4) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.team-member-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  column-gap: var(--eo-space-4) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.team-member-card > .record-card-overlay-link {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+}
+
+.team-member-card .record-card-overlay-label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  border: 0 !important;
+}
+
+.team-member-card > .team-member-copy,
+.team-member-card > div:not(.team-member-actions):not(.inline-actions) {
+  grid-column: 1 !important;
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.team-member-card > .team-member-actions,
+.team-member-card > .inline-actions {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: var(--eo-space-2) !important;
+  margin: 0 !important;
+}
+
+.team-member-card p {
+  margin-top: 0 !important;
+  margin-bottom: 2px !important;
+  color: var(--eo-color-text-secondary) !important;
+}
+
+.team-member-card .muted {
+  color: var(--eo-record-muted) !important;
+}
+
+/* Contractor and client portals use the shared slide-out menu only. */
+.contractor-dash-nav {
+  display: none !important;
+}
+
+/* Client portal */
+.client-job-card-list {
+  display: grid !important;
+  gap: var(--eo-space-4) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.client-job-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--eo-space-5) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  text-decoration: none !important;
+}
+
+.client-job-card:hover,
+.client-job-card:focus-visible {
+  transform: translateY(-1px) !important;
+  border-color: var(--eo-color-border-strong) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+  outline: none !important;
+}
+
+.client-job-card-main {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.client-job-card-main .eyebrow {
+  margin: 0 0 var(--eo-space-2) !important;
+}
+
+.client-job-card-main h3 {
+  margin: 0 0 4px !important;
+  font-size: 1.04rem !important;
+  color: var(--eo-record-text) !important;
+}
+
+.client-job-secondary {
+  margin: 0 !important;
+  color: var(--eo-record-muted) !important;
+}
+
+.client-job-schedule {
+  flex: 0 0 auto !important;
+  text-align: right !important;
+}
+
+.client-job-schedule strong,
+.client-job-schedule span {
+  display: block !important;
+}
+
+.client-job-schedule span {
+  margin-top: 4px !important;
+  color: var(--eo-record-muted) !important;
+}
+
+/* Jobs detail */
+.job-detail-shell {
+  display: grid !important;
+  gap: var(--eo-space-4) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.job-detail-shell > .page-head {
+  margin-bottom: var(--eo-space-1) !important;
+  padding: 0 !important;
+}
+
+.job-detail-shell > .page-head h2,
+.job-detail-shell > .page-head p {
+  margin-top: 0 !important;
+}
+
+.job-detail-shell > .card,
+.job-detail-shell > details.card,
+.job-detail-shell > section.card,
+.job-detail-shell .job-photos-card {
+  margin-bottom: 0 !important;
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.job-detail-shell > section:not(.card) {
+  margin-bottom: 0 !important;
+  padding: var(--eo-card-padding) !important;
+  border: 1px solid var(--eo-record-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  background: var(--eo-record-surface) !important;
+  box-shadow: var(--eo-record-shadow) !important;
+  color: var(--eo-record-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.job-detail-shell h3 {
+  margin-top: 0 !important;
+  color: var(--eo-record-text) !important;
+}
+
+.job-detail-shell .muted {
+  color: var(--eo-record-muted) !important;
+}
+
+.job-detail-shell .form {
+  gap: var(--eo-space-3) !important;
+}
+
+.job-detail-shell .job-detail-actions,
+.job-detail-shell .button-row {
+  gap: var(--eo-space-2) !important;
+  flex-wrap: wrap !important;
+}
+
+.job-detail-shell .card .card {
+  margin-top: var(--eo-space-4) !important;
+  border-radius: var(--eo-radius-control) !important;
+  border-color: var(--eo-color-border) !important;
+  background: var(--eo-color-surface-subtle) !important;
+  box-shadow: none !important;
+}
+
+.job-detail-shell details.card > summary {
+  cursor: pointer !important;
+  font-weight: 700 !important;
+}
+
+/* Remove every remaining parent frame around record groups. Entries should float directly on the shared page background. */
+.card:has(> .customer-card-row),
+.card:has(.customer-card-row),
+.card:has(> .customer-card-list),
+.card:has(.customer-card-list),
+.card:has(> .team-member-list),
+.card:has(.team-member-list),
+.card:has(> .client-job-card-list),
+.card:has(.client-job-card-list),
+.card:has(> .finance-expense-list),
+.card:has(.finance-expense-list),
+.card:has(> .worker-list),
+.card:has(.worker-list),
+.card:has(> .contractor-list),
+.card:has(.contractor-list),
+.card:has(> .record-list),
+.card:has(.record-list),
+.card:has(> .jobs-operations-table),
+.card:has(.jobs-operations-table),
+.panel:has(.customer-card-row),
+.panel:has(.team-member-list),
+.panel:has(.client-job-card-list),
+.panel:has(.finance-expense-list),
+.panel:has(.worker-list),
+.panel:has(.contractor-list),
+.panel:has(.record-list),
+.panel:has(.jobs-operations-table),
+.role-dashboard-section:has(.client-job-card-list),
+.role-dashboard-section:has(.record-list),
+.portal-dashboard-section:has(.client-job-card-list),
+.portal-dashboard-section:has(.record-list),
+.schedule-views > section:has(article.card),
+.list-panel:has(.customer-card-row),
+.list-panel:has(.team-member-card),
+.list-panel:has(.client-job-card),
+.list-panel:has(.finance-list-card),
+.list-panel:has(.worker-card),
+.list-panel:has(.record-card) {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.customer-card-list,
+.team-member-list,
+.client-job-card-list,
+.finance-expense-list,
+.worker-list,
+.contractor-list,
+.record-list {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 680px) {
+  .customer-card-row,
+  .client-job-card,
+  .team-member-card {
+    align-items: flex-start !important;
+  }
+
+  .customer-card-row,
+  .client-job-card {
+    flex-direction: column !important;
+    gap: var(--eo-space-3) !important;
+  }
+
+  .team-member-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .team-member-card > .team-member-actions,
+  .team-member-card > .inline-actions {
+    grid-column: 1 !important;
+    justify-self: start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .client-job-schedule {
+    width: 100% !important;
+    padding-top: var(--eo-space-2) !important;
+    border-top: 1px solid var(--eo-color-border) !important;
+    text-align: left !important;
+  }
+
+  .schedule-views article.card > div:first-child {
+    align-items: flex-start !important;
+  }
+
+  .job-detail-shell > .card,
+  .job-detail-shell > details.card,
+  .job-detail-shell > section.card,
+  .job-detail-shell > section:not(.card),
+  .job-detail-shell .job-photos-card {
+    padding: var(--eo-card-padding) !important;
+  }
+
+  .job-detail-shell > .page-head {
+    align-items: flex-start !important;
+  }
+}
+/* END unified-record-cards.css */
+
+/* BEGIN row-action-align.css */
+/* Canonical record and list action alignment.
+   Keep all shared Open / Edit / Remove sizing, spacing and baselines here.
+   This file is imported after role/page styles so owner, client, worker and
+   shared pages inherit one final rule without page-specific overrides. */
+
+:root {
+  --eo-action-gap: 8px;
+  --eo-action-height: 42px;
+  --eo-action-min-width: 88px;
+}
+
+.dashboard-shell .list-row,
+.dashboard-shell .team-member-card,
+.dashboard-shell .customer-row,
+.dashboard-shell .worker-card,
+.dashboard-shell .record-card,
+.dashboard-shell .finance-list-card,
+.role-portal-shell .list-row,
+.contractor-main .list-row,
+.client-main .list-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 16px !important;
+  text-align: left !important;
+}
+
+.dashboard-shell .finance-list-card > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Every reusable action group gets one baseline, gap and control height. */
+.record-actions,
+.inline-actions,
+.team-member-actions,
+.team-directory-actions,
+.button-row,
+.job-detail-actions {
+  align-items: stretch !important;
+  gap: var(--eo-action-gap) !important;
+}
+
+.record-actions-inline {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(var(--eo-action-min-width), max-content) !important;
+  justify-content: start !important;
+  align-items: stretch !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 12px !important;
+}
+
+.record-actions-stack {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+}
+
+.record-actions > .btn,
+.record-actions > button,
+.record-actions > a,
+.inline-actions > .btn,
+.team-member-actions > .btn,
+.team-directory-actions > .btn {
+  min-height: var(--eo-action-height) !important;
+  height: var(--eo-action-height) !important;
+  min-width: var(--eo-action-min-width) !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  position: relative !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+/* Grouped actions never inherit vertical sibling spacing from a card. */
+.dashboard-shell .card .record-actions > * + *,
+.dashboard-shell .panel .record-actions > * + *,
+.dashboard-shell .customer-card-row .record-actions > * + *,
+.role-portal-shell .card .record-actions > * + *,
+.role-portal-shell .panel .record-actions > * + *,
+.contractor-main .record-actions > * + *,
+.client-main .record-actions > * + * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .list-row > .inline-actions,
+.dashboard-shell .list-row > .team-member-actions,
+.dashboard-shell .list-row > .record-actions,
+.dashboard-shell .list-row > .button-row,
+.dashboard-shell .team-member-card > .inline-actions,
+.dashboard-shell .team-member-card > .team-member-actions,
+.dashboard-shell .worker-card > .inline-actions,
+.dashboard-shell .record-card > .inline-actions,
+.dashboard-shell .finance-list-card > .inline-actions,
+.role-portal-shell .list-row > .inline-actions,
+.contractor-main .list-row > .inline-actions,
+.client-main .list-row > .inline-actions {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: start !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: var(--eo-action-gap) !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Customer cards use the shared RecordActions component. This is the only
+   global owner of the action row divider, spacing and three-button baseline. */
+.dashboard-shell .customer-card-row .record-actions,
+.customer-card-row .record-actions {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(var(--eo-action-min-width), max-content) !important;
+  justify-content: start !important;
+  align-items: stretch !important;
+  gap: var(--eo-action-gap) !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 12px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #dbe3e8 !important;
+}
+
+.dashboard-shell .customer-card-row .record-actions > *,
+.customer-card-row .record-actions > * {
+  align-self: stretch !important;
+  min-height: var(--eo-action-height) !important;
+  height: var(--eo-action-height) !important;
+  min-width: var(--eo-action-min-width) !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .dashboard-shell .list-row,
+  .dashboard-shell .team-member-card,
+  .dashboard-shell .finance-list-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 12px !important;
+  }
+
+  .dashboard-shell .list-row > .inline-actions,
+  .dashboard-shell .team-member-card > .inline-actions,
+  .dashboard-shell .team-member-card > .team-member-actions,
+  .dashboard-shell .finance-list-card > .inline-actions,
+  .dashboard-shell .finance-list-card > .job-detail-actions {
+    grid-column: 1 !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  .dashboard-shell .finance-list-card > .job-detail-actions,
+  .dashboard-shell .finance-list-card .job-detail-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: var(--eo-action-gap) !important;
+  }
+
+  .dashboard-shell .finance-list-card .job-detail-actions > .btn,
+  .dashboard-shell .finance-list-card .job-detail-actions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .finance-list-card :is(strong,p,span,small) {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  .record-actions-inline,
+  .dashboard-shell .customer-card-row .record-actions,
+  .customer-card-row .record-actions {
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .record-actions-count-1 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .record-actions-count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .record-actions > .btn,
+  .record-actions > button,
+  .record-actions > a {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .record-actions-inline,
+  .dashboard-shell .customer-card-row .record-actions,
+  .customer-card-row .record-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+/* END row-action-align.css */
+
+/* BEGIN form-field-spacing.css */
+/* Universal: labels never sit on top of their boxes. */
+.dashboard-shell label,
+.role-portal-shell label,
+.contractor-main label,
+.client-main label,
+.quote-workspace label,
+.quote-compose label {
+  display: grid !important;
+  gap: var(--everitt-label-gap, 8px) !important;
+  align-content: start !important;
+}
+
+.dashboard-shell label > :is(input, select, textarea, .input),
+.role-portal-shell label > :is(input, select, textarea, .input),
+.quote-workspace label > :is(input, select, textarea, .input),
+.quote-compose label > :is(input, select, textarea, .input) {
+  margin-top: 0 !important;
+  width: 100% !important;
+}
+
+.dashboard-shell .form-grid,
+.quote-workspace .form-grid,
+.quote-compose .form-grid,
+.quote-pricing-settings .form-grid {
+  display: grid !important;
+  gap: var(--everitt-heading-gap, 16px) !important;
+}
+
+.quote-workspace,
+.quote-compose {
+  display: grid !important;
+  gap: var(--everitt-heading-gap, 16px) !important;
+}
+
+.quote-pricing-settings {
+  display: grid !important;
+  gap: var(--everitt-control-gap, 12px) !important;
+  padding: 16px 0 !important;
+}
+
+.quote-pricing-settings summary {
+  margin-bottom: var(--everitt-control-gap, 12px) !important;
+}
+
+.quote-pricing-settings .muted {
+  margin: 0 0 var(--everitt-control-gap, 12px) !important;
+}
+
+/* Record Payment must behave like a real viewport dialog on Safari, iPad,
+   mobile web and native WebViews. Neutralize containing-block effects from
+   ancestor cards and keep every field on the opaque dialog surface. */
+.job-detail-shell:has(.job-payment-modal-backdrop),
+.job-detail-shell section:has(.job-payment-modal-backdrop),
+.job-detail-shell .job-financials-card:has(.job-payment-modal-backdrop) {
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+}
+
+.job-detail-shell .job-payment-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: max(18px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) !important;
+  overflow: auto !important;
+  background: rgba(15, 23, 42, 0.68) !important;
+  box-sizing: border-box !important;
+}
+
+.job-detail-shell .job-payment-modal-backdrop > .job-payment-modal.card,
+.job-detail-shell .job-payment-modal {
+  position: relative !important;
+  width: min(100%, 560px) !important;
+  max-width: 560px !important;
+  max-height: calc(100dvh - 36px) !important;
+  margin: auto !important;
+  padding: 22px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  color: #173044 !important;
+  border: 1px solid #d6dfe5 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 70px rgba(10, 26, 38, 0.3) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-sizing: border-box !important;
+}
+
+.job-detail-shell .job-payment-modal > h4 {
+  display: block !important;
+  margin: 0 0 18px !important;
+  padding: 0 !important;
+  color: #173044 !important;
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+}
+
+.job-detail-shell .job-payment-modal .finance-form-block,
+.job-detail-shell .job-payment-modal .compact-finance-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.job-detail-shell .job-payment-modal label {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 10px 0 0 !important;
+  padding: 0 !important;
+  color: #173044 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+.job-detail-shell .job-payment-modal :is(input, select, textarea, .input) {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: #ffffff !important;
+  color: #173044 !important;
+  -webkit-text-fill-color: #173044 !important;
+  border: 1px solid #cbd6dd !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.job-detail-shell .job-payment-modal :is(input, select) {
+  min-height: 48px !important;
+}
+
+.job-detail-shell .job-payment-modal textarea {
+  min-height: 96px !important;
+}
+
+.job-detail-shell .job-payment-modal .button-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 14px 0 0 !important;
+}
+
+.job-detail-shell .job-payment-modal .button-row > .btn,
+.job-detail-shell .job-payment-modal .button-row > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 50px !important;
+  margin: 0 !important;
+  white-space: normal !important;
+}
+
+@media (max-width: 720px) {
+  .job-detail-shell .job-payment-modal-backdrop {
+    align-items: flex-start !important;
+    padding-top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .job-detail-shell .job-payment-modal-backdrop > .job-payment-modal.card,
+  .job-detail-shell .job-payment-modal {
+    width: 100% !important;
+    max-width: 560px !important;
+    max-height: calc(100dvh - 28px) !important;
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .job-detail-shell .job-payment-modal > h4 {
+    font-size: 22px !important;
+    margin-bottom: 14px !important;
+  }
+}
+/* END form-field-spacing.css */
+
+/* BEGIN signed-in-rhythm-final.css */
+/* Final signed-in spacing and alignment layer.
+   Scope: Owner, Client and Worker views only.
+   Purpose: one predictable vertical rhythm and one control alignment system
+   without changing component logic, routing, data, permissions or actions. */
+
+:root {
+  --eo-rhythm-label: 8px;
+  --eo-rhythm-control: 14px;
+  --eo-rhythm-heading: 16px;
+  --eo-rhythm-section: 26px;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-stage,
+.role-portal-shell .app-page-content,
+.role-portal-shell .app-page-stage {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-stage > *,
+.role-portal-shell .app-page-stage > * {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell .app-page-stage > * + *,
+.role-portal-shell .app-page-stage > * + * {
+  margin-top: var(--eo-rhythm-section) !important;
+}
+
+.dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main),
+.role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: var(--eo-rhythm-section) !important;
+  align-items: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) > *,
+.role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4),
+.role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4) {
+  margin-top: 0 !important;
+}
+
+.dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4) + :is(p,.muted,.meta,.page-subtitle),
+.role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) :is(h1,h2,h3,h4) + :is(p,.muted,.meta,.page-subtitle) {
+  margin-top: var(--eo-rhythm-label) !important;
+}
+
+.dashboard-shell :is(form,.form,.form-grid,fieldset),
+.role-portal-shell :is(form,.form,.form-grid,fieldset) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell label,
+.role-portal-shell label,
+.dashboard-shell .contractor-main label,
+.dashboard-shell .client-main label {
+  min-width: 0 !important;
+}
+
+.dashboard-shell label > :is(input,select,textarea,.input),
+.role-portal-shell label > :is(input,select,textarea,.input),
+.dashboard-shell .contractor-main label > :is(input,select,textarea,.input),
+.dashboard-shell .client-main label > :is(input,select,textarea,.input) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: var(--eo-rhythm-label) !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell :is(input,select,textarea,.input),
+.role-portal-shell :is(input,select,textarea,.input) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions),
+.role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) {
+  align-items: center !important;
+  gap: var(--eo-rhythm-control) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > *,
+.role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn),
+.role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn) {
+  align-self: center !important;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Related buttons share one height and width so action rows stay aligned.
+   Photo capture/library controls use a wider common size because their labels
+   are intentionally longer. This applies in every signed-in role view. */
+.dashboard-shell .photo-capture-buttons,
+.role-portal-shell .photo-capture-buttons {
+  align-items: stretch !important;
+}
+
+.dashboard-shell .photo-capture-buttons > .photo-capture-btn,
+.role-portal-shell .photo-capture-buttons > .photo-capture-btn {
+  width: 220px;
+  min-width: 220px;
+  min-height: 56px;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Text/count/status immediately followed by a control needs breathing room.
+   This catches pagination such as "Showing 10 / 16" + "Show 10 more" and
+   equivalent patterns across owner, client and worker pages. */
+.dashboard-shell :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) + :is(button,.btn,a.btn,.button-row,.inline-actions),
+.role-portal-shell :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) + :is(button,.btn,a.btn,.button-row,.inline-actions),
+.dashboard-shell :is(button,.btn,a.btn,.button-row,.inline-actions) + :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status),
+.role-portal-shell :is(button,.btn,a.btn,.button-row,.inline-actions) + :is(p,.muted,.meta,.small,.helper-text,.status-text,.pagination-status) {
+  margin-top: var(--eo-rhythm-control) !important;
+}
+
+/* Direct stacked controls should never visually touch each other. */
+.dashboard-shell :is(button,.btn,a.btn) + :is(button,.btn,a.btn),
+.role-portal-shell :is(button,.btn,a.btn) + :is(button,.btn,a.btn) {
+  margin-top: var(--eo-rhythm-control);
+}
+
+.dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main) > :is(.card,.panel,section,details),
+.role-portal-shell :is(.job-detail-shell,.contractor-main,.client-main) > :is(.card,.panel,section,details) {
+  margin-block: 0 !important;
+}
+
+.dashboard-shell :is(.job-photos-card,.job-checklist,.job-workflow,.job-labor-section,.job-assignments,.record-sharing-panel) + *,
+.role-portal-shell :is(.job-photos-card,.job-checklist,.job-workflow,.job-labor-section,.job-assignments,.record-sharing-panel) + * {
+  margin-top: var(--eo-rhythm-section) !important;
+}
+
+@media (max-width: 680px) {
+  :root {
+    --eo-rhythm-section: 24px;
+    --eo-rhythm-control: 14px;
+  }
+
+  .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions),
+  .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-shell .photo-capture-buttons > .photo-capture-btn,
+  .role-portal-shell .photo-capture-buttons > .photo-capture-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+/* END signed-in-rhythm-final.css */
+
