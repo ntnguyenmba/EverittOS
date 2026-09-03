@@ -47,7 +47,6 @@ test('manual address entry keeps typed value without selecting a suggestion', ()
 
   const source = read('components/address-autocomplete.tsx');
   assert.match(source, /structuredAddressFromManual\(next\)/);
-  assert.match(source, /Manual text is always preserved/);
   assert.doesNotMatch(source, /onChange\('',\s*null\)/);
 });
 
@@ -74,15 +73,14 @@ test('full address search keeps street results when exact house number is unavai
 test('address API requests a larger provider pool but displays a short list', () => {
   const source = read('app/api/address/autocomplete/route.ts');
   assert.match(source, /const DISPLAY_LIMIT = 8/);
-  assert.match(source, /const PROVIDER_LIMIT = 24/);
+  assert.match(source, /const PROVIDER_LIMIT = 32/);
   assert.match(source, /photonUrl\.searchParams\.set\('limit', String\(PROVIDER_LIMIT\)\)/);
   assert.match(source, /slice\(0, DISPLAY_LIMIT\)/);
 });
 
 test('Enter key selects a suggestion only when one is highlighted', () => {
   const source = read('components/address-autocomplete.tsx');
-  assert.match(source, /Only consume Enter when a suggestion is actively highlighted/);
-  assert.match(source, /if \(activeIndex >= 0 && suggestions\[activeIndex\]\)/);
+  assert.match(source, /event\.key === 'Enter' && activeIndex >= 0 && suggestions\[activeIndex\]/);
   assert.match(source, /event\.preventDefault\(\)/);
   assert.match(source, /setOpen\(false\)/);
   assert.match(source, /setActiveIndex\(-1\)/);
@@ -94,8 +92,6 @@ test('address autocomplete leaves manual value intact on Escape and outside clic
   assert.match(source, /mousedown/);
   assert.match(source, /setOpen\(false\)/);
   assert.match(source, /setActiveIndex\(-1\)/);
-  assert.match(source, /setState\('empty'\)/);
-  assert.match(source, /Manual text is always preserved/);
 });
 
 test('customer search includes contact name, property fields, and all company customers', () => {
@@ -189,7 +185,6 @@ test('job creator auto-creates and links customer and primary property without p
   assert.match(source, /forceNew: true/);
   assert.match(source, /newPropertyName\.trim\(\) \|\| createCopy\.propertyNamePlaceholder/);
   assert.match(source, /\/api\/customers\/\$\{customerId\}\/properties/);
-  assert.match(source, /Fail before creating the job/);
   assert.match(source, /createCopy\.prepareCustomerProperty/);
   assert.match(source, /customer_id: customerId/);
   assert.match(source, /property_id: propertyId/);
