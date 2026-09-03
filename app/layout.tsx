@@ -51,26 +51,7 @@ import './quote-workspace.css';
 import './role-home-structure.css';
 
 /* Signed-in shell: one canvas, one nav rule, one spacing system. */
-import './signed-in-canvas.css';
-import './jobs-filter-mobile-alignment.css';
-import './jobs-mobile-layout-hotfix.css';
-import './word-spacing-fix.css';
-import './top-chrome-align.css';
-import './ask-everitt-overlay-fix.css';
-import './job-card-spacing.css';
-import './one-nav.css';
-import './box-stack-spacing.css';
-import './signed-in-stability.css';
-import './hero-last.css';
-import './visual-unify.css';
-import './readability-last.css';
-import './everitt-login-look.css';
-import './final-layout-guard.css';
-import './view-center-final.css';
-import './unified-record-cards.css';
-import './row-action-align.css';
-import './form-field-spacing.css';
-import './signed-in-rhythm-final.css';
+import './legacy-signed-in.css';
 import './global-content-rhythm.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
