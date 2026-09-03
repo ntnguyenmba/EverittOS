@@ -5,7 +5,7 @@
   --eo-content-control-gap: 12px;
   --eo-content-text-gap: 10px;
   --eo-content-heading-gap: 16px;
-  --eo-content-section-gap: 24px;
+  --eo-content-section-gap: 20px;
   --eo-content-card-padding: 20px;
 }
 
@@ -37,13 +37,57 @@
   overflow-wrap: break-word;
 }
 
-:is(.dashboard-shell, .role-portal-shell) :is(.app-page-stage, .job-detail-shell, .contractor-main, .client-main) {
+/* Top-level page stacks use one compact gap. Reset old sibling margins so
+   spacing cannot double, and pin distribution to the start so tall stages
+   never turn normal gaps into large empty bands. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .app-page-stage,
+  .jobs-list-page,
+  .job-detail-shell,
+  .portal-page,
+  .role-dashboard,
+  .contractor-dashboard,
+  .dashboard-home,
+  .today-page,
+  .contractor-main,
+  .client-main
+) {
   gap: var(--eo-content-section-gap) !important;
+  justify-content: flex-start !important;
+  align-content: start !important;
 }
 
-:is(.dashboard-shell, .role-portal-shell) :is(.app-page-stage, .job-detail-shell, .contractor-main, .client-main) > * {
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .app-page-stage,
+  .jobs-list-page,
+  .job-detail-shell,
+  .portal-page,
+  .role-dashboard,
+  .contractor-dashboard,
+  .dashboard-home,
+  .today-page,
+  .contractor-main,
+  .client-main
+) > * {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* Lists and tables must remain content-sized inside a tall page stage. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .jobs-table-card,
+  .jobs-mobile-table-wrap,
+  .jobs-operations-table,
+  .jobs-list,
+  .record-list,
+  .customer-list,
+  .client-jobs-list,
+  .contractor-jobs-list
+) {
+  flex: none !important;
+  align-self: start !important;
+  width: 100% !important;
+  min-height: 0 !important;
 }
 
 /* Text inside a surface stays close enough to belong together without touching. */
@@ -145,7 +189,7 @@
 
 @media (max-width: 640px) {
   :root {
-    --eo-content-section-gap: 20px;
+    --eo-content-section-gap: 16px;
     --eo-content-card-padding: 16px;
   }
 
