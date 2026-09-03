@@ -144,10 +144,10 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           gap: 16px;
           box-sizing: border-box;
           border: 1px solid rgba(255,255,255,.2);
-          border-radius: 16px;
-          background: #243f53;
+          border-radius: var(--eo-radius-card);
+          background: var(--eo-color-brand);
           color: #fff;
-          box-shadow: 0 12px 28px rgba(9,24,35,.16);
+          box-shadow: var(--eo-shadow-card);
         }
         .app-role-banner-context {
           min-width: 0;
@@ -187,7 +187,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           .app-role-banner {
             min-height: 60px;
             padding: 13px 15px;
-            border-radius: 14px;
+            border-radius: var(--eo-radius-control);
           }
           .app-role-banner-context {
             font-size: 11px;
