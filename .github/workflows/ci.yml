@@ -24,8 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Production dependency security audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Billing regression tests
         run: npm run test:purchases
+
+      - name: Validate native release configuration
+        run: npm run mobile:validate-release
 
       - name: Verify types, languages, and tests
         run: npm run verify
