@@ -6,6 +6,7 @@ on:
       - main
   workflow_dispatch:
 
+# Security and native release checks are required before build verification.
 jobs:
   quality:
     name: Verify, lint, build
