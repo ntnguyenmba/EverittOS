@@ -1,0 +1,167 @@
+/* Final shared content rhythm for owner, client, and worker views.
+   Loaded last so older page-specific patches cannot collapse or inflate spacing. */
+:root {
+  --eo-content-label-gap: 8px;
+  --eo-content-control-gap: 12px;
+  --eo-content-text-gap: 10px;
+  --eo-content-heading-gap: 16px;
+  --eo-content-section-gap: 24px;
+  --eo-content-card-padding: 20px;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .app-page-content,
+  .app-page-stage,
+  .job-detail-shell,
+  .contractor-main,
+  .client-main,
+  .card,
+  .panel,
+  .settings-card,
+  .client-job-card,
+  .list-row,
+  .form,
+  .form-grid,
+  fieldset,
+  .button-row,
+  .inline-actions,
+  .record-actions
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) {
+  padding: var(--eo-content-card-padding) !important;
+  overflow-wrap: break-word;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.app-page-stage, .job-detail-shell, .contractor-main, .client-main) {
+  gap: var(--eo-content-section-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.app-page-stage, .job-detail-shell, .contractor-main, .client-main) > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Text inside a surface stays close enough to belong together without touching. */
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(h1, h2, h3, h4, p, ul, ol, form, .form, .form-grid, .button-row, .inline-actions, .record-actions, details, section, .list-row, .job-visits-list) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(h1, h2, h3, h4) + :is(p, .muted, .meta, .page-subtitle) {
+  margin-top: var(--eo-content-label-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(p, ul, ol, .muted, .meta) + :is(p, ul, ol, .muted, .meta) {
+  margin-top: var(--eo-content-text-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(p, ul, ol, .muted, .meta, h1, h2, h3, h4) + :is(form, .form, .form-grid, fieldset, .button-row, .inline-actions, .record-actions, details, section, .list-row, .job-visits-list),
+:is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(form, .form, .form-grid, fieldset, .button-row, .inline-actions, .record-actions, details, section, .list-row, .job-visits-list) + :is(p, ul, ol, .muted, .meta, h1, h2, h3, h4, form, .form, .form-grid, fieldset, .button-row, .inline-actions, .record-actions, details, section, .list-row, .job-visits-list) {
+  margin-top: var(--eo-content-heading-gap) !important;
+}
+
+/* Labels, fields, and action groups use one predictable control rhythm. */
+:is(.dashboard-shell, .role-portal-shell) :is(form, .form, .form-grid, fieldset) {
+  row-gap: var(--eo-content-control-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) label > :is(input, select, textarea, .input) {
+  margin-top: var(--eo-content-label-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions, .page-actions, .settings-actions, .filter-row) {
+  gap: var(--eo-content-control-gap) !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions) > :is(button, .btn, a.btn) {
+  margin: 0 !important;
+}
+
+/* Job detail fixes visible in the mobile owner screen. */
+.dashboard-shell .job-detail-shell > .page-head {
+  gap: var(--eo-content-heading-gap) !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .job-detail-shell > .page-head > .button-row {
+  gap: var(--eo-content-control-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell > section.card {
+  display: block !important;
+}
+
+.dashboard-shell .job-detail-shell > section.card > .form + p {
+  margin-top: var(--eo-content-heading-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell .job-detail-actions {
+  margin-top: var(--eo-content-heading-gap) !important;
+  gap: var(--eo-content-control-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell .job-detail-actions + details {
+  margin-top: var(--eo-content-section-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell details > summary {
+  padding-block: 4px !important;
+  line-height: 1.4 !important;
+}
+
+.dashboard-shell .job-detail-shell .job-visits {
+  gap: var(--eo-content-control-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell .job-visits > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .job-detail-shell .job-visits .muted > button.btn {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  margin: 4px 0 4px 6px !important;
+  padding: 6px 10px !important;
+  vertical-align: middle;
+}
+
+.dashboard-shell .job-detail-shell .job-visits-list {
+  gap: var(--eo-content-control-gap) !important;
+  margin-top: var(--eo-content-heading-gap) !important;
+}
+
+.dashboard-shell .job-detail-shell .job-visits-list .list-row {
+  padding: 14px 16px !important;
+  gap: var(--eo-content-control-gap) !important;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --eo-content-section-gap: 20px;
+    --eo-content-card-padding: 16px;
+  }
+
+  :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions, .page-actions, .settings-actions) {
+    row-gap: var(--eo-content-control-gap) !important;
+  }
+
+  :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions) > :is(button, .btn, a.btn) {
+    min-height: 46px;
+  }
+
+  .dashboard-shell .job-detail-shell .job-detail-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell .job-detail-shell .job-visits .muted > button.btn {
+    min-height: 36px !important;
+  }
+}
