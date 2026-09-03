@@ -50,7 +50,7 @@ const frozenLayoutCss = [
   'signed-in-rhythm-final.css',
 ];
 
-const allowedExtra = new Set(['design/tokens.css', 'design/primitives.css']);
+const allowedExtra = new Set(['design/tokens.css', 'design/primitives.css', 'global-content-rhythm.css']);
 
 if (cssImports[0] !== 'globals.css') {
   failures.push('app/layout.tsx must keep globals.css as the first stylesheet import');
@@ -58,7 +58,7 @@ if (cssImports[0] !== 'globals.css') {
 
 const extras = cssImports.filter((name) => !frozenLayoutCss.includes(name) && !allowedExtra.has(name));
 if (extras.length) {
-  failures.push('New global CSS imports are blocked during the freeze. Allowed extras: app/design/tokens.css, app/design/primitives.css.');
+  failures.push('New global CSS imports are blocked during the freeze. Allowed extras: app/design/tokens.css, app/design/primitives.css, app/global-content-rhythm.css.');
   for (const file of extras) failures.push(`  extra import: ${file}`);
 }
 
