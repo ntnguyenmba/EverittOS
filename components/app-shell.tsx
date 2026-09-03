@@ -93,7 +93,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           max-width: 100vw;
           display: block;
           overflow-x: clip;
-          background: #e9eef2;
+          background: var(--eo-color-page);
         }
         .dashboard-shell-background {
           position: fixed;
@@ -125,10 +125,10 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           z-index: 42;
           display: block;
           width: 100%;
-          padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+          padding: var(--eo-space-2) max(var(--eo-space-5), env(safe-area-inset-right)) 0 max(var(--eo-space-5), env(safe-area-inset-left));
           box-sizing: border-box;
         }
-        .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 14px max(20px,env(safe-area-inset-right)) 40px max(20px,env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
+        .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: var(--eo-space-4) max(var(--eo-space-5),env(safe-area-inset-right)) 40px max(var(--eo-space-5),env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
@@ -137,11 +137,11 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           min-width: 0 !important;
           min-height: 68px;
           margin: 0 !important;
-          padding: 15px 18px;
+          padding: var(--eo-space-4) var(--eo-space-5);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
+          gap: var(--eo-space-4);
           box-sizing: border-box;
           border: 1px solid rgba(255,255,255,.2);
           border-radius: var(--eo-radius-card);
@@ -171,22 +171,22 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell .language-switcher { display:grid; gap:5px; min-width:0; }
         .dashboard-shell .language-switcher-label { display:block; line-height:1.25; }
         .dashboard-shell .language-switcher-select { line-height:1.25; padding-left:12px; padding-right:32px; white-space:nowrap; }
-        .dashboard-shell .owner-home-primary { display:grid!important; gap:var(--everitt-control-gap)!important; }
+        .dashboard-shell .owner-home-primary { display:grid!important; gap:var(--eo-control-gap)!important; }
         .dashboard-shell .owner-home-primary > * { margin-top:0!important; margin-bottom:0!important; }
         .dashboard-shell .owner-home-kicker { display:block!important; line-height:1.35!important; }
         .dashboard-shell .owner-home-primary h2 { line-height:1.3!important; overflow-wrap:anywhere; }
         .dashboard-shell .owner-home-primary p { line-height:1.55!important; overflow-wrap:anywhere; }
-        .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:var(--everitt-control-gap)!important; padding-top:4px; }
+        .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:var(--eo-control-gap)!important; padding-top:4px; }
         .role-portal-shell .btn,.role-portal-shell button,.role-portal-shell select { min-height: 44px; }
-        .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#243f53!important; border-color:#243f53!important; color:#fff!important; }
-        .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--everitt-control-gap)!important; width:100%; }
-        .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--everitt-section-gap)!important; }
+        .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:var(--eo-color-brand)!important; border-color:var(--eo-color-brand)!important; color:#fff!important; }
+        .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--eo-control-gap)!important; width:100%; }
+        .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--eo-section-gap)!important; }
         .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
         .role-portal-shell .metric-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
         @media(max-width:640px){
           .app-role-banner {
             min-height: 60px;
-            padding: 13px 15px;
+            padding: var(--eo-space-3) var(--eo-space-4);
             border-radius: var(--eo-radius-control);
           }
           .app-role-banner-context {
