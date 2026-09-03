@@ -166,7 +166,7 @@ export function parseNaturalAskEverittQuery(input: string): NaturalAskQuery {
     return make(original, 'open_estimates');
   }
 
-  if (/\bwho(?:'s| is)?\s+free\b|\bfree\s+(?:workers?|staff|team)\b|\b(worker|workers|staff|team)\b.*\bavailability\b/.test(q)) {
+  if (/\bwho\b.*\bfree\b|\bfree\s+(?:workers?|staff|team)\b|\b(worker|workers|staff|team)\b.*\bavailability\b/.test(q)) {
     return make(original, 'worker_availability');
   }
 

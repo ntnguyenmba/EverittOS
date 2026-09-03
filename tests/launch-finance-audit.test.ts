@@ -19,7 +19,6 @@ test('dashboard money links point at details drill-down routes', () => {
     DASHBOARD_LINKS.unpaidInvoices,
     DASHBOARD_LINKS.cashAfterExpenses,
     DASHBOARD_LINKS.estimatedProfit,
-    DASHBOARD_LINKS.contractorPay,
     DASHBOARD_LINKS.contractorPayOwed,
     DASHBOARD_LINKS.contractorPayPending,
     DASHBOARD_LINKS.activeCustomers
@@ -31,6 +30,7 @@ test('dashboard money links point at details drill-down routes', () => {
     assert.equal(isDashboardDetailMetric(metric), true, `metric missing for ${href}`);
   }
 
+  assert.equal(DASHBOARD_LINKS.contractorPay, '/dashboard/worker-pay');
   assert.equal(DASHBOARD_LINKS.otherExpenses, '/expenses');
 });
 
