@@ -27,7 +27,8 @@
     "android:open": "npx cap open android",
     "ios:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync ios",
     "android:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync android",
-    "ui:visual-contract": "tsx scripts/visual-contract-audit.ts"
+    "ui:visual-contract": "tsx scripts/visual-contract-audit.ts",
+    "ui:production-smoke": "node scripts/production-ui-smoke.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
