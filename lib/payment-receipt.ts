@@ -173,13 +173,14 @@ export function resolveReceiptCustomer(input: {
   const email = trimText(linked?.email) || null;
   const phone = trimText(linked?.phone) || trimText(job?.phone) || null;
   const jobServiceAddress = trimText(job?.address);
-  const addressLines = jobServiceAddress
-    ? [jobServiceAddress]
-    : structured.length > 0
+  const addressLines =
+    structured.length > 0
       ? structured
       : linkedAddressFallback
         ? [linkedAddressFallback]
-        : [];
+        : jobServiceAddress
+          ? [jobServiceAddress]
+          : [];
 
   return { displayName, email, phone, addressLines };
 }
