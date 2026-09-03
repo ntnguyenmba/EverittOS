@@ -1,6 +1,6 @@
-/* Shared primitives. Pages opt in with these classes.
-   Values copied from winning Jobs sheets. No !important.
-   Do not target frozen page selectors here. */
+/* Shared EverittOS primitives.
+   Pages may opt in directly; the final rhythm layer also maps established
+   product classes to these same tokens. */
 
 .eo-chrome {
   width: min(100%, var(--eo-view-max));
@@ -8,120 +8,126 @@
 }
 
 .eo-card {
-  padding: var(--job-card-pad);
   min-width: 0;
   max-width: 100%;
+  padding: var(--eo-card-padding);
   box-sizing: border-box;
-}
-
-.eo-card .eo-btn {
-  min-height: var(--eo-tap);
-}
-
-.eo-card .eo-btn {
-  min-height: var(--eo-tap);
+  border: 1px solid var(--eo-color-border);
+  border-radius: var(--eo-radius-card);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  box-shadow: var(--eo-shadow-card);
 }
 
 .eo-list-row {
+  min-width: 0;
   min-height: var(--eo-tap);
 }
 
 .eo-btn {
-  min-height: var(--eo-tap);
   min-width: 0;
   max-width: 100%;
+  min-height: var(--eo-tap);
+  padding: 10px 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  border-radius: var(--eo-radius-control);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
-  box-sizing: border-box;
+}
+
+.eo-btn-primary {
+  border-color: var(--eo-color-accent);
+  background: var(--eo-color-accent);
+  color: #ffffff;
 }
 
 .eo-field {
-  min-height: var(--eo-control);
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  min-height: var(--eo-control);
+  padding: 11px 14px;
   box-sizing: border-box;
+  border: 1px solid var(--eo-color-border-strong);
+  border-radius: var(--eo-radius-control);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  font: inherit;
+}
+
+.eo-field:focus {
+  border-color: var(--eo-color-accent);
+  outline: 3px solid var(--eo-color-focus);
+  outline-offset: 1px;
 }
 
 .eo-status {
+  min-height: var(--eo-filter-tab);
+  padding: 0 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--eo-filter-tab);
-  padding: 0 13px;
+  border: 1px solid var(--eo-color-border);
   border-radius: var(--eo-radius-pill);
+  background: var(--eo-color-surface-subtle);
+  color: var(--eo-color-text-secondary);
   white-space: nowrap;
 }
 
 .eo-action-grid {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--eo-space-3);
-  min-width: 0;
-  max-width: 100%;
+  gap: var(--eo-control-gap);
 }
 
 .eo-visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+  border: 0;
 }
 
 @media (max-width: 760px) {
   .eo-action-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: var(--eo-control) var(--eo-control);
-    gap: var(--eo-space-3);
     width: 100%;
-    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--eo-control-gap);
   }
 
   .eo-action-grid > * {
     width: 100%;
     min-width: 0;
-    height: var(--eo-control);
     min-height: var(--eo-control);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   .eo-action-grid > :last-child {
     grid-column: 1 / -1;
     grid-row: 1;
   }
-
-  .eo-action-grid > :first-child {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .eo-action-grid > :nth-child(2) {
-    grid-column: 2;
-    grid-row: 2;
-  }
 }
 
 @media (max-width: 350px) {
   .eo-action-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(3, var(--eo-control));
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .eo-action-grid > :last-child,
-  .eo-action-grid > :first-child,
-  .eo-action-grid > :nth-child(2) {
+  .eo-action-grid > :last-child {
     grid-column: 1;
     grid-row: auto;
   }
