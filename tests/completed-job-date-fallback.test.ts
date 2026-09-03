@@ -124,7 +124,7 @@ describe('Completed job date fallbacks without dashboard warnings', () => {
   });
 
   it('keeps maintenance tooling off the dashboard and on Jobs/Analytics only', () => {
-    const jobsPage = readFileSync('app/jobs/page.tsx', 'utf8');
+    const jobsPage = readFileSync('components/jobs-list.tsx', 'utf8');
     const analyticsPage = readFileSync('app/analytics/page.tsx', 'utf8');
     assert.match(jobsPage, /missing_completion_date/);
     assert.match(jobsPage, /isAdminRole/);

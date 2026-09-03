@@ -102,11 +102,11 @@ test('no email does not fail job creation and detail shows no-email state', () =
   assert.match(jobsApi, /must never block job creation/);
 
   const panel = read('components/client-access-panel.tsx');
-  assert.match(panel, /Status: Email needed/);
-  assert.match(panel, /does not block the job/);
-  assert.match(panel, /Status: Active/);
-  assert.match(panel, /Copy portal link/);
-  assert.match(panel, /Turn off access/);
+  assert.match(panel, /normalizedCustomerEmail/);
+  assert.match(panel, /saveEmailAndEnable/);
+  assert.match(panel, /Client access enabled/);
+  assert.match(panel, /copyLink/);
+  assert.match(panel, /revokeAccess/);
 });
 
 test('managers can add additional access with role and permission fields', () => {

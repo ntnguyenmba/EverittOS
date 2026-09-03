@@ -399,7 +399,7 @@ describe('calendar import job sync', () => {
 
   it('settings and jobs UI keep calendar import generic and hide amounts without financial access', () => {
     const settings = readFileSync('app/settings/page.tsx', 'utf8');
-    const jobs = readFileSync('app/jobs/page.tsx', 'utf8');
+    const jobs = readFileSync('components/jobs-list.tsx', 'utf8');
     const panel = readFileSync('components/calendar-import-panel.tsx', 'utf8');
     const cron = readFileSync('vercel.json', 'utf8');
     const migration = readFileSync('supabase/migrations/202610020001_calendar_import.sql', 'utf8');

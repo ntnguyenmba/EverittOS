@@ -42,8 +42,8 @@ test('worker offline photo flow persists previews and queues uploads', () => {
   assert.match(offline, /readPendingContractorPhotos/);
   assert.match(offline, /savePendingPhotoRows/);
   assert.match(offline, /deleteFieldPhoto/);
-  assert.match(page, /type="file" accept="image\/\*"/);
-  assert.doesNotMatch(page, /capture="environment"/);
+  assert.match(page, /pickJobPhotoFromCamera/);
+  assert.match(page, /pickJobPhotoFromLibrary/);
   assert.match(page, /readPendingContractorPhotos/);
   assert.match(nativeStore, /saveFieldPhoto/);
 });

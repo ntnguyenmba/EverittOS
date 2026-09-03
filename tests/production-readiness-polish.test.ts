@@ -27,7 +27,7 @@ describe('Production readiness polish', () => {
     assert.match(css, /dashboard-mobile-alignment\.css/);
     assert.match(css, /dashboard-metric-responsive-fix\.css/);
     const layout = readFileSync('app/layout.tsx', 'utf8');
-    assert.match(layout, /mobile-usability-fixes\.css/);
+    assert.match(layout, /global-content-rhythm\.css/);
   });
 
   it('labor labels localize for Spanish and Vietnamese', () => {

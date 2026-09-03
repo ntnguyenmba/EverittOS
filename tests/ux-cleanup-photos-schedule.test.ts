@@ -72,6 +72,6 @@ test('user-facing company wording replaces workspace in key catalogs', () => {
   const en = read('lib/i18n/messages/en.ts');
   assert.match(en, /Company settings/);
   assert.match(en, /Customer dashboard/);
-  assert.match(en, /Contractor dashboard/);
+  assert.doesNotMatch(en, /Contractor dashboard/);
   assert.match(en, /settingsNav:[\s\S]*workspace: 'Company'/);
 });

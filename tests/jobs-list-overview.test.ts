@@ -34,7 +34,7 @@ describe('jobs list overview', () => {
     assert.match(page, /status=active/);
     assert.match(page, /status=finished/);
     assert.match(page, /filter=unassigned/);
-    assert.match(page, /openJob\(job\.id\)/);
+    assert.match(page, /jobDetailHref\(role, job\.id\)/);
     assert.match(page, /jobs-menu-trigger/);
     assert.match(page, /maps\.google\.com/);
     assert.match(page, /createInvoice/);

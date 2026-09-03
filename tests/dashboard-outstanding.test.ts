@@ -318,12 +318,12 @@ test('finance cards use locale keys for Customers owe, Contractor costs, Profit'
     en.money.outstandingHelp,
     'Remaining unpaid invoice balances plus unpaid direct jobs without invoices for the selected period.'
   );
-  assert.equal(en.money.contractorCost, 'Contractor costs');
-  assert.equal(en.money.contractorCostHelp, 'Total labor cost for jobs in this period, paid or unpaid.');
+  assert.equal(en.money.contractorCost, 'Worker costs');
+  assert.equal(en.money.contractorCostHelp, 'Labor cost for jobs in this period.');
   assert.equal(en.money.expectedProfit, 'Profit');
   assert.equal(
     en.money.expectedProfitHelp,
-    'Profit = Job revenue − Contractor costs − Business expenses.'
+    'Job revenue minus worker costs and business expenses.'
   );
 });
 

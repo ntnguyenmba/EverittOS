@@ -9,10 +9,10 @@ const css = readFileSync(resolve(root, 'app/button-consistency.css'), 'utf8');
 
 describe('shared button consistency', () => {
   it('loads the shared button layer after all older page polish files', () => {
-    const consistencyImport = layout.indexOf("import './button-consistency.css';");
-    const previousPolishImport = layout.indexOf("import './job-instructions-context-link.css';");
+    const consolidatedImport = layout.indexOf("import './global-content-rhythm.css';");
+    const legacyImport = layout.indexOf("import './legacy-signed-in.css';");
 
-    assert.ok(consistencyImport > previousPolishImport);
+    assert.ok(consolidatedImport > legacyImport);
   });
 
   it('keeps the common button frame and minimum tap target', () => {

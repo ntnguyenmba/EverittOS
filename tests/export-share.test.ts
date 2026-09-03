@@ -153,7 +153,7 @@ describe('business data export and email sharing', () => {
       ['components/dashboard-revenue-snapshot.tsx', '/api/exports/dashboard'],
       ['app/dashboard/details/page.tsx', '/api/exports/dashboard-details'],
       ['app/bookkeeping/page.tsx', '/api/exports/bookkeeping'],
-      ['app/jobs/page.tsx', '/api/exports/jobs'],
+      ['components/jobs-list.tsx', '/api/exports/jobs'],
       ['app/people/page.tsx', '/api/exports/team'],
       ['app/portal/client/jobs/page.tsx', '/api/exports/portal/client/jobs'],
       ['app/portal/contractor/page.tsx', '/api/exports/portal/contractor/jobs']
@@ -165,7 +165,7 @@ describe('business data export and email sharing', () => {
     }
     assert.doesNotMatch(readFileSync('app/customers/page.tsx', 'utf8'), /exportExcel|everittos-customers\.xls/);
     assert.match(readFileSync('app/expenses/page.tsx', 'utf8'), /filterFrom|filterTo|filterCategory/);
-    assert.match(readFileSync('app/jobs/page.tsx', 'utf8'), /exportQuery/);
+    assert.match(readFileSync('components/jobs-list.tsx', 'utf8'), /exportQuery/);
     assert.match(readFileSync('components/dashboard-revenue-snapshot.tsx', 'utf8'), /query=\{\{\s*range\s*\}\}/);
   });
 

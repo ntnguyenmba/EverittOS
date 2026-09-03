@@ -42,10 +42,10 @@ describe('Team pay and contractor cost unification', () => {
     assert.match(source, /paymentMethod/);
     assert.match(source, />Flat rate</);
     assert.match(source, />Hourly</);
-    assert.match(source, /What the contractor earns/);
-    assert.match(source, /Calculated contractor pay/);
-    assert.match(source, /Contractor pay notes \(optional\)/);
-    assert.match(source, /Unassigned contractor/);
+    assert.match(source, /What the worker earns/);
+    assert.match(source, /Calculated worker pay/);
+    assert.match(source, /Worker pay notes \(optional\)/);
+    assert.match(source, /Unassigned worker/);
     assert.doesNotMatch(source, /\/api\/jobs\/\$\{jobId\}\/labor/);
     assert.match(source, /expected_contractor_cost: expectedContractorPay/);
   });

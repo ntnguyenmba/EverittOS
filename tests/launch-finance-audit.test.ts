@@ -31,7 +31,7 @@ test('dashboard money links point at details drill-down routes', () => {
   }
 
   assert.equal(DASHBOARD_LINKS.contractorPay, '/dashboard/worker-pay');
-  assert.equal(DASHBOARD_LINKS.otherExpenses, '/expenses');
+  assert.equal(DASHBOARD_LINKS.otherExpenses, '/dashboard/details?metric=expenses');
 });
 
 test('getJobOperationalDate prefers completion then work dates over created_at', () => {

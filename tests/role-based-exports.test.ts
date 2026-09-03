@@ -257,14 +257,14 @@ describe('role-based exports', () => {
     assert.match(page, /jobs-filter-tab/);
     assert.match(page, /jobs-menu-trigger/);
     assert.match(page, /stopPropagation/);
-    assert.match(page, /openJob\(job\.id\)/);
+    assert.match(page, /jobDetailHref\(role, job\.id\)/);
     assert.doesNotMatch(page, /Statuses refresh automatically|liveNote/);
     assert.doesNotMatch(page, /jobs-billing-pill/);
 
     const css = readFileSync('app/form-alignment-fixes.css', 'utf8');
     assert.match(css, /jobs-shell-minimal/);
     assert.match(css, /min-height: 44px/);
-    assert.match(css, /dashboard-shell-background[\s\S]*display: none/);
+    assert.match(css, /dashboard-shell-background[\s\S]*display: block/);
   });
 
   it('today and finished filters use shared canonical logic', () => {

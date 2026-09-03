@@ -88,7 +88,7 @@ describe('locale persistence and billing localization', () => {
   });
 
   it('jobs table and export labels follow locale', () => {
-    const jobs = readFileSync('app/jobs/page.tsx', 'utf8');
+    const jobs = readFileSync('components/jobs-list.tsx', 'utf8');
     assert.match(jobs, /copy\[locale\]/);
     assert.match(jobs, /getExportCopy/);
     assert.doesNotMatch(jobs, /Statuses refresh automatically/);
