@@ -1,11 +1,11 @@
 /* Shared floating card treatment based on the finished Team page. */
 
 :root {
-  --eo-record-surface: rgba(252, 253, 253, 0.985);
-  --eo-record-border: rgba(72, 91, 104, 0.24);
-  --eo-record-shadow: 0 14px 30px rgba(27, 45, 60, 0.12);
-  --eo-record-text: #172a38;
-  --eo-record-muted: #526a79;
+  --eo-record-surface: var(--eo-color-surface);
+  --eo-record-border: var(--eo-color-border);
+  --eo-record-shadow: var(--eo-shadow-card);
+  --eo-record-text: var(--eo-color-text);
+  --eo-record-muted: var(--eo-color-muted);
 }
 
 /* Customers */
@@ -19,7 +19,7 @@
   margin: 0 !important;
   padding: 18px 20px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -44,7 +44,7 @@
 
 .customer-card-row p {
   margin: 0 0 3px !important;
-  color: #344d5d !important;
+  color: var(--eo-color-text-secondary) !important;
   overflow-wrap: anywhere !important;
 }
 
@@ -64,7 +64,7 @@
 .schedule-views article.card {
   padding: 18px 20px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -85,7 +85,7 @@
 .schedule-views article.card p {
   margin-top: 0 !important;
   margin-bottom: 3px !important;
-  color: #344d5d !important;
+  color: var(--eo-color-text-secondary) !important;
 }
 
 .schedule-views article.card .muted {
@@ -124,7 +124,7 @@
   margin: 0 !important;
   padding: 18px 20px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -178,7 +178,7 @@
 .team-member-card p {
   margin-top: 0 !important;
   margin-bottom: 2px !important;
-  color: #344d5d !important;
+  color: var(--eo-color-text-secondary) !important;
 }
 
 .team-member-card .muted {
@@ -209,7 +209,7 @@
   min-width: 0 !important;
   padding: 20px 22px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -284,7 +284,7 @@
   margin-bottom: 0 !important;
   padding: 20px 22px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -296,7 +296,7 @@
   margin-bottom: 0 !important;
   padding: 20px 22px !important;
   border: 1px solid var(--eo-record-border) !important;
-  border-radius: 18px !important;
+  border-radius: var(--eo-radius-card) !important;
   background: var(--eo-record-surface) !important;
   box-shadow: var(--eo-record-shadow) !important;
   color: var(--eo-record-text) !important;
@@ -327,7 +327,7 @@
   margin-top: 14px !important;
   border-radius: 14px !important;
   border-color: rgba(72, 91, 104, 0.18) !important;
-  background: #eef3f5 !important;
+  background: var(--eo-color-surface-subtle) !important;
   box-shadow: none !important;
 }
 
