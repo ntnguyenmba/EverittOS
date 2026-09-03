@@ -5,12 +5,40 @@ import { AppFooter } from '@/components/app-footer';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageContent } from '@/components/app-page-content';
 import { MobileNav } from '@/components/mobile-nav';
+import { useTranslation } from '@/components/locale-provider';
 import { Sidebar } from '@/components/sidebar';
 import { UnsavedChangesGuard } from '@/components/unsaved-changes-guard';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import type { UserRole } from '@/lib/roles';
+
+type RoleBannerKind = 'owner' | 'client' | 'worker';
+
+const ROLE_BANNER_COPY = {
+  en: { context: 'Signed in as', owner: 'Owner', client: 'Client', worker: 'Worker' },
+  es: { context: 'Sesión iniciada como', owner: 'Propietario', client: 'Cliente', worker: 'Trabajador' },
+  vi: { context: 'Đang đăng nhập với vai trò', owner: 'Chủ doanh nghiệp', client: 'Khách hàng', worker: 'Nhân viên' }
+} as const;
+
+function roleBannerKind(role: UserRole): RoleBannerKind {
+  if (role === 'client') return 'client';
+  if (role === 'contractor' || role === 'employee' || role === 'viewer') return 'worker';
+  return 'owner';
+}
+
+function RoleContextBanner({ role }: { role: UserRole }) {
+  const { locale } = useTranslation();
+  const copy = ROLE_BANNER_COPY[locale];
+  const kind = roleBannerKind(role);
+
+  return (
+    <section className={`app-role-banner app-role-banner-${kind}`} aria-label={`${copy.context}: ${copy[kind]}`}>
+      <span className="app-role-banner-context">{copy.context}</span>
+      <strong className="app-role-banner-name">{copy[kind]}</strong>
+    </section>
+  );
+}
 
 type AppShellProps = {
   plan?: EverittosPlan | string | null;
@@ -23,7 +51,8 @@ type AppShellProps = {
 export function AppShell({ plan, role, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
-  const resolvedRole = normalizeRole(role ?? workspacePlan?.role);
+  const roleSource = role ?? workspacePlan?.role;
+  const resolvedRole = normalizeRole(roleSource);
   const normalizedRole = normalizeRole(resolvedRole);
   const isClientPortal = isClientRole(normalizedRole);
   const isContractorPortal = isContractorRole(normalizedRole);
@@ -49,6 +78,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
       <main id="main-content" className="main">
         <AppPageContent>
           {showAi ? <AskEverittCommand plan={resolvedPlan} embedded={false} /> : null}
+          {roleSource ? <RoleContextBanner role={resolvedRole} /> : null}
           {children}
         </AppPageContent>
         <AppFooter />
@@ -102,6 +132,42 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
+        .app-role-banner {
+          width: 100% !important;
+          min-width: 0 !important;
+          min-height: 68px;
+          margin: 0 !important;
+          padding: 15px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          box-sizing: border-box;
+          border: 1px solid rgba(255,255,255,.2);
+          border-radius: 16px;
+          background: #243f53;
+          color: #fff;
+          box-shadow: 0 12px 28px rgba(9,24,35,.16);
+        }
+        .app-role-banner-context {
+          min-width: 0;
+          color: rgba(255,255,255,.76) !important;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.3;
+          letter-spacing: .055em;
+          text-transform: uppercase;
+        }
+        .app-role-banner-name {
+          color: #fff !important;
+          font-size: 18px;
+          font-weight: 800;
+          line-height: 1.2;
+          text-align: right;
+        }
+        .dashboard-shell .contractor-role-label {
+          display: none !important;
+        }
         .dashboard-shell .language-switcher { display:grid; gap:5px; min-width:0; }
         .dashboard-shell .language-switcher-label { display:block; line-height:1.25; }
         .dashboard-shell .language-switcher-select { line-height:1.25; padding-left:12px; padding-right:32px; white-space:nowrap; }
@@ -118,6 +184,17 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
         .role-portal-shell .metric-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
         @media(max-width:640px){
+          .app-role-banner {
+            min-height: 60px;
+            padding: 13px 15px;
+            border-radius: 14px;
+          }
+          .app-role-banner-context {
+            font-size: 11px;
+          }
+          .app-role-banner-name {
+            font-size: 17px;
+          }
           .dashboard-shell-overlay{background:linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48))!important}
         }
         @media(max-width:760px){.role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}.role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
