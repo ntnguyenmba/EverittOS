@@ -105,24 +105,6 @@ export function JobCreateTranslatedFields(props: {
         <label htmlFor="recurrence-starts-on">{props.isRecurring ? r.startsOn : c.date}</label>
         <input id="recurrence-starts-on" name="recurrence_starts_on" className="input" type="date" required={props.isRecurring} aria-required={props.isRecurring ? 'true' : undefined} aria-invalid={Boolean(props.recurrenceFieldErrors.startDate)} value={props.primaryVisit?.visit_date || props.recurrenceStartDate} onChange={(e) => props.setSeriesStartDate(e.target.value)} />
         {props.recurrenceFieldErrors.startDate ? <p className="auth-message auth-message-error" role="alert">{props.recurrenceFieldErrors.startDate}</p> : null}
-        <div className="grid-2" style={{ marginTop: 12 }}>
-          <div className="form-group">
-            <label htmlFor="job-start-time">{r.startTime}</label>
-            <input id="job-start-time" className="input" type="time" aria-invalid={Boolean(props.recurrenceFieldErrors.startTime)} value={props.primaryVisit?.start_time || ''} onChange={(e) => { if (!props.primaryVisit) return; props.setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined })); props.updateVisit(props.primaryVisit.id, { start_time: e.target.value }); }} />
-            {props.recurrenceFieldErrors.startTime ? <p className="auth-message auth-message-error" role="alert">{props.recurrenceFieldErrors.startTime}</p> : null}
-          </div>
-          <div className="form-group">
-            <label htmlFor="job-end-time">{r.endTime}</label>
-            <input id="job-end-time" className="input" type="time" value={props.primaryVisit?.end_time || ''} onChange={(e) => props.primaryVisit && props.updateVisit(props.primaryVisit.id, { end_time: e.target.value })} />
-          </div>
-        </div>
-      </section>
-
-      <section className="job-create-section">
-        <h4>{c.customerPriceHeading}</h4>
-        <p className="muted">{c.customerPriceHelp}</p>
-        <label>{c.customerPrice}</label>
-        <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={props.clientIncome} onChange={(e) => props.setClientIncome(e.target.value)} />
       </section>
 
       <section className="job-create-section">
@@ -132,29 +114,49 @@ export function JobCreateTranslatedFields(props: {
           <option value="">{c.unassigned}</option>
           {props.teamMembers.map((member) => <option key={member.userId} value={member.userId}>{member.label} · {props.roleLabel(member.role)}</option>)}
         </select>
-        <label style={{ marginTop: 16 }}>{c.workerPrice}</label>
-        <p className="muted">{c.workerPriceHelp}</p>
-        <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(props.locale).paymentMethod} style={{ marginTop: 8 }}>
-          <button type="button" className={`btn${props.contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => props.setContractorPayMode('flat')}>{c.flatRate}</button>
-          <button type="button" className={`btn${props.contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => props.setContractorPayMode('hourly')}>{c.hourly}</button>
-        </div>
-        {props.contractorPayMode === 'hourly' ? (
-          <>
-            <div className="grid-2" style={{ marginTop: 10 }}>
-              <div className="form-group"><label>{c.hours}</label><input className="input" type="number" min="0" step="0.25" value={props.contractorHours} onChange={(e) => props.setContractorHours(e.target.value)} /></div>
-              <div className="form-group"><label>{c.workerHourlyRate}</label><input className="input" type="number" min="0" step="0.01" value={props.contractorHourlyRate} onChange={(e) => props.setContractorHourlyRate(e.target.value)} /></div>
-            </div>
-            <p className="muted">{c.workerCost}: ${props.previewContractorPay.toFixed(2)}</p>
-          </>
-        ) : (
-          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={props.contractorFlatRate} onChange={(e) => props.setContractorFlatRate(e.target.value)} />
-        )}
-        <label>{c.jobNotes}</label>
-        <textarea className="input" rows={3} value={props.notes} onChange={(e) => props.setNotes(e.target.value)} />
+      </section>
+
+      <section className="job-create-section">
+        <h4>{c.customerPriceHeading}</h4>
+        <p className="muted">{c.customerPriceHelp}</p>
+        <label>{c.customerPrice}</label>
+        <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={props.clientIncome} onChange={(e) => props.setClientIncome(e.target.value)} />
       </section>
 
       <details style={{ marginTop: 12 }}>
         <summary>{c.moreOptions}</summary>
+        <section className="job-create-section">
+          <div className="grid-2">
+            <div className="form-group">
+              <label htmlFor="job-start-time">{r.startTime}</label>
+              <input id="job-start-time" className="input" type="time" aria-invalid={Boolean(props.recurrenceFieldErrors.startTime)} value={props.primaryVisit?.start_time || ''} onChange={(e) => { if (!props.primaryVisit) return; props.setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined })); props.updateVisit(props.primaryVisit.id, { start_time: e.target.value }); }} />
+              {props.recurrenceFieldErrors.startTime ? <p className="auth-message auth-message-error" role="alert">{props.recurrenceFieldErrors.startTime}</p> : null}
+            </div>
+            <div className="form-group">
+              <label htmlFor="job-end-time">{r.endTime}</label>
+              <input id="job-end-time" className="input" type="time" value={props.primaryVisit?.end_time || ''} onChange={(e) => props.primaryVisit && props.updateVisit(props.primaryVisit.id, { end_time: e.target.value })} />
+            </div>
+          </div>
+          <label style={{ marginTop: 16 }}>{c.workerPrice}</label>
+          <p className="muted">{c.workerPriceHelp}</p>
+          <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(props.locale).paymentMethod} style={{ marginTop: 8 }}>
+            <button type="button" className={`btn${props.contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => props.setContractorPayMode('flat')}>{c.flatRate}</button>
+            <button type="button" className={`btn${props.contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => props.setContractorPayMode('hourly')}>{c.hourly}</button>
+          </div>
+          {props.contractorPayMode === 'hourly' ? (
+            <>
+              <div className="grid-2" style={{ marginTop: 10 }}>
+                <div className="form-group"><label>{c.hours}</label><input className="input" type="number" min="0" step="0.25" value={props.contractorHours} onChange={(e) => props.setContractorHours(e.target.value)} /></div>
+                <div className="form-group"><label>{c.workerHourlyRate}</label><input className="input" type="number" min="0" step="0.01" value={props.contractorHourlyRate} onChange={(e) => props.setContractorHourlyRate(e.target.value)} /></div>
+              </div>
+              <p className="muted">{c.workerCost}: ${props.previewContractorPay.toFixed(2)}</p>
+            </>
+          ) : (
+            <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={props.contractorFlatRate} onChange={(e) => props.setContractorFlatRate(e.target.value)} />
+          )}
+          <label>{c.jobNotes}</label>
+          <textarea className="input" rows={3} value={props.notes} onChange={(e) => props.setNotes(e.target.value)} />
+        </section>
         <section className="job-create-section">
           <label htmlFor="recurrence-frequency">{r.scheduleType}</label>
           <select id="recurrence-frequency" className="input" value={props.recurrenceFrequency} onChange={(e) => {
