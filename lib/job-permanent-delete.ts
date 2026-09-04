@@ -2,6 +2,9 @@
 
 export const COMPLETED_JOB_STATUSES = new Set(['completed', 'done', 'complete', 'closed']);
 
+export const FINANCIAL_HISTORY_DELETE_MESSAGE =
+  'Jobs with invoices, payments, worker labor, or expenses cannot be permanently deleted. Cancel the job instead so financial history stays accurate.';
+
 export function isCompletedJobStatus(status: string | null | undefined): boolean {
   return COMPLETED_JOB_STATUSES.has(String(status || '').toLowerCase());
 }
@@ -61,4 +64,20 @@ export function selectRecurringJobsForPermanentDelete(
   }
 
   return Array.from(new Set(ids));
+}
+
+export function isFinancialHistoryDeleteError(message: string | null | undefined): boolean {
+  const text = String(message || '');
+  if (!text) return false;
+  return (
+    /invoices, payments, worker labor, or expenses/i.test(text) ||
+    (/cannot be permanently deleted/i.test(text) && /cancel the job instead/i.test(text)) ||
+    /HAS_FINANCIAL_HISTORY/i.test(text)
+  );
+}
+
+export function isPermanentDeleteConflictError(message: string | null | undefined): boolean {
+  const text = String(message || '');
+  if (isFinancialHistoryDeleteError(text)) return true;
+  return /reference|foreign key|still reference|could not be permanently deleted/i.test(text);
 }
