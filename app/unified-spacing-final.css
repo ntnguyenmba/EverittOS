@@ -125,16 +125,25 @@
 .dashboard-shell .quote-page-head {
   display: flex !important;
   flex-direction: column !important;
-  align-items: center !important;
-  text-align: center !important;
-  width: min(100%, 760px) !important;
-  margin: 0 auto !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 .dashboard-shell .quote-page-head > div,
 .dashboard-shell .quote-page-head h1,
 .dashboard-shell .quote-page-head p {
+  display: block !important;
   width: 100% !important;
-  text-align: center !important;
+  text-align: left !important;
+}
+.dashboard-shell .quote-page-head .page-subtitle {
+  display: block !important;
+  color: var(--eo-ink, #173044) !important;
+  opacity: 1 !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  margin: 6px 0 0 !important;
 }
 .dashboard-shell .quote-compose-grid,
 .dashboard-shell .quote-list,
