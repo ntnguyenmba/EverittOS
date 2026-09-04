@@ -307,3 +307,69 @@
   margin-left: 0 !important;
   margin-right: 0 !important;
 }
+
+/* Date/time fields use the same box as text, number, and select inputs. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
+  input[type='month'],
+  input[type='week']
+) {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: block !important;
+  min-height: 46px !important;
+  padding: 0.78rem 0.9rem !important;
+  line-height: 1.4 !important;
+  border: 1px solid var(--eo-color-border-strong) !important;
+  border-radius: var(--eo-radius-control) !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  font: inherit !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-fields-wrapper,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-text,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-month-field,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-day-field,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-year-field,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-hour-field,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local']
+)::-webkit-datetime-edit-minute-field {
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+}
