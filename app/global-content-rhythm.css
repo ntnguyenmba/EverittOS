@@ -37,9 +37,6 @@
   overflow-wrap: break-word;
 }
 
-
-/* Established page components inherit the same visual primitives. Structural
-   table/list wrappers are intentionally excluded so layout behavior is unchanged. */
 :is(.dashboard-shell, .role-portal-shell) :is(
   .settings-card,
   .client-job-card,
@@ -104,8 +101,6 @@
   color: var(--eo-color-text-secondary) !important;
 }
 
-/* Top-level page stacks use one compact gap and clear older sibling
-   margins without changing their display, sizing, or table behavior. */
 :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-stage,
   .jobs-list-page,
@@ -137,7 +132,6 @@
   margin-bottom: 0 !important;
 }
 
-/* Text inside a surface stays close enough to belong together without touching. */
 :is(.dashboard-shell, .role-portal-shell) :is(.card, .panel, .settings-card, .client-job-card) > :is(h1, h2, h3, h4, p, ul, ol, form, .form, .form-grid, .button-row, .inline-actions, .record-actions, details, section, .list-row, .job-visits-list) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
@@ -156,7 +150,6 @@
   margin-top: var(--eo-content-heading-gap) !important;
 }
 
-/* Labels, fields, and action groups use one predictable control rhythm. */
 :is(.dashboard-shell, .role-portal-shell) :is(form, .form, .form-grid, fieldset) {
   row-gap: var(--eo-content-control-gap) !important;
 }
@@ -173,7 +166,6 @@
   margin: 0 !important;
 }
 
-/* Job detail fixes visible in the mobile owner screen. */
 .dashboard-shell .job-detail-shell > .page-head {
   gap: var(--eo-content-heading-gap) !important;
   margin: 0 !important;
@@ -235,7 +227,6 @@
 }
 
 @media (max-width: 640px) {
-
   :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions, .page-actions, .settings-actions) {
     row-gap: var(--eo-content-control-gap) !important;
   }
@@ -253,7 +244,6 @@
   }
 }
 
-/* Boxes stay inside boxes on every signed-in view. */
 :is(.dashboard-shell, .role-portal-shell) :is(
   .card,
   .panel,
@@ -288,19 +278,6 @@
   max-width: 100% !important;
 }
 
-:is(.dashboard-shell, .role-portal-shell) :is(
-  input[type='date'],
-  input[type='time'],
-  input[type='datetime-local'],
-  input[type='month'],
-  input[type='week']
-) {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-}
-
-/* One subtitle rule for every page header. */
 :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head) .page-subtitle {
   display: block !important;
   margin: 6px 0 0 !important;
@@ -309,4 +286,24 @@
   font-size: 15px !important;
   line-height: 1.45 !important;
   opacity: 1 !important;
+}
+
+/* iOS date/time controls have a large intrinsic width. Force them to shrink
+   inside the schedule card instead of running off the right edge. */
+.dashboard-shell .job-create-section {
+  overflow: hidden !important;
+  padding-inline: 16px !important;
+}
+
+.dashboard-shell .job-create-section > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.dashboard-shell .job-create-section > :is(input, select, textarea),
+.dashboard-shell .job-create-section :is(input[type='date'], input[type='time']) {
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
 }
