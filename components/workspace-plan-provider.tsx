@@ -50,6 +50,24 @@ function emptyPlanState(error: string | null = null): Omit<WorkspacePlanState, '
   return { profilePlan:null, subscriptionStatus:null, billingPlan:null, organizationPlan:null, plan:null, role:null, rawProfilePlan:null, rawSubscriptionStatus:null, loading:false, error };
 }
 
+function mergeWorkspacePlan(
+  prev: Omit<WorkspacePlanState, 'refresh'>,
+  next: Omit<WorkspacePlanState, 'refresh'>
+): Omit<WorkspacePlanState, 'refresh'> {
+  if (!next.error) return next;
+  if (!prev.role && !prev.plan) return next;
+  return {
+    ...prev,
+    loading: false,
+    error: next.error,
+    role: prev.role,
+    plan: prev.plan ?? next.plan,
+    profilePlan: prev.profilePlan ?? next.profilePlan,
+    billingPlan: prev.billingPlan ?? next.billingPlan,
+    organizationPlan: prev.organizationPlan ?? next.organizationPlan
+  };
+}
+
 async function requestWorkspacePlan(): Promise<Response> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), PLAN_REQUEST_TIMEOUT_MS);
@@ -67,7 +85,7 @@ function stateFromJson(json: WorkspacePlanResponse): Omit<WorkspacePlanState, 'r
     billingPlan,
     organizationPlan,
     plan: highestPlan([billingPlan, organizationPlan, profilePlan]),
-    role: normalizeRole(json.role || 'employee'),
+    role: json.role ? normalizeRole(json.role) : null,
     rawProfilePlan: json.rawProfilePlan ?? json.profilePlan ?? null,
     rawSubscriptionStatus: json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null,
     loading: false,
@@ -84,7 +102,7 @@ async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>
     return stateFromJson(json);
   } catch (error) {
     const message = error instanceof DOMException && error.name === 'AbortError' ? 'Workspace plan request timed out.' : 'Unable to load workspace plan.';
-    return { ...emptyPlanState(message), plan:'free', role:'employee' };
+    return emptyPlanState(message);
   }
 }
 
@@ -99,7 +117,7 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
       setState((prev) => ({ ...prev, loading:options?.silent ? prev.loading : true, error:null }));
       const next = await fetchWorkspacePlan();
       lastRefreshRef.current = Date.now();
-      setState(next);
+      setState((prev) => mergeWorkspacePlan(prev, next));
     })();
     refreshPromiseRef.current = run;
     try { await run; } finally { if (refreshPromiseRef.current === run) refreshPromiseRef.current = null; }
