@@ -8,7 +8,10 @@ import {
   parseMoneyDollars
 } from '../lib/money-decimal';
 import {
+  FINANCIAL_HISTORY_DELETE_MESSAGE,
   isCompletedJobStatus,
+  isFinancialHistoryDeleteError,
+  isPermanentDeleteConflictError,
   previousIsoDate,
   resolveOccurrenceAnchorDate,
   selectRecurringJobsForPermanentDelete
@@ -31,7 +34,7 @@ test('optional money preserves intentional zero and treats blank as null', () =>
   assert.equal(optionalMoneyDollars('125.50'), 125.5);
   assert.equal(optionalMoneyDollars('-5'), -5);
   assert.notEqual(optionalMoneyDollars(0), null);
-  assert.equal(0 || null, null); // documents the anti-pattern we avoid
+  assert.equal(0 || null, null);
 });
 
 test('create and save jobs with zero client and/or contractor pay', () => {
@@ -160,8 +163,17 @@ test('delete API uses manager gate, atomic RPC, and never silent-cancels', () =>
   assert.match(route, /status:\s*'ended'/);
   assert.match(route, /record_shares/);
   assert.match(route, /deletedJobCount/);
+  assert.match(route, /HAS_FINANCIAL_HISTORY/);
+  assert.match(route, /jobsHaveFinancialHistory/);
   assert.doesNotMatch(route, /status:\s*'cancelled'/);
   assert.match(route, /409/);
+});
+
+test('finance history delete errors map to cancel-instead copy', () => {
+  assert.equal(isFinancialHistoryDeleteError(FINANCIAL_HISTORY_DELETE_MESSAGE), true);
+  assert.equal(isPermanentDeleteConflictError(FINANCIAL_HISTORY_DELETE_MESSAGE), true);
+  assert.equal(isFinancialHistoryDeleteError('Job not found.'), false);
+  assert.equal(isPermanentDeleteConflictError('foreign key constraint'), true);
 });
 
 test('job details exposes permanent delete only for managers', () => {
@@ -193,6 +205,14 @@ test('migration adds atomic permanent delete function', () => {
   assert.match(migration, /record_shares/);
   assert.match(migration, /deletedJobCount/);
   assert.doesNotMatch(migration, /status = 'cancelled'/);
+});
+
+test('finance guard refuses permanent delete when money history exists', () => {
+  const migration = read('supabase/migrations/202610010002_guard_financial_job_deletion.sql');
+  assert.match(migration, /job_payments/);
+  assert.match(migration, /job_labor/);
+  assert.match(migration, /Cancel the job instead/);
+  assert.match(migration, /v_has_financial_history/);
 });
 
 test('profitability and labor UI keep zero values editable', () => {
