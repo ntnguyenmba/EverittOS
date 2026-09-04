@@ -288,11 +288,10 @@
   opacity: 1 !important;
 }
 
-/* iOS date/time controls have a large intrinsic width. Force them to shrink
-   inside the schedule card instead of running off the right edge. */
 .dashboard-shell .job-create-section {
   overflow: hidden !important;
-  padding-inline: 16px !important;
+  padding: 16px !important;
+  gap: 12px !important;
 }
 
 .dashboard-shell .job-create-section > * {
@@ -300,10 +299,11 @@
   max-width: 100% !important;
 }
 
-.dashboard-shell .job-create-section > :is(input, select, textarea),
-.dashboard-shell .job-create-section :is(input[type='date'], input[type='time']) {
+.dashboard-shell .job-create-section :is(input, select, textarea) {
   width: auto !important;
   max-width: 100% !important;
   min-width: 0 !important;
   justify-self: stretch !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
