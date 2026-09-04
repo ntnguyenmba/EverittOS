@@ -367,6 +367,67 @@ export function JobsList() {
           <Link href="/jobs?status=finished" className={filterTabClass(activeFinished)} aria-current={activeFinished ? 'page' : undefined}>{c.finished}</Link>
           {managerView ? <Link href="/jobs?filter=unassigned" className={filterTabClass(activeNeedsWorker, true)} aria-current={activeNeedsWorker ? 'page' : undefined}>{c.needsWorker}</Link> : null}
         </div>
+
+        <section className="jobs-advanced-filters" aria-label={c.filters} style={{ marginBlock: 8 }}>
+          <div className="jobs-filter-heading" style={{ marginBottom: 8 }}>{c.filters}</div>
+          <div className="jobs-filter-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+            <label className="jobs-filter-control"><span>{c.worker}</span><select value={workerFilter} onChange={(event) => setWorkerFilter(event.target.value)}><option value="">{c.allWorkers}</option><option value="__unassigned__">{c.unassigned}</option>{workerOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.client}</span><select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}><option value="">{c.allClients}</option>{clientOptions.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.property}</span><select value={propertyFilter} onChange={(event) => setPropertyFilter(event.target.value)}><option value="">{c.allProperties}</option>{propertyOptions.map((property) => <option key={property} value={property}>{property}</option>)}</select></label>
+          </div>
+
+          <details style={{ marginTop: 10 }} open={Boolean(monthFilter || yearFilter || sortMode !== 'date') || undefined}>
+            <summary className="btn" style={{ width: 'fit-content', cursor: 'pointer', listStyle: 'none' }}>{c.moreFilters}</summary>
+            <div className="jobs-filter-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 10 }}>
+              <label className="jobs-filter-control"><span>{c.month}</span><select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}><option value="">{c.allMonths}</option>{Array.from({ length: 12 }, (_, index) => { const value = String(index + 1).padStart(2, '0'); const label = new Intl.DateTimeFormat(localeCode, { month: 'long' }).format(new Date(2026, index, 1)); return <option key={value} value={value}>{label}</option>; })}</select></label>
+              <label className="jobs-filter-control"><span>{c.year}</span><select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="">{c.allYears}</option>{yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+              <label className="jobs-filter-control"><span>{c.sortBy}</span><select value={sortMode} onChange={(event) => setSortMode(event.target.value === 'assigned' ? 'assigned' : 'date')}><option value="date">{c.date}</option><option value="assigned">{c.sortByAssigned}</option></select></label>
+            </div>
+          </details>
+
+          {hasLocalFilters ? <button type="button" className="btn jobs-clear-filters" style={{ marginTop: 10 }} onClick={clearLocalFilters}>{c.clearFilters}</button> : null}
+        </section>
+
+        {filtered ? <p className="muted jobs-filter-summary">{c.filtered}{!hasLocalFilters ? <> · <Link href="/jobs">{c.showAll}</Link></> : null}</p> : null}
+        {isAdminRole(role) && assignmentFilter === 'missing_completion_date' ? <p className="muted jobs-filter-summary">{c.missingFinish}</p> : null}
+        {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
+        {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
+        {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
+        {!loading && rows.length > 0 ? (
+          <>
+            <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
+              {visibleRows.map((job) => {
+                const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
+                const needsWorker = jobNeedsWorker(job);
+                const assignment = assignedName || displayPersonName(null, job.assigned_email) || (needsWorker ? c.unassigned : '—');
+                const locationLabel = jobListAddress(job) || c.unscheduled;
+                const showInvoice = canManageFinancials && canCreateInvoiceForJob(job) && String(job.billing_status || '') !== 'paid' && String(job.billing_status || '') !== 'receipt_sent';
+                const menuOpen = openMenuId === job.id;
+                const ownerMoney = isOwner ? ownerFinancials[job.id] : undefined;
+                return (
+                  <tr key={job.id} className={`jobs-operations-row open-in-new-tab-card${isOwner ? ' jobs-owner-finance-row' : ''}`}>
+                    <td data-label={c.date} className="jobs-col-date"><Link href={jobDetailHref(role, job.id)} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${locationLabel} in a new tab`}><span className="record-card-overlay-label">Open {locationLabel} in a new tab</span></Link><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
+                    <td data-label={c.address} className="jobs-col-property"><Link href={jobDetailHref(role, job.id)} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{isOwner && job.customer_name ? <div className="jobs-secondary">{c.client}: {job.customer_name}</div> : null}{canManageFinancials && !isOwner ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
+                    <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
+                    {isOwner ? (
+                      <>
+                        <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay"><span className="jobs-money-label">{c.customerPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</span></td>
+                        <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay"><span className="jobs-money-label">{c.contractorPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</span></td>
+                        <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit"><span className="jobs-money-label">{c.ownerProfit}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</span></td>
+                      </>
+                    ) : null}
+                    <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
+                    <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={jobDetailHref(role, job.id)} target="_blank" rel="noopener noreferrer" className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
+                  </tr>
+                );
+              })}
+            </tbody></table></div></div>
+            <div className="jobs-list-more" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginTop: 14 }}>
+              <span className="muted">{c.showing.replace('{visible}', String(Math.min(visibleCount, rows.length))).replace('{total}', String(rows.length))}</span>
+              {hasMoreRows ? <button type="button" className="btn btn-secondary" onClick={() => setVisibleCount((count) => count + JOBS_PAGE_SIZE)}>{c.showMore}</button> : null}
+            </div>
+          </>
+        ) : null}
       </div>
     </AppShell>
   );
