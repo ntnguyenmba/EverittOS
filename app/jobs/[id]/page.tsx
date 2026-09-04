@@ -423,9 +423,14 @@ export default function JobDetailPage({ params }: PageProps) {
           <div><h2>{job.title}</h2><p>{job.address || copy.noAddressAdded}</p></div>
           <div className="button-row" style={{ flexWrap: 'wrap' }}>
             {canManage ? (
-              <button type="button" className="btn btn-primary" disabled={duplicating} onClick={() => void bookAgain()}>
-                {duplicating ? copy.creatingJob : copy.bookAgain}
-              </button>
+              <>
+                <button type="button" className="btn btn-primary" disabled={duplicating} onClick={() => void bookAgain()}>
+                  {duplicating ? copy.creatingJob : copy.bookAgain}
+                </button>
+                <button type="button" className="btn btn-danger" disabled={deletingJob} onClick={() => void permanentlyDeleteJob()}>
+                  {deletingJob ? copy.deletingJob : copy.deleteJob}
+                </button>
+              </>
             ) : null}
             <StatusPill status={job.status} />
           </div>

@@ -145,9 +145,9 @@ const copy: Record<Locale, JobDetailCopy> = {
     working: 'Working...', skipVisit: 'Skip this visit', cancelVisit: 'Cancel this visit', editFuture: 'Edit this and future', editSeries: 'Edit entire series',
     pauseSeries: 'Pause series', resumeSeries: 'Resume series', endSeries: 'End series', internalMetadata: 'Internal details', saveInternalNotes: 'Save team notes', jobId: 'Job ID', money: 'Money',
     deleteJob: 'Delete',
-    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyOneTime: 'This also deletes expenses, invoices, payments, worker labor, visits, photos, and other records linked only to this job.',
     deleteJobSectionCopyRecurring: 'Delete this visit and all future visits? Past completed visits will stay.',
-    deleteJobConfirmOneTime: 'Permanently delete this job? This cannot be undone.',
+    deleteJobConfirmOneTime: 'Delete this job and all linked expenses, invoices, payments, worker labor, visits, and photos? This cannot be undone.',
     deleteJobConfirmRecurring: 'Delete this visit and all future visits? Past completed visits will stay. This cannot be undone.',
     deletingJob: 'Deleting…',
     unableToDeleteJob: 'Could not permanently delete this job.'
@@ -179,9 +179,9 @@ const copy: Record<Locale, JobDetailCopy> = {
     working: 'Procesando...', skipVisit: 'Omitir esta visita', cancelVisit: 'Cancelar esta visita', editFuture: 'Editar esta y las futuras', editSeries: 'Editar toda la serie',
     pauseSeries: 'Pausar serie', resumeSeries: 'Reanudar serie', endSeries: 'Finalizar serie', internalMetadata: 'Detalles internos', saveInternalNotes: 'Guardar notas del equipo', jobId: 'ID del trabajo', money: 'Dinero',
     deleteJob: 'Eliminar',
-    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyOneTime: 'También se eliminan los gastos, facturas, pagos, trabajo, visitas, fotos y otros registros vinculados únicamente a este trabajo.'
     deleteJobSectionCopyRecurring: '¿Eliminar esta visita y todas las visitas futuras? Las visitas completadas anteriores se conservarán.',
-    deleteJobConfirmOneTime: '¿Eliminar permanentemente este trabajo? Esto no se puede deshacer.',
+    deleteJobConfirmOneTime: '¿Eliminar este trabajo y todos los gastos, facturas, pagos, trabajo, visitas y fotos vinculados? Esto no se puede deshacer.',
     deleteJobConfirmRecurring: '¿Eliminar esta visita y todas las visitas futuras? Las visitas completadas anteriores se conservarán. Esto no se puede deshacer.',
     deletingJob: 'Eliminando…',
     unableToDeleteJob: 'No se pudo eliminar permanentemente este trabajo.'
@@ -209,9 +209,9 @@ const copy: Record<Locale, JobDetailCopy> = {
     working: 'Đang xử lý...', skipVisit: 'Bỏ qua lần này', cancelVisit: 'Hủy lần này', editFuture: 'Sửa lần này và tương lai', editSeries: 'Sửa toàn bộ chuỗi',
     pauseSeries: 'Tạm dừng chuỗi', resumeSeries: 'Tiếp tục chuỗi', endSeries: 'Kết thúc chuỗi', internalMetadata: 'Chi tiết nội bộ', saveInternalNotes: 'Lưu ghi chú nhóm', jobId: 'Mã công việc', money: 'Tiền',
     deleteJob: 'Xóa',
-    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyOneTime: 'Thao tác này cũng xóa chi phí, hóa đơn, thanh toán, công lao động, lần làm, ảnh và các dữ liệu chỉ liên kết với công việc này.'
     deleteJobSectionCopyRecurring: 'Xóa lần làm này và tất cả các lần trong tương lai? Các lần đã hoàn tất trước đó sẽ được giữ lại.',
-    deleteJobConfirmOneTime: 'Xóa vĩnh viễn công việc này? Không thể hoàn tác.',
+    deleteJobConfirmOneTime: 'Xóa công việc này cùng tất cả chi phí, hóa đơn, thanh toán, công lao động, lần làm và ảnh liên quan? Không thể hoàn tác.',
     deleteJobConfirmRecurring: 'Xóa lần làm này và tất cả các lần trong tương lai? Các lần đã hoàn tất trước đó sẽ được giữ lại. Không thể hoàn tác.',
     deletingJob: 'Đang xóa…',
     unableToDeleteJob: 'Không thể xóa vĩnh viễn công việc này.'

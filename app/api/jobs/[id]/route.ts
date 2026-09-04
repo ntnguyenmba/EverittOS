@@ -371,8 +371,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
       recurringSeriesEnded?: boolean;
       deletedFromDate?: string | null;
       deletedJobIds?: string[];
+      photoStoragePaths?: string[];
     };
     const deletedJobCount = Number(result.deletedJobCount || 0);
+    const photoStoragePaths = Array.isArray(result.photoStoragePaths)
+      ? result.photoStoragePaths.filter((path): path is string => typeof path === 'string' && path.length > 0)
+      : [];
+    if (photoStoragePaths.length) {
+      const storageClient = createAdminSupabase() || ctx.supabase;
+      await storageClient.storage.from('job-photos').remove(photoStoragePaths);
+    }
     await logWorkspaceActivity(
       ctx.workspace.organizationId,
       ctx.userId,
