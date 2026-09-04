@@ -252,3 +252,61 @@
     min-height: 36px !important;
   }
 }
+
+/* Boxes stay inside boxes on every signed-in view. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .card,
+  .panel,
+  .settings-card,
+  .job-create-section,
+  .visit-editor,
+  .quote-compose,
+  .quote-workspace,
+  .form,
+  .form-grid,
+  .form-group,
+  .auth-field,
+  label,
+  fieldset
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input,
+  select,
+  textarea,
+  .input,
+  input.input,
+  select.input,
+  textarea.input
+) {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
+  input[type='month'],
+  input[type='week']
+) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* One subtitle rule for every page header. */
+:is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head) .page-subtitle {
+  display: block !important;
+  margin: 6px 0 0 !important;
+  max-width: 42rem;
+  color: var(--eo-color-text-secondary, #4b5a63) !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  opacity: 1 !important;
+}
