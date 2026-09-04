@@ -131,6 +131,39 @@ function moneyValue(value: string): number {
   return parseMoneyDollars(value);
 }
 
+function durationHoursValue(value: string): number | null {
+  const hours = Number(value);
+  return Number.isFinite(hours) && hours > 0 ? hours : null;
+}
+
+function endFromDuration(date: string, startTime: string, hours: number) {
+  const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = startTime.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch || !Number.isFinite(hours) || hours <= 0) return null;
+  const start = Date.UTC(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]) - 1,
+    Number(dateMatch[3]),
+    Number(timeMatch[1]),
+    Number(timeMatch[2])
+  );
+  const end = new Date(start + Math.round(hours * 60) * 60_000);
+  return {
+    date: `${end.getUTCFullYear()}-${String(end.getUTCMonth() + 1).padStart(2, '0')}-${String(end.getUTCDate()).padStart(2, '0')}`,
+    time: `${String(end.getUTCHours()).padStart(2, '0')}:${String(end.getUTCMinutes()).padStart(2, '0')}`
+  };
+}
+
+function hoursBetweenTimes(startTime: string, endTime: string): number | null {
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  if (![startHour, startMinute, endHour, endMinute].every(Number.isFinite)) return null;
+  const start = startHour * 60 + startMinute;
+  let end = endHour * 60 + endMinute;
+  if (end <= start) end += 24 * 60;
+  return (end - start) / 60;
+}
+
 /** Blank → null; intentional "0" → 0. Never use `value || null` for money. */
 function optionalMoneyInput(value: string): number | null {
   const trimmed = value.trim();
@@ -175,6 +208,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [additionalExpenses, setAdditionalExpenses] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
   const [contractorPayMode, setContractorPayMode] = useState<ContractorPayMode>('flat');
+  const [jobDurationHours, setJobDurationHours] = useState('');
   const [contractorHours, setContractorHours] = useState('');
   const [contractorHourlyRate, setContractorHourlyRate] = useState('');
   const [contractorFlatRate, setContractorFlatRate] = useState('');
@@ -341,6 +375,17 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setStructuredAddress(null);
     if (property.timezone) setTimeZone(property.timezone);
     if (property.default_price != null && !clientIncome) setClientIncome(String(property.default_price));
+    if (property.default_duration_minutes != null && !jobDurationHours) {
+      const hours = property.default_duration_minutes / 60;
+      setJobDurationHours(String(hours));
+      setVisits((rows) =>
+        rows.map((visit, index) => {
+          if (index !== 0 || !visit.visit_date || !visit.start_time) return visit;
+          const end = endFromDuration(visit.visit_date, visit.start_time, hours);
+          return end ? { ...visit, end_time: end.time } : visit;
+        })
+      );
+    }
     if (property.preferred_contractor_id) setAssignedTo(property.preferred_contractor_id);
 
     const noteBits = [
@@ -426,6 +471,42 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
   function updateVisit(id: string, patch: Partial<VisitDraft>) {
     setVisits((rows) => rows.map((visit) => (visit.id === id ? { ...visit, ...patch } : visit)));
+  }
+
+  function setPrimaryDuration(value: string) {
+    setJobDurationHours(value);
+    const hours = durationHoursValue(value);
+    if (!hours) return;
+    setVisits((rows) =>
+      rows.map((visit, index) => {
+        if (index !== 0 || !visit.visit_date || !visit.start_time) return visit;
+        const end = endFromDuration(visit.visit_date, visit.start_time, hours);
+        return end ? { ...visit, end_time: end.time } : visit;
+      })
+    );
+  }
+
+  function setPrimaryStartTime(value: string) {
+    setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined }));
+    const hours = durationHoursValue(jobDurationHours);
+    setVisits((rows) =>
+      rows.map((visit, index) => {
+        if (index !== 0) return visit;
+        const end = hours && visit.visit_date ? endFromDuration(visit.visit_date, value, hours) : null;
+        return { ...visit, start_time: value, ...(end ? { end_time: end.time } : {}) };
+      })
+    );
+  }
+
+  function setPrimaryEndTime(value: string) {
+    setVisits((rows) =>
+      rows.map((visit, index) => {
+        if (index !== 0) return visit;
+        const hours = visit.start_time && value ? hoursBetweenTimes(visit.start_time, value) : null;
+        if (hours) setJobDurationHours(String(hours));
+        return { ...visit, end_time: value };
+      })
+    );
   }
 
   function setSeriesStartDate(value: string) {
@@ -597,7 +678,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         appFeedback.error('Each visit needs a date, start time, and end time.');
         return;
       }
-      if (visit.end_time && visit.end_time <= visit.start_time) {
+      const isPrimaryOvernight =
+        visit.id === scheduledVisits[0]?.id &&
+        Boolean(durationHoursValue(jobDurationHours)) &&
+        Boolean(visit.start_time && visit.end_time);
+      if (visit.end_time && visit.end_time <= visit.start_time && !isPrimaryOvernight) {
         appFeedback.error('Visit end time must be after start time.');
         return;
       }
@@ -640,8 +725,18 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     const firstVisit = scheduledVisits[0];
     const lastVisit = scheduledVisits[scheduledVisits.length - 1];
+    const selectedDurationHours = durationHoursValue(jobDurationHours);
+    const primaryEnd =
+      firstVisit && selectedDurationHours
+        ? endFromDuration(firstVisit.visit_date, firstVisit.start_time, selectedDurationHours)
+        : null;
     const scheduledStart = firstVisit ? wallClockDateTime(firstVisit.visit_date, firstVisit.start_time) : null;
-    const scheduledEnd = lastVisit ? wallClockDateTime(lastVisit.visit_date, lastVisit.end_time) : null;
+    const scheduledEnd =
+      scheduledVisits.length === 1 && primaryEnd
+        ? wallClockDateTime(primaryEnd.date, primaryEnd.time)
+        : lastVisit
+          ? wallClockDateTime(lastVisit.visit_date, lastVisit.end_time)
+          : null;
 
     setLoading(true);
 
@@ -745,13 +840,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         : optionalMoneyInput(contractorFlatRate);
     const assignedMember = teamMembers.find((member) => member.userId === assignedTo);
     const resolvedContractorName = assignedMember?.label || 'Unassigned worker';
-    const durationMinutes =
-      firstVisit?.start_time && firstVisit?.end_time
-        ? Math.max(
-            0,
-            Number(firstVisit.end_time.slice(0, 2)) * 60 + Number(firstVisit.end_time.slice(3, 5)) -
-              (Number(firstVisit.start_time.slice(0, 2)) * 60 + Number(firstVisit.start_time.slice(3, 5)))
-          )
+    const durationMinutes = selectedDurationHours
+      ? Math.round(selectedDurationHours * 60)
+      : firstVisit?.start_time && firstVisit?.end_time
+        ? Math.round((hoursBetweenTimes(firstVisit.start_time, firstVisit.end_time) || 0) * 60)
         : null;
 
     if (recurrenceFrequency !== 'none') {
@@ -832,7 +924,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         expected_expense_description: expenseDescription.trim() || null,
         assigned_to: assignedTo || null,
         start_date: firstVisit?.visit_date || null,
-        due_date: lastVisit?.visit_date || null,
+        due_date: scheduledVisits.length === 1 && primaryEnd ? primaryEnd.date : lastVisit?.visit_date || null,
         scheduled_start: scheduledStart,
         scheduled_end: scheduledEnd,
         visits: scheduledVisits.map((visit) => ({
@@ -1150,17 +1242,43 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 value={primaryVisit?.start_time || ''}
                 onChange={(e) => {
                   if (!primaryVisit) return;
-                  setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined }));
-                  updateVisit(primaryVisit.id, { start_time: e.target.value });
+                  setPrimaryStartTime(e.target.value);
                 }}
               />
               {recurrenceFieldErrors.startTime ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p> : null}
             </div>
             <div className="form-group">
               <label htmlFor="job-end-time">{recurrenceCopy.endTime}</label>
-              <input id="job-end-time" className="input" type="time" value={primaryVisit?.end_time || ''} onChange={(e) => primaryVisit && updateVisit(primaryVisit.id, { end_time: e.target.value })} />
+              <input id="job-end-time" className="input" type="time" value={primaryVisit?.end_time || ''} onChange={(e) => primaryVisit && setPrimaryEndTime(e.target.value)} />
             </div>
           </div>
+          <label htmlFor="job-duration-hours" style={{ marginTop: 12 }}>How long is this job?</label>
+          <div className="segmented-control" role="group" aria-label="Job duration presets" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+            {[1, 2, 3, 4, 6, 8].map((hours) => (
+              <button
+                key={hours}
+                type="button"
+                className={`btn${jobDurationHours === String(hours) ? ' btn-primary' : ''}`}
+                aria-pressed={jobDurationHours === String(hours)}
+                onClick={() => setPrimaryDuration(String(hours))}
+              >
+                {hours} hr
+              </button>
+            ))}
+          </div>
+          <input
+            id="job-duration-hours"
+            className="input"
+            type="number"
+            min="0.25"
+            step="0.25"
+            inputMode="decimal"
+            placeholder="Custom hours"
+            value={jobDurationHours}
+            onChange={(e) => setPrimaryDuration(e.target.value)}
+            style={{ marginTop: 10 }}
+          />
+          <p className="muted">Choose a preset or enter any length. End time updates automatically, including overnight jobs.</p>
         </section>
 
         <section className="job-create-section">
@@ -1186,7 +1304,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           {contractorPayMode === 'hourly' ? (
             <>
               <div className="grid-2" style={{ marginTop: 10 }}>
-                <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
+                <div className="form-group">
+                  <label>Hours</label>
+                  <input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} />
+                  {durationHoursValue(jobDurationHours) ? (
+                    <button className="btn" type="button" style={{ marginTop: 8 }} onClick={() => setContractorHours(jobDurationHours)}>
+                      Use job duration
+                    </button>
+                  ) : null}
+                </div>
                 <div className="form-group"><label>Worker hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
               </div>
               <p className="muted">Worker cost: ${previewContractorPay.toFixed(2)}</p>
