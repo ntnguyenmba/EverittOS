@@ -38,23 +38,21 @@ export async function GET(_request: Request, context: RouteContext) {
 
   if (!jobIds.length) return NextResponse.json({ canDelete: false, protected: true, reason: 'Completed historical visits are protected.' });
 
-  const [invoices, payments, labor, expenses] = await Promise.all([
+  const [invoices, payments] = await Promise.all([
     ctx.supabase.from('invoices').select('id').eq('organization_id', ctx.workspace.organizationId).in('job_id', jobIds).limit(1),
-    ctx.supabase.from('job_payments').select('id').eq('organization_id', ctx.workspace.organizationId).in('job_id', jobIds).limit(1),
-    ctx.supabase.from('job_labor').select('id').eq('organization_id', ctx.workspace.organizationId).in('job_id', jobIds).limit(1),
-    ctx.supabase.from('expenses').select('id').eq('organization_id', ctx.workspace.organizationId).in('job_id', jobIds).limit(1)
+    ctx.supabase.from('job_payments').select('id').eq('organization_id', ctx.workspace.organizationId).in('job_id', jobIds).limit(1)
   ]);
 
-  const queryError = invoices.error || payments.error || labor.error || expenses.error;
+  const queryError = invoices.error || payments.error;
   if (queryError) return NextResponse.json({ error: mapWorkspaceSaveError(queryError.message) }, { status: 400 });
 
-  const protectedByFinance = Boolean(invoices.data?.length || payments.data?.length || labor.data?.length || expenses.data?.length);
+  const protectedByFinance = Boolean(invoices.data?.length || payments.data?.length);
   return NextResponse.json({
     canDelete: !protectedByFinance,
     protected: protectedByFinance,
     targetJobCount: jobIds.length,
     reason: protectedByFinance
-      ? 'This job has invoices, payments, worker labor, or expenses. Cancel it instead so financial history stays accurate.'
+      ? 'This job has invoices or payments. Cancel it instead so financial history stays accurate.'
       : null
   });
 }

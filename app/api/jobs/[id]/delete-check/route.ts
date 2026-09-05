@@ -50,6 +50,6 @@ export async function GET(_request: Request, context: RouteContext) {
   if (queryError) return NextResponse.json({ error: queryError.message || 'Could not verify financial history.' }, { status: 500 });
 
   const counts = { invoices:invoices.count || 0, payments:payments.count || 0, labor:labor.count || 0, expenses:expenses.count || 0 };
-  const hasFinancialHistory = Object.values(counts).some(count => count > 0);
+  const hasFinancialHistory = counts.invoices > 0 || counts.payments > 0;
   return NextResponse.json({ canPermanentlyDelete: !hasFinancialHistory, hasFinancialHistory, targetJobCount: targetJobIds.length, counts, recurring:Boolean(job.recurring_series_id), status:job.status || null });
 }
