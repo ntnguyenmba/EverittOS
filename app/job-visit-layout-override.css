@@ -39,3 +39,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Create Job: From / To must stay visible. A prior nth-of-type hide removed the time fields. */
+.unified-job-form > .job-create-section:nth-of-type(3) > .grid-2,
+.unified-job-form .job-schedule-times {
+  display: grid !important;
+}
