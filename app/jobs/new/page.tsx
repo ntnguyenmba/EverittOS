@@ -1,12 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { JobCreateI18nBind } from '@/components/job-create-i18n-bind';
-import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
 import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import styles from './job-form-simplify.module.css';
+
+const JobCreator = dynamic(
+  () => import('@/components/job-creator').then((mod) => mod.JobCreator),
+  {
+    ssr: false,
+    loading: () => <p className="loading-state">Loading form…</p>
+  }
+);
 
 export default function NewJobPage() {
   const { locale } = useTranslation();
