@@ -3,7 +3,7 @@
 export const COMPLETED_JOB_STATUSES = new Set(['completed', 'done', 'complete', 'closed']);
 
 export const FINANCIAL_HISTORY_DELETE_MESSAGE =
-  'Jobs with invoices, payments, worker labor, or expenses cannot be permanently deleted. Cancel the job instead so financial history stays accurate.';
+  'Jobs with invoices or payments cannot be permanently deleted. Cancel the job instead so financial history stays accurate.';
 
 export function isCompletedJobStatus(status: string | null | undefined): boolean {
   return COMPLETED_JOB_STATUSES.has(String(status || '').toLowerCase());
@@ -70,6 +70,7 @@ export function isFinancialHistoryDeleteError(message: string | null | undefined
   const text = String(message || '');
   if (!text) return false;
   return (
+    /invoices or payments cannot be permanently deleted/i.test(text) ||
     /invoices, payments, worker labor, or expenses/i.test(text) ||
     (/cannot be permanently deleted/i.test(text) && /cancel the job instead/i.test(text)) ||
     /HAS_FINANCIAL_HISTORY/i.test(text)
