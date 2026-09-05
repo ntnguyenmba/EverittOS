@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export default function NewJobError({
   error,
   reset
@@ -15,9 +17,9 @@ export default function NewJobError({
         <button type="button" className="btn btn-primary" onClick={() => reset()}>
           Try again
         </button>
-        <a className="btn" href="/jobs">
+        <Link className="btn" href="/jobs">
           Back to jobs
-        </a>
+        </Link>
       </div>
     </div>
   );
