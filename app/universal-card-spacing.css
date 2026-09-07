@@ -1,0 +1,42 @@
+/* Universal EverittOS card spacing.
+   Loaded last so every owner, worker, client, web, iOS, and Android view uses
+   the same readable horizontal breathing room for card-like surfaces. */
+
+:root {
+  --eo-card-inline-padding: 28px;
+  --eo-card-block-padding: 22px;
+}
+
+:where(
+  .card:not(.jobs-table-card):not(.contractor-portal-hero),
+  .panel,
+  .settings-card,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .role-summary-card,
+  .contractor-metric,
+  .dashboard-metric-card,
+  .list-row.team-member-card,
+  [data-record-card='true']
+) {
+  box-sizing: border-box !important;
+  padding-inline: var(--eo-card-inline-padding) !important;
+  padding-block: var(--eo-card-block-padding) !important;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --eo-card-inline-padding: 20px;
+    --eo-card-block-padding: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --eo-card-inline-padding: 18px;
+    --eo-card-block-padding: 16px;
+  }
+}
