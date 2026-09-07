@@ -1,13 +1,15 @@
 /* Universal EverittOS card spacing.
-   Loaded last so every owner, worker, client, web, iOS, and Android view uses
-   the same readable horizontal breathing room for card-like surfaces. */
+   Loaded last so owner, worker, client, web, iOS, and Android views share
+   the same readable inset on every standard card and list-row surface. */
 
 :root {
   --eo-card-inline-padding: 28px;
   --eo-card-block-padding: 22px;
 }
 
-:where(
+/* Use body-level specificity because several legacy page files still contain
+   !important padding rules. This central rule is the final authority. */
+body :is(
   .card:not(.jobs-table-card):not(.contractor-portal-hero),
   .panel,
   .settings-card,
@@ -19,12 +21,28 @@
   .role-summary-card,
   .contractor-metric,
   .dashboard-metric-card,
-  .list-row.team-member-card,
+  .list-row,
   [data-record-card='true']
 ) {
   box-sizing: border-box !important;
-  padding-inline: var(--eo-card-inline-padding) !important;
-  padding-block: var(--eo-card-block-padding) !important;
+  padding-left: var(--eo-card-inline-padding) !important;
+  padding-right: var(--eo-card-inline-padding) !important;
+  padding-top: var(--eo-card-block-padding) !important;
+  padding-bottom: var(--eo-card-block-padding) !important;
+}
+
+/* Team and directory rows need the same inset even when older alignment files
+   target them with more specific selectors. */
+body .dashboard-shell .team-member-card,
+body .role-portal-shell .team-member-card,
+body .dashboard-shell .team-member-list > .list-row,
+body .role-portal-shell .team-member-list > .list-row,
+body .dashboard-shell .customer-card-row,
+body .role-portal-shell .customer-card-row {
+  padding-left: var(--eo-card-inline-padding) !important;
+  padding-right: var(--eo-card-inline-padding) !important;
+  padding-top: var(--eo-card-block-padding) !important;
+  padding-bottom: var(--eo-card-block-padding) !important;
 }
 
 @media (max-width: 700px) {
