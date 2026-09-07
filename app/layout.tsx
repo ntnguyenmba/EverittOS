@@ -53,6 +53,8 @@ import './role-home-structure.css';
 /* Signed-in shell: one canvas, one nav rule, one spacing system. */
 import './legacy-signed-in.css';
 import './global-content-rhythm.css';
+/* Final universal card inset. Keep last so page-specific CSS cannot crowd card edges. */
+import './universal-card-spacing.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
