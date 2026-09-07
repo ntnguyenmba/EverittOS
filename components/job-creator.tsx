@@ -90,17 +90,51 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     finally { setSubmitting(false); }
   }
 
-  return <form onSubmit={handleSubmit} className="card" style={{ display: 'grid', gap: 16 }}>
-    {error ? <div className="form-error" role="alert">{error}</div> : null}
-    <label><span>Job title</span><input value={title} onChange={(e) => setTitle(e.target.value)} required autoComplete="off" /></label>
-    <label><span>Saved customer</span><select value={customerId} disabled={loadingCustomers} onChange={(e) => { setCustomerId(e.target.value); setPropertyId(''); }}><option value="">{loadingCustomers ? 'Loading customers…' : 'Select a customer'}</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.contact_name || c.company_name || c.email || c.phone || 'Customer'}</option>)}</select></label>
-    <label><span>Saved property</span><select value={propertyId} disabled={!customerId || loadingProperties} onChange={(e) => setPropertyId(e.target.value)}><option value="">{!customerId ? 'Select a customer first' : loadingProperties ? 'Loading properties…' : properties.length ? 'Select a property' : 'No saved properties'}</option>{properties.map((p) => <option key={p.id} value={p.id}>{p.name ? `${p.name}${p.formatted_address || p.address ? ` · ${p.formatted_address || p.address}` : ''}` : p.formatted_address || p.address || 'Property'}</option>)}</select></label>
-    <label><span>Customer name</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} autoComplete="name" /></label>
-    <label><span>Email</span><input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} autoComplete="email" /></label>
-    <label><span>Phone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" inputMode="tel" /></label>
-    <label><span>Address</span><input value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}><label><span>Start date</span><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label><label><span>Due date</span><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label></div>
-    <label><span>Notes</span><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></label>
-    <div className="inline-actions" style={{ justifyContent: 'flex-end' }}><button type="button" className="btn" onClick={() => window.history.back()} disabled={submitting}>Cancel</button><button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating…' : 'Create job'}</button></div>
-  </form>;
+  return (
+    <form onSubmit={handleSubmit} className="card" style={{ display: 'grid', gap: 18, maxWidth: 760 }}>
+      {error ? <div className="form-error" role="alert">{error}</div> : null}
+
+      <label>
+        <span>Job title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required autoComplete="off" placeholder="Example: Weekly salon cleaning" />
+      </label>
+
+      <label>
+        <span>Customer</span>
+        <select value={customerId} disabled={loadingCustomers} onChange={(e) => { setCustomerId(e.target.value); setPropertyId(''); }}>
+          <option value="">{loadingCustomers ? 'Loading customers…' : 'Select saved customer'}</option>
+          {customers.map((c) => <option key={c.id} value={c.id}>{c.contact_name || c.company_name || c.email || c.phone || 'Customer'}</option>)}
+        </select>
+      </label>
+
+      <label>
+        <span>Property</span>
+        <select value={propertyId} disabled={!customerId || loadingProperties} onChange={(e) => setPropertyId(e.target.value)}>
+          <option value="">{!customerId ? 'Select customer first' : loadingProperties ? 'Loading properties…' : properties.length ? 'Select saved property' : 'No saved properties'}</option>
+          {properties.map((p) => <option key={p.id} value={p.id}>{p.name ? `${p.name}${p.formatted_address || p.address ? ` · ${p.formatted_address || p.address}` : ''}` : p.formatted_address || p.address || 'Property'}</option>)}
+        </select>
+      </label>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+        <label><span>Start date</span><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
+        <label><span>Due date</span><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label>
+      </div>
+
+      <details>
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>More details</summary>
+        <div style={{ display: 'grid', gap: 14, marginTop: 14 }}>
+          <label><span>Customer name</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} autoComplete="name" /></label>
+          <label><span>Email</span><input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} autoComplete="email" /></label>
+          <label><span>Phone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" inputMode="tel" /></label>
+          <label><span>Address</span><input value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
+          <label><span>Notes</span><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></label>
+        </div>
+      </details>
+
+      <div className="inline-actions" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <button type="button" className="btn" onClick={() => window.history.back()} disabled={submitting}>Cancel</button>
+        <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating…' : 'Create job'}</button>
+      </div>
+    </form>
+  );
 }
