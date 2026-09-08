@@ -102,6 +102,45 @@
   border: 0;
 }
 
+/* One sheet stack so cards are neither jammed nor drifting apart. */
+.eo-sheet-stack,
+.job-detail-shell,
+.formWrap,
+.unified-job-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eo-section-gap);
+}
+
+.job-detail-shell > .card,
+.job-detail-shell > section,
+.job-detail-shell > details {
+  margin-bottom: 0;
+}
+
+.job-financials-card .job-financials-section + .job-financials-section,
+.finance-section .finance-list,
+.finance-metric-grid {
+  gap: var(--eo-control-gap);
+}
+
+.job-financials-card .finance-metric-grid,
+.finance-section .finance-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--eo-control-gap);
+}
+
+.job-pay-more {
+  margin-top: var(--eo-space-2);
+}
+
+.job-pay-more > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--eo-color-accent);
+}
+
 @media (max-width: 760px) {
   .eo-action-grid {
     width: 100%;
@@ -119,6 +158,11 @@
   .eo-action-grid > :last-child {
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+
+  .job-financials-card .finance-metric-grid,
+  .finance-section .finance-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
