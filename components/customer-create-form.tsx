@@ -47,7 +47,7 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
       });
 
       if (res.status === 401) {
-        router.replace('/login?next=/customers/new');
+        window.location.assign('/login?next=/customers/new');
         return;
       }
 
@@ -59,8 +59,7 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
 
       appFeedback.created();
       onCreated?.(json.customer.id);
-      router.replace(redirectTo);
-      router.refresh();
+      window.location.assign(redirectTo);
     } catch (error) {
       appFeedback.error(requestFailureMessage(error, copy.unableToSave));
     } finally {
@@ -68,17 +67,67 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
     }
   }
 
+  function cancelCreate() {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.assign(redirectTo);
+  }
+
   return (
     <form className="card form" onSubmit={(event) => void saveCustomer(event)}>
       <h3 className="card-title-sm">{copy.formTitle}</h3>
-      <input className="input" placeholder={copy.name} value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
-      <input className="input" placeholder={copy.phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
-      <input className="input" placeholder={copy.email} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <input className="input" placeholder={copy.address} value={address} onChange={(e) => setAddress(e.target.value)} />
-      <textarea className="input" rows={3} placeholder={copy.notes} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      <button type="submit" className="btn btn-primary" disabled={saving || !displayName.trim()}>
-        {saving ? FEEDBACK.loading : copy.save}
-      </button>
+      <input
+        className="input"
+        name="displayName"
+        autoComplete="name"
+        placeholder={copy.name}
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+        required
+      />
+      <input
+        className="input"
+        name="phone"
+        autoComplete="tel"
+        placeholder={copy.phone}
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
+      <input
+        className="input"
+        name="email"
+        autoComplete="email"
+        type="email"
+        placeholder={copy.email}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <input
+        className="input"
+        name="address"
+        autoComplete="street-address"
+        placeholder={copy.address}
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
+      <textarea
+        className="input"
+        name="notes"
+        rows={3}
+        placeholder={copy.notes}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+      />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="submit" className="btn btn-primary" disabled={saving || !displayName.trim()}>
+          {saving ? FEEDBACK.loading : copy.save}
+        </button>
+        <button type="button" className="btn" onClick={cancelCreate} disabled={saving}>
+          {copy.cancel}
+        </button>
+      </div>
     </form>
   );
 }
