@@ -74,6 +74,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>(emptyPaymentForm());
   const [revenueAmount, setRevenueAmount] = useState('');
   const [revenueNotes, setRevenueNotes] = useState('');
+  const [editingAmount, setEditingAmount] = useState(false);
 
   const loadFinancials = useCallback(async () => {
     setLoading(true);
@@ -88,6 +89,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setProfitability(next);
     setRevenueAmount(next.manualRevenue == null ? '' : String(next.manualRevenue));
     setRevenueNotes(next.revenueNotes || '');
+    setEditingAmount(next.manualRevenue == null || next.manualRevenue === 0);
   }, [appFeedback, copy.unableToLoad, jobId]);
 
   useEffect(() => {
@@ -129,7 +131,6 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       appFeedback.error(copy.invalidAmount);
       return;
     }
-
     setSaving(true);
     const res = await fetch(`/api/jobs/${jobId}/profitability`, {
       method: 'PATCH',
@@ -138,16 +139,15 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     });
     const json = await res.json().catch(() => ({}));
     setSaving(false);
-
     if (!res.ok) {
       appFeedback.error(json.error || copy.unableToSave);
       return;
     }
-
     const next = json.profitability as JobProfitability;
     setProfitability(next);
     setRevenueAmount(next.manualRevenue == null ? '' : String(next.manualRevenue));
     setRevenueNotes(next.revenueNotes || '');
+    setEditingAmount(false);
     appFeedback.success(copy.saveExpectedAmount);
   }
 
@@ -158,7 +158,6 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       appFeedback.error(copy.invalidAmount);
       return;
     }
-
     setSavingPayment(true);
     const editing = Boolean(paymentForm.id);
     const source = paymentForm.source || 'job';
@@ -179,41 +178,32 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     });
     const json = await res.json().catch(() => ({}));
     setSavingPayment(false);
-
     if (!res.ok) {
       appFeedback.error(json.error || copy.unableToRecord);
       return;
     }
-
     setProfitability(json.profitability as JobProfitability);
     setShowPaymentForm(false);
     setPaymentForm(emptyPaymentForm());
     appFeedback.success(editing ? copy.paymentUpdated : copy.paymentSaved);
-
     if (!editing) {
       const payments = (json.payments || (json.profitability as JobProfitability)?.payments || []) as JobPaymentHistoryEntry[];
       const newest = payments[0];
-      if (newest) {
-        router.push(`/jobs/${jobId}/receipts/${newest.source}/${newest.id}`);
-      }
+      if (newest) router.push(`/jobs/${jobId}/receipts/${newest.source}/${newest.id}`);
     }
   }
 
   async function removePayment(payment: JobPaymentHistoryEntry) {
     if (deletingId) return;
     setDeletingId(payment.id);
-    const res = await fetch(`/api/jobs/${jobId}/payments/${payment.id}?source=${payment.source}`, {
-      method: 'DELETE'
-    });
+    const res = await fetch(`/api/jobs/${jobId}/payments/${payment.id}?source=${payment.source}`, { method: 'DELETE' });
     const json = await res.json().catch(() => ({}));
     setDeletingId(null);
     setConfirmDeleteId(null);
-
     if (!res.ok) {
       appFeedback.error(json.error || copy.unableToRecord);
       return;
     }
-
     setProfitability(json.profitability as JobProfitability);
     appFeedback.success(copy.paymentDeleted);
   }
@@ -229,6 +219,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
   const p = profitability;
   const totalExpenses = p?.totalExpenses ?? (p?.laborCost || 0) + (p?.materialCost || 0) + (p?.otherExpenses || 0);
+  const collectedAmount = p?.collectedAmount || 0;
+  const hasCollectedPayment = collectedAmount > 0;
+  const storedAmount = p?.manualRevenue == null ? '' : String(p.manualRevenue);
+  const amountDirty = revenueAmount.trim() !== storedAmount;
 
   return (
     <div className="card finance-card job-financials-card">
@@ -238,13 +232,9 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
           <p className="muted">{copy.sectionCopy}</p>
         </div>
         {canManage ? (
-          <div className="button-row job-financials-actions">
-            <button type="button" className="btn btn-primary" onClick={openAddPayment}>
-              {copy.recordPayment}
-            </button>
-            <button type="button" className="btn" onClick={openCreateInvoice}>
-              {copy.createInvoice}
-            </button>
+          <div className="button-row job-financials-actions eo-action-grid">
+            <button type="button" className="btn btn-primary" onClick={openAddPayment}>{copy.recordPayment}</button>
+            <button type="button" className="btn" onClick={openCreateInvoice}>{copy.createInvoice}</button>
           </div>
         ) : null}
       </div>
@@ -252,22 +242,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       <div className="job-financials-section profit-summary-section">
         <h4>{copy.paymentStatus}</h4>
         <div className="finance-metric-grid financials-summary-grid">
-          <div className="finance-metric featured">
-            <span className="finance-metric-label">{copy.paymentStatus}</span>
-            <strong>{paymentStatusLabel(p?.paymentStatus || 'no_amount_set', copy)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.expectedRevenue}</span>
-            <strong>{formatCurrency(p?.expectedAmount || 0)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.collected}</span>
-            <strong>{formatCurrency(p?.collectedAmount || 0)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.outstanding}</span>
-            <strong>{formatCurrency(p?.outstanding || 0)}</strong>
-          </div>
+          <div className="finance-metric featured"><span className="finance-metric-label">{copy.paymentStatus}</span><strong>{paymentStatusLabel(p?.paymentStatus || 'no_amount_set', copy)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">{copy.expectedJobAmount}</span><strong>{formatCurrency(p?.expectedAmount || 0)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">{copy.collected}</span><strong>{formatCurrency(collectedAmount)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">{copy.outstanding}</span><strong>{formatCurrency(p?.outstanding || 0)}</strong></div>
         </div>
         <p className="muted finance-note">{copy.paymentHelper}</p>
       </div>
@@ -275,55 +253,46 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       {canManage ? (
         <div className="job-financials-section">
           <h4>{copy.expectedJobAmount}</h4>
-          <div className="finance-form-block compact-finance-form">
-            <label htmlFor={`client-income-${jobId}`}>{copy.expectedJobAmount}</label>
-            <input
-              id={`client-income-${jobId}`}
-              className="input"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={revenueAmount}
-              onChange={(event) => setRevenueAmount(event.target.value)}
-            />
-            <label htmlFor={`client-income-notes-${jobId}`}>{copy.paymentNotes}</label>
-            <textarea
-              id={`client-income-notes-${jobId}`}
-              className="input"
-              rows={2}
-              value={revenueNotes}
-              onChange={(event) => setRevenueNotes(event.target.value)}
-            />
-            <p className="muted finance-note">{copy.saveExpectedAmountHelper}</p>
-            <button type="button" className="btn" disabled={saving} onClick={() => void saveRevenue()}>
-              {saving ? FEEDBACK.loading : copy.saveExpectedAmount}
-            </button>
-          </div>
+          {!editingAmount && storedAmount ? (
+            <div className="finance-list-card">
+              <div>
+                <strong>{formatCurrency(p?.expectedAmount || 0)}</strong>
+                <p className="muted finance-note">{copy.saveExpectedAmountHelper}</p>
+              </div>
+              <button type="button" className="btn" onClick={() => setEditingAmount(true)}>Edit amount</button>
+            </div>
+          ) : (
+            <div className="finance-form-block compact-finance-form">
+              <label htmlFor={`client-income-${jobId}`}>{copy.expectedJobAmount}</label>
+              <input id={`client-income-${jobId}`} className="input" type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" value={revenueAmount} onChange={(event) => setRevenueAmount(event.target.value)} />
+              <p className="muted finance-note">{copy.saveExpectedAmountHelper}</p>
+              {amountDirty ? (
+                <div className="button-row">
+                  <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>{saving ? FEEDBACK.loading : (locale === 'en' ? 'Save job amount' : copy.saveExpectedAmount)}</button>
+                  {storedAmount ? (
+                    <button type="button" className="btn" disabled={saving} onClick={() => { setRevenueAmount(storedAmount); setRevenueNotes(p?.revenueNotes || ''); setEditingAmount(false); }}>{copy.cancel}</button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       ) : null}
 
       <div className="job-financials-section">
         <h4>{copy.expensesAndProfit}</h4>
         <div className="finance-metric-grid financials-summary-grid">
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.expenses}</span>
-            <strong>{formatCurrency(totalExpenses)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.expectedProfit}</span>
-            <strong>{formatCurrency(p?.expectedProfit || 0)}</strong>
-          </div>
-          <div className="finance-metric featured">
-            <span className="finance-metric-label">{copy.collectedProfit}</span>
-            <strong>{formatCurrency(p?.collectedProfit || 0)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{copy.balanceDue}</span>
-            <strong>{formatCurrency(p?.outstanding || 0)}</strong>
-          </div>
+          <div className="finance-metric"><span className="finance-metric-label">{copy.expenses}</span><strong>{formatCurrency(totalExpenses)}</strong></div>
+          <div className="finance-metric featured"><span className="finance-metric-label">{copy.expectedProfit}</span><strong>{formatCurrency(p?.expectedProfit || 0)}</strong></div>
+          {hasCollectedPayment ? (
+            <div className="finance-metric"><span className="finance-metric-label">{copy.collectedProfit}</span><strong>{formatCurrency(p?.collectedProfit || 0)}</strong></div>
+          ) : (
+            <div className="finance-metric"><span className="finance-metric-label">{copy.collectedProfit}</span><strong>—</strong></div>
+          )}
         </div>
+        {!hasCollectedPayment ? (
+          <p className="muted finance-note">Cash profit shows after the customer pays. Until then this job is still owed {formatCurrency(p?.outstanding || 0)}.</p>
+        ) : null}
       </div>
 
       <div className="job-financials-section">
@@ -339,43 +308,20 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                   <span>{formatPaymentDate(payment.paidAt, locale)}</span>
                   {payment.paymentMethod ? <span>{paymentMethodLabel(payment.paymentMethod, locale)}</span> : null}
                   {payment.paymentReference ? <span>{payment.paymentReference}</span> : null}
-                  <span className="muted">
-                    {payment.source === 'invoice' ? copy.paymentViaInvoice : copy.paymentDirect}
-                  </span>
+                  <span className="muted">{payment.source === 'invoice' ? copy.paymentViaInvoice : copy.paymentDirect}</span>
                 </div>
                 {payment.notes ? <p className="muted payment-history-notes">{payment.notes}</p> : null}
                 <div className="button-row">
-                  <Link className="btn" href={`/jobs/${jobId}/receipts/${payment.source}/${payment.id}`}>
-                    {copy.viewReceipt}
-                  </Link>
-                  {canManage ? (
-                    <button type="button" className="btn" onClick={() => openEditPayment(payment)}>
-                      {copy.editPayment}
-                    </button>
-                  ) : null}
+                  <Link className="btn" href={`/jobs/${jobId}/receipts/${payment.source}/${payment.id}`}>{copy.viewReceipt}</Link>
+                  {canManage ? <button type="button" className="btn" onClick={() => openEditPayment(payment)}>{copy.editPayment}</button> : null}
                   {canManage ? (
                     confirmDeleteId === `${payment.source}-${payment.id}` ? (
                       <>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          disabled={deletingId === payment.id}
-                          onClick={() => void removePayment(payment)}
-                        >
-                          {deletingId === payment.id ? FEEDBACK.loading : copy.confirmRemove}
-                        </button>
-                        <button type="button" className="btn" onClick={() => setConfirmDeleteId(null)}>
-                          {copy.cancel}
-                        </button>
+                        <button type="button" className="btn btn-primary" disabled={deletingId === payment.id} onClick={() => void removePayment(payment)}>{deletingId === payment.id ? FEEDBACK.loading : copy.confirmRemove}</button>
+                        <button type="button" className="btn" onClick={() => setConfirmDeleteId(null)}>{copy.cancel}</button>
                       </>
                     ) : (
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => setConfirmDeleteId(`${payment.source}-${payment.id}`)}
-                      >
-                        {copy.deletePayment}
-                      </button>
+                      <button type="button" className="btn" onClick={() => setConfirmDeleteId(`${payment.source}-${payment.id}`)}>{copy.deletePayment}</button>
                     )
                   ) : null}
                 </div>
@@ -386,82 +332,25 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       </div>
 
       {showPaymentForm && canManage ? (
-        <div
-          className="modal-backdrop job-payment-modal-backdrop"
-          role="presentation"
-          onClick={() => setShowPaymentForm(false)}
-        >
-          <div
-            className="card job-payment-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`client-payment-${jobId}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h4 id={`client-payment-${jobId}`}>
-              {paymentForm.id ? copy.editPayment : copy.recordPayment}
-            </h4>
+        <div className="modal-backdrop job-payment-modal-backdrop" role="presentation" onClick={() => setShowPaymentForm(false)}>
+          <div className="card job-payment-modal" role="dialog" aria-modal="true" aria-labelledby={`client-payment-${jobId}`} onClick={(event) => event.stopPropagation()}>
+            <h4 id={`client-payment-${jobId}`}>{paymentForm.id ? copy.editPayment : copy.recordPayment}</h4>
             <div className="finance-form-block compact-finance-form">
               <label htmlFor={`payment-amount-${jobId}`}>{copy.paymentAmount}</label>
-              <input
-                id={`payment-amount-${jobId}`}
-                className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                enterKeyHint="next"
-                value={paymentForm.amount}
-                onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))}
-              />
+              <input id={`payment-amount-${jobId}`} className="input" type="number" min="0" step="0.01" inputMode="decimal" enterKeyHint="next" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} />
               <label htmlFor={`payment-date-${jobId}`}>{copy.paymentDate}</label>
-              <input
-                id={`payment-date-${jobId}`}
-                className="input"
-                type="date"
-                value={paymentForm.paidDate}
-                onChange={(event) => setPaymentForm((current) => ({ ...current, paidDate: event.target.value }))}
-              />
+              <input id={`payment-date-${jobId}`} className="input" type="date" value={paymentForm.paidDate} onChange={(event) => setPaymentForm((current) => ({ ...current, paidDate: event.target.value }))} />
               <label htmlFor={`payment-method-${jobId}`}>{copy.paymentMethod}</label>
-              <select
-                id={`payment-method-${jobId}`}
-                className="input"
-                value={paymentForm.method}
-                onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value }))}
-              >
-                {CLIENT_PAYMENT_METHODS.map((method) => (
-                  <option key={method} value={method}>
-                    {paymentMethodLabel(method, locale)}
-                  </option>
-                ))}
+              <select id={`payment-method-${jobId}`} className="input" value={paymentForm.method} onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value }))}>
+                {CLIENT_PAYMENT_METHODS.map((method) => <option key={method} value={method}>{paymentMethodLabel(method, locale)}</option>)}
               </select>
               <label htmlFor={`payment-ref-${jobId}`}>{copy.paymentReference}</label>
-              <input
-                id={`payment-ref-${jobId}`}
-                className="input"
-                value={paymentForm.reference}
-                onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))}
-              />
+              <input id={`payment-ref-${jobId}`} className="input" value={paymentForm.reference} onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))} />
               <label htmlFor={`payment-notes-field-${jobId}`}>{copy.paymentNotes}</label>
-              <textarea
-                id={`payment-notes-field-${jobId}`}
-                className="input"
-                rows={2}
-                value={paymentForm.notes}
-                onChange={(event) => setPaymentForm((current) => ({ ...current, notes: event.target.value }))}
-              />
+              <textarea id={`payment-notes-field-${jobId}`} className="input" rows={2} value={paymentForm.notes} onChange={(event) => setPaymentForm((current) => ({ ...current, notes: event.target.value }))} />
               <div className="button-row">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={savingPayment}
-                  onClick={() => void submitPayment()}
-                >
-                  {savingPayment ? FEEDBACK.loading : paymentForm.id ? copy.saveChanges : copy.recordPayment}
-                </button>
-                <button type="button" className="btn" onClick={() => setShowPaymentForm(false)}>
-                  {copy.cancel}
-                </button>
+                <button type="button" className="btn btn-primary" disabled={savingPayment} onClick={() => void submitPayment()}>{savingPayment ? FEEDBACK.loading : paymentForm.id ? copy.saveChanges : copy.recordPayment}</button>
+                <button type="button" className="btn" onClick={() => setShowPaymentForm(false)}>{copy.cancel}</button>
               </div>
             </div>
           </div>
