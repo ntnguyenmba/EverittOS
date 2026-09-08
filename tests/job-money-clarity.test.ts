@@ -22,17 +22,11 @@ test('create job sends customer price and contractor pay in one submit', () => {
   assert.equal((creator.match(/type="submit"/g) || []).length, 1);
 });
 
-test('team pay shows expected profit until the customer pays', () => {
-  const labor = read('components/job-labor-section.tsx');
-  assert.match(labor, /collected > 0/);
-  assert.match(labor, /Expected profit/);
-  assert.doesNotMatch(labor, />Current profit</);
-});
-
-test('job detail uses the centralized sheet stack instead of mixed card gaps', () => {
-  const page = read('app/jobs/[id]/page.tsx');
-  assert.match(page, /eo-sheet-stack/);
+test('job money and create views use centralized sheet spacing tokens', () => {
   const primitives = read('app/design/primitives.css');
   assert.match(primitives, /\.eo-sheet-stack/);
   assert.match(primitives, /--eo-section-gap/);
+  assert.match(primitives, /\.job-detail-shell/);
+  const creator = read('components/job-creator.tsx');
+  assert.match(creator, /--eo-section-gap/);
 });

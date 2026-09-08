@@ -105,16 +105,17 @@
 /* One sheet stack so cards are neither jammed nor drifting apart. */
 .eo-sheet-stack,
 .job-detail-shell,
-.formWrap,
 .unified-job-form {
   display: flex;
   flex-direction: column;
   gap: var(--eo-section-gap);
 }
 
+/* Neutralize leftover inline card margins so only the token gap remains. */
 .job-detail-shell > .card,
 .job-detail-shell > section,
 .job-detail-shell > details {
+  margin-top: 0;
   margin-bottom: 0;
 }
 
