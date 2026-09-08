@@ -111,12 +111,12 @@
   gap: var(--eo-section-gap);
 }
 
-/* Neutralize leftover inline card margins so only the token gap remains. */
+/* Token gap is the only vertical rhythm. Beat leftover inline margins. */
 .job-detail-shell > .card,
 .job-detail-shell > section,
 .job-detail-shell > details {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .job-financials-card .job-financials-section + .job-financials-section,
