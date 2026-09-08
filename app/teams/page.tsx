@@ -6,6 +6,7 @@ import { AppShell } from '@/components/app-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import { fetchWithTimeout, requestFailureMessage } from '@/lib/fetch-with-timeout';
 
 type Team = {
   id: string;
@@ -64,22 +65,27 @@ export default function TeamsPage() {
     if (!name.trim() || saving) return;
     setSaving(true);
     setMessage('');
-    const res = await fetch('/api/teams', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, color })
-    });
-    const json = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to create team.');
-      return;
+    try {
+      const res = await fetchWithTimeout('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), description: description.trim(), color: color.trim() })
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMessage(json.error || 'Unable to create team.');
+        return;
+      }
+      setName('');
+      setDescription('');
+      setColor('');
+      setMessage('Team created.');
+      await load();
+    } catch (error) {
+      setMessage(requestFailureMessage(error, 'Unable to create team.'));
+    } finally {
+      setSaving(false);
     }
-    setName('');
-    setDescription('');
-    setColor('');
-    setMessage('Team created.');
-    void load();
   }
 
   return (

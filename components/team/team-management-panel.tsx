@@ -11,6 +11,7 @@ import { formatLastSeenAt } from '@/lib/last-seen';
 import { canManageTeam, canModifyTeamMember, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -269,8 +270,8 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
     if (!canManage || !email.trim() || busy) return;
     setInviteUrl('');
     await run(async () => {
-      const res = await fetch('/api/team/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined }) });
-      const json = await res.json();
+      const res = await fetchWithTimeout('/api/team/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined }) }, 30_000);
+      const json = (await res.json().catch(() => ({}))) as { error?: string; acceptUrl?: string };
       if (!res.ok) throw new Error(friendlyErrorMessage(json.error || 'Invite failed'));
       setInviteUrl(json.acceptUrl);
       setEmail('');

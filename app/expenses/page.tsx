@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OPTIONS, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
+import { fetchWithTimeout, requestFailureMessage } from '@/lib/fetch-with-timeout';
 import { formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { billingUpgradeHref } from '@/lib/nav-access';
@@ -218,62 +219,61 @@ function ExpensesContent() {
     }
 
     setSaving(true);
+    try {
+      const payload = {
+        date: form.date,
+        category: form.category,
+        vendor: form.vendor,
+        description: form.description,
+        amount,
+        payment_method: form.payment_method,
+        notes: form.notes,
+        job_id: form.job_id || null,
+        customer_id: form.customer_id || null,
+        worker_id: form.worker_id || null
+      };
 
-    const payload = {
-      date: form.date,
-      category: form.category,
-      vendor: form.vendor,
-      description: form.description,
-      amount,
-      payment_method: form.payment_method,
-      notes: form.notes,
-      job_id: form.job_id || null,
-      customer_id: form.customer_id || null,
-      worker_id: form.worker_id || null
-    };
+      const res = editingId
+        ? await fetchWithTimeout(`/api/expenses/${editingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+        : await fetchWithTimeout('/api/expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-    const res = editingId
-      ? await fetch(`/api/expenses/${editingId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-      : await fetch('/api/expenses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-    const json = await res.json();
-    if (!res.ok) {
-      setSaving(false);
-      appFeedback.error(json.error || 'Unable to save expense.');
-      return;
-    }
-
-    const expenseId = editingId || json.expense?.id;
-    if (receiptFile && expenseId) {
-      const fd = new FormData();
-      fd.append('file', receiptFile);
-      const receiptRes = await fetch(`/api/expenses/${expenseId}/receipt`, { method: 'POST', body: fd });
-      if (!receiptRes.ok) {
-        const receiptJson = await receiptRes.json();
-        setSaving(false);
-        appFeedback.error(receiptJson.error || 'Expense saved but receipt upload failed.');
-        resetForm();
-        await loadExpenses();
+      const json = (await res.json().catch(() => ({}))) as { expense?: { id?: string }; error?: string };
+      if (!res.ok) {
+        appFeedback.error(json.error || 'Unable to save expense.');
         return;
       }
-    }
 
-    setSaving(false);
-    if (editingId) {
-      appFeedback.updated();
-    } else {
-      appFeedback.created();
+      const expenseId = editingId || json.expense?.id;
+      if (receiptFile && expenseId) {
+        const fd = new FormData();
+        fd.append('file', receiptFile);
+        const receiptRes = await fetchWithTimeout(`/api/expenses/${expenseId}/receipt`, { method: 'POST', body: fd }, 30_000);
+        if (!receiptRes.ok) {
+          const receiptJson = (await receiptRes.json().catch(() => ({}))) as { error?: string };
+          appFeedback.error(receiptJson.error || 'Expense saved but receipt upload failed.');
+          resetForm();
+          await loadExpenses();
+          return;
+        }
+      }
+
+      if (editingId) appFeedback.updated();
+      else appFeedback.created();
+      resetForm();
+      await loadExpenses();
+    } catch (error) {
+      appFeedback.error(requestFailureMessage(error, 'Unable to save expense.'));
+    } finally {
+      setSaving(false);
     }
-    resetForm();
-    await loadExpenses();
   }
 
   async function deleteExpense(id: string) {

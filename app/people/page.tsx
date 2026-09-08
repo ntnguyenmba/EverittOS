@@ -15,6 +15,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { getTeamPageCopy } from '@/lib/i18n/team-page-copy';
+import { fetchWithTimeout, requestFailureMessage } from '@/lib/fetch-with-timeout';
 import { canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -142,27 +143,32 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
     setSaving(true);
     setMessage('');
-    const res = await fetch('/api/contractors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name.trim(),
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
-        companyName: form.companyName.trim() || null,
-        contractorClassification: form.contractorClassification
-      })
-    });
-    const json = (await res.json().catch(() => ({}))) as { error?: string };
-    setSaving(false);
-    if (!res.ok) {
-      setMessage(json.error || c.unableAdd);
-      return;
-    }
+    try {
+      const res = await fetchWithTimeout('/api/contractors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim() || null,
+          phone: form.phone.trim() || null,
+          companyName: form.companyName.trim() || null,
+          contractorClassification: form.contractorClassification
+        })
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMessage(json.error || c.unableAdd);
+        return;
+      }
 
-    setForm(EMPTY_CONTRACTOR);
-    setMessage(c.memberAdded);
-    void loadContractors();
+      setForm(EMPTY_CONTRACTOR);
+      setMessage(c.memberAdded);
+      await loadContractors();
+    } catch (error) {
+      setMessage(requestFailureMessage(error, c.unableAdd));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleContractor(contractor: Contractor) {

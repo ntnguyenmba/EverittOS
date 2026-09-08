@@ -281,7 +281,7 @@ export function TeamDirectory() {
           <p className="muted">{activeCount} {c.active.toLowerCase()} · {c.membersSubtitle}</p>
         </div>
         <div className="inline-actions team-directory-actions">
-          <Link className="btn" href="/people#invite-by-email">{c.addMember}</Link>
+          <Link className="btn" href="/people#invite-by-email" scroll onClick={() => window.setTimeout(() => window.dispatchEvent(new HashChangeEvent('hashchange')), 0)}>{c.addMember}</Link>
           <Link className="btn btn-primary" href="/jobs/new">{c.createJob}</Link>
         </div>
       </div>
