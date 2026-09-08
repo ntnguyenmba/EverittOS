@@ -7,6 +7,13 @@ type JobCreatorProps = { onJobCreated?: (jobId: string) => void };
 type Customer = { id: string; company_name?: string | null; contact_name?: string | null; email?: string | null; phone?: string | null; address_line1?: string | null; service_address?: string | null; property_address?: string | null };
 type Property = { id: string; customer_id?: string | null; name?: string | null; formatted_address?: string | null; address?: string | null };
 
+function optionalMoneyInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const amount = Number(trimmed);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
@@ -19,6 +26,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [notes, setNotes] = useState(searchParams.get('notes') || '');
   const [startDate, setStartDate] = useState(searchParams.get('start_date') || '');
   const [dueDate, setDueDate] = useState(searchParams.get('due_date') || '');
+  const [clientIncome, setClientIncome] = useState(searchParams.get('client_income') || searchParams.get('price') || '');
+  const [contractorFlatRate, setContractorFlatRate] = useState(searchParams.get('contractor_pay') || '');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
@@ -72,16 +81,42 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (property) setAddress(property.formatted_address || property.address || '');
   }, [propertyId, properties]);
 
+  const expectedContractorPay = optionalMoneyInput(contractorFlatRate);
+  const previewRevenue = optionalMoneyInput(clientIncome) || 0;
+  const previewCost = expectedContractorPay || 0;
+  const previewProfit = Number((previewRevenue - previewCost).toFixed(2));
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
     setError('');
     if (!title.trim()) { setError('Job title is required.'); return; }
+    if (contractorFlatRate.trim() && expectedContractorPay == null) {
+      setError('Enter a valid contractor pay amount.');
+      return;
+    }
+    if (clientIncome.trim() && optionalMoneyInput(clientIncome) == null) {
+      setError('Enter a valid customer price.');
+      return;
+    }
     setSubmitting(true);
     try {
       const response = await fetch('/api/jobs', {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), customer_id: customerId || null, property_id: propertyId || null, customer_name: customerName.trim() || undefined, customer_email: customerEmail.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined, notes: notes.trim() || undefined, start_date: startDate || null, due_date: dueDate || null })
+        body: JSON.stringify({
+          title: title.trim(),
+          customer_id: customerId || null,
+          property_id: propertyId || null,
+          customer_name: customerName.trim() || undefined,
+          customer_email: customerEmail.trim() || undefined,
+          phone: phone.trim() || undefined,
+          address: address.trim() || undefined,
+          notes: notes.trim() || undefined,
+          start_date: startDate || null,
+          due_date: dueDate || null,
+          revenue_amount: optionalMoneyInput(clientIncome),
+          expected_contractor_cost: expectedContractorPay
+        })
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || !json.job?.id) throw new Error(json.error || 'Unable to create job.');
@@ -91,7 +126,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card" style={{ display: 'grid', gap: 18, maxWidth: 760 }}>
+    <form onSubmit={handleSubmit} className="card unified-job-form" style={{ display: 'grid', gap: 'var(--eo-section-gap)', maxWidth: 760 }}>
       {error ? <div className="form-error" role="alert">{error}</div> : null}
 
       <label>
@@ -115,14 +150,28 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </select>
       </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--eo-control-gap)' }}>
         <label><span>Start date</span><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
         <label><span>Due date</span><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label>
       </div>
 
+      <div className="job-create-section" style={{ display: 'grid', gap: 'var(--eo-control-gap)' }}>
+        <label>
+          <span>Customer price</span>
+          <input className="input" type="number" min="0" step="0.01" inputMode="decimal" placeholder="150.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
+        </label>
+        <label>
+          <span>Contractor pay</span>
+          <input className="input" type="number" min="0" step="0.01" inputMode="decimal" placeholder="120.00" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} />
+        </label>
+        <p className="muted" style={{ margin: 0 }}>
+          Expected profit: ${previewProfit.toFixed(2)}
+        </p>
+      </div>
+
       <details>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>More details</summary>
-        <div style={{ display: 'grid', gap: 14, marginTop: 14 }}>
+        <div style={{ display: 'grid', gap: 'var(--eo-control-gap)', marginTop: 14 }}>
           <label><span>Customer name</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} autoComplete="name" /></label>
           <label><span>Email</span><input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} autoComplete="email" /></label>
           <label><span>Phone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" inputMode="tel" /></label>
@@ -131,9 +180,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </div>
       </details>
 
-      <div className="inline-actions" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <div className="inline-actions" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 'var(--eo-control-gap)' }}>
         <button type="button" className="btn" onClick={() => window.history.back()} disabled={submitting}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating…' : 'Create job'}</button>
+        <button type="submit" className="btn btn-primary unified-job-save" disabled={submitting}>{submitting ? 'Creating…' : 'Create job'}</button>
       </div>
     </form>
   );
