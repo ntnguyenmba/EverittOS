@@ -45,6 +45,9 @@ const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
   photos: '/jobs'
 };
 
+/** Create routes that hang under soft client navigation — force a full load. */
+const HARD_NAV_HREFS = new Set(['/customers/new', '/jobs/new', '/leads/new', '/workflows/new']);
+
 export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick, showAction = true }: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
   const actionLabel = t(`empty.${emptyKey}.action`);
@@ -58,9 +61,21 @@ export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick, s
       {actionLabel}
     </button>
   ) : actionHref && hasActionLabel ? (
-    <Link className="btn btn-primary" href={actionHref}>
-      {actionLabel}
-    </Link>
+    HARD_NAV_HREFS.has(actionHref) ? (
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          window.location.assign(actionHref);
+        }}
+      >
+        {actionLabel}
+      </button>
+    ) : (
+      <Link className="btn btn-primary" href={actionHref}>
+        {actionLabel}
+      </Link>
+    )
   ) : undefined;
 
   return (
