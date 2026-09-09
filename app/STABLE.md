@@ -1,18 +1,7 @@
-# EverittOS stable points
+# EverittOS stable point
 
-Visuals are frozen. Use these refs to roll back without redesigning.
+All app work stays on `main`.
 
-- `working-2026-09-04` — last tagged known-good production point
-- `known-good-2026-09-09` — branch after load/session-only changes
+Existing rollback tag already on this repo:
 
-Rollback:
-
-```
-git checkout working-2026-09-04
-```
-
-or
-
-```
-git checkout known-good-2026-09-09
-```
+- `working-2026-09-04`
