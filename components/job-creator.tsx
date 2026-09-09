@@ -150,14 +150,31 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName(customer.contact_name || customer.company_name || '');
     setCustomerEmail(customer.email || '');
     setPhone(customer.phone || '');
-    setAddress(customer.service_address || customer.property_address || customer.address_line1 || '');
+    const customerAddress = (customer.service_address || customer.property_address || customer.address_line1 || '').trim();
+    if (customerAddress) {
+      setAddress(customerAddress);
+      setStructuredAddress(null);
+    }
   }, [customerId, customers]);
 
   useEffect(() => {
-    if (!propertyId) return;
-    const property = properties.find((item) => item.id === propertyId);
-    if (property) setAddress(property.formatted_address || property.address || '');
-  }, [propertyId, properties]);
+    if (!customerId) return;
+    if (propertyId) {
+      const property = properties.find((item) => item.id === propertyId);
+      const propertyAddress = (property?.formatted_address || property?.address || '').trim();
+      if (propertyAddress) {
+        setAddress(propertyAddress);
+        setStructuredAddress(null);
+      }
+      return;
+    }
+    if (loadingProperties) return;
+    const firstWithAddress = properties.find((item) => (item.formatted_address || item.address || '').trim());
+    if (!firstWithAddress) return;
+    const fallback = (firstWithAddress.formatted_address || firstWithAddress.address || '').trim();
+    setAddress((current) => current.trim() || fallback);
+    if (properties.length === 1) setPropertyId(firstWithAddress.id);
+  }, [customerId, propertyId, properties, loadingProperties]);
 
   function setSeriesStartDate(value: string) {
     setRecurrenceStartDate(value);
