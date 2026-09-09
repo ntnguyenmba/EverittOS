@@ -1,0 +1,253 @@
+/* Final signed-in surface system. Keep imported last. */
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) {
+  --eo-final-paper: #ffffff;
+  --eo-final-ink: #172033;
+  --eo-final-muted: #5b667a;
+  --eo-final-line: #dde6f2;
+  --eo-final-navy: #234a84;
+  --eo-final-navy-hover: #1e3f72;
+}
+
+/* Wallpaper remains the page canvas. */
+html body .dashboard-shell,
+html body .dashboard-shell > .main,
+html body .dashboard-shell .main,
+html body .dashboard-shell .app-page-content,
+html body .dashboard-shell .app-page-stage,
+html body .role-portal-shell,
+html body .role-portal-shell .app-page-content,
+html body .role-portal-shell .app-page-stage,
+html body .contractor-main,
+html body .client-main {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* No halo anywhere in signed-in content. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(h1, h2, h3, h4, h5, p, label, span, strong, small, .muted, .page-subtitle) {
+  text-shadow: none !important;
+}
+
+/* Surface 1: existing role/navigation bars stay navy. */
+html body .dashboard-shell .sidebar,
+html body :is(.dashboard-shell, .role-portal-shell) :is(.role-strip, .role-banner, .signed-in-as, .signed-in-role-card) {
+  background: var(--eo-final-navy) !important;
+  color: #ffffff !important;
+}
+
+/* Surface 2: each top-level logical page group is one white card. */
+html body .dashboard-shell .app-page-stage > :is(section, article),
+html body .role-portal-shell .app-page-stage > :is(section, article),
+html body .dashboard-shell .app-page-stage > div:has(> h1),
+html body .dashboard-shell .app-page-stage > div:has(> div > h1),
+html body .role-portal-shell .app-page-stage > div:has(> h1),
+html body .role-portal-shell .app-page-stage > div:has(> div > h1),
+html body .dashboard-shell .app-page-stage > :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+html body .role-portal-shell .app-page-stage > :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+html body :is(.dashboard-shell, .role-portal-shell) :is(.team-directory-card, .quote-compose, .quote-workspace, .job-create-section, .settings-card, .job-financials-card, .finance-list-card, .client-summary-card) {
+  background: var(--eo-final-paper) !important;
+  background-color: var(--eo-final-paper) !important;
+  border: 1px solid var(--eo-final-line) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.06) !important;
+  color: var(--eo-final-ink) !important;
+  padding: 20px !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Remove the old translucent heading treatment. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+  background: var(--eo-final-paper) !important;
+  background-color: var(--eo-final-paper) !important;
+  border: 1px solid var(--eo-final-line) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+/* Top-level headings that were plain wrappers, such as Team, now become a real card. */
+html body .dashboard-shell .app-page-stage > div:has(> div > h1),
+html body .role-portal-shell .app-page-stage > div:has(> div > h1) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+}
+
+html body .dashboard-shell .app-page-stage > div:has(> div > h1) > div,
+html body .role-portal-shell .app-page-stage > div:has(> div > h1) > div {
+  min-width: 0 !important;
+}
+
+/* Keep wording inside white groups plain, with no mini boxes. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head,
+  .team-directory-card,
+  .quote-compose,
+  .quote-workspace,
+  .job-create-section,
+  .settings-card,
+  .job-financials-card,
+  .finance-list-card,
+  .client-summary-card
+) :is(h1, h2, h3, h4, p, label, .muted, .page-subtitle) {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head,
+  .team-directory-card,
+  .quote-compose,
+  .quote-workspace,
+  .job-create-section,
+  .settings-card,
+  .job-financials-card,
+  .finance-list-card,
+  .client-summary-card
+) :is(h1, h2, h3, h4, label, strong) {
+  color: var(--eo-final-ink) !important;
+  -webkit-text-fill-color: var(--eo-final-ink) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head,
+  .team-directory-card,
+  .quote-compose,
+  .quote-workspace,
+  .job-create-section,
+  .settings-card,
+  .job-financials-card,
+  .finance-list-card,
+  .client-summary-card
+) :is(p, .muted, .page-subtitle, small) {
+  color: var(--eo-final-muted) !important;
+  -webkit-text-fill-color: var(--eo-final-muted) !important;
+}
+
+/* A logical group should not contain another large wrapper card. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(.team-directory-card, .quote-compose, .quote-workspace, .job-create-section) :is(
+  .team-directory-filters,
+  .grid-2,
+  .segmented-control,
+  .button-row,
+  .inline-actions,
+  .record-list,
+  .team-member-list,
+  .jobs-list,
+  .list,
+  .list-group
+) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card .team-directory-filters {
+  padding: 0 !important;
+  margin-top: 18px !important;
+}
+
+/* Surface 3: records and fields can be separate white reading controls inside a section. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
+  input,
+  select,
+  textarea,
+  .input,
+  .team-member-card,
+  .customer-card-row,
+  .job-card,
+  .worker-card,
+  .record-card,
+  .client-job-card,
+  .simplified-job-card
+) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #d5dfec !important;
+  color: var(--eo-final-ink) !important;
+  -webkit-text-fill-color: var(--eo-final-ink) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(.team-member-card, .customer-card-row, .job-card, .worker-card, .record-card, .client-job-card, .simplified-job-card) {
+  border: 1px solid var(--eo-final-line) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+/* Buttons stay readable and consistent. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn-primary, button.btn-primary, button[type='submit']) {
+  background: var(--eo-final-navy) !important;
+  border-color: var(--eo-final-navy) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn-primary, button.btn-primary, button[type='submit']):hover {
+  background: var(--eo-final-navy-hover) !important;
+  border-color: var(--eo-final-navy-hover) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
+  background: #ffffff !important;
+  border-color: #d5dfec !important;
+  color: var(--eo-final-ink) !important;
+  -webkit-text-fill-color: var(--eo-final-ink) !important;
+  text-shadow: none !important;
+}
+
+/* Keep wallpaper breathing room between logical groups. */
+html body .dashboard-shell .app-page-stage,
+html body .role-portal-shell .app-page-stage {
+  display: grid !important;
+  gap: 18px !important;
+}
+
+html body .dashboard-shell .app-page-stage > *,
+html body .role-portal-shell .app-page-stage > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 760px) {
+  html body .dashboard-shell .app-page-stage,
+  html body .role-portal-shell .app-page-stage {
+    gap: 14px !important;
+  }
+
+  html body .dashboard-shell .app-page-stage > :is(section, article),
+  html body .role-portal-shell .app-page-stage > :is(section, article),
+  html body .dashboard-shell .app-page-stage > div:has(> h1),
+  html body .dashboard-shell .app-page-stage > div:has(> div > h1),
+  html body .role-portal-shell .app-page-stage > div:has(> h1),
+  html body .role-portal-shell .app-page-stage > div:has(> div > h1),
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head, .team-directory-card, .quote-compose, .quote-workspace, .job-create-section, .settings-card, .job-financials-card, .finance-list-card, .client-summary-card) {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+}
