@@ -136,9 +136,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     updatedSeries as unknown as Parameters<typeof generateSeriesWindow>[3]
   );
 
+  const { data: replacementJob } = await ctx.supabase
+    .from('jobs')
+    .select('id, occurrence_date')
+    .eq('recurring_series_id', id)
+    .eq('organization_id', ctx.workspace.organizationId)
+    .gte('occurrence_date', fromDate)
+    .eq('is_skipped', false)
+    .not('status', 'in', '("cancelled","canceled","completed","done","complete","closed")')
+    .order('occurrence_date', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return NextResponse.json({
     ok: true,
     replacedFutureVisitCount: replaceableIds.length,
+    replacementJobId: replacementJob?.id || null,
     generation,
     message: 'Recurring schedule updated. Past completed visits were not changed.'
   });
