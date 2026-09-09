@@ -115,3 +115,179 @@ html body .job-financials-head {
 html body :is(.dashboard-shell, .role-portal-shell) :is(.job-detail-shell, .app-page-stage, .jobs-list-page) {
   gap: var(--eo-stack-gap) !important;
 }
+
+/*
+  EverittOS signed-in visual system.
+  Keep the final visual pass here so pages inherit one palette, one surface rule,
+  one control treatment, and one spacing language without touching page logic.
+*/
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) {
+  --bg: #f8fafc;
+  --eo-color-page: #f8fafc;
+  --eo-canvas: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --paper: #ffffff;
+  --paper-solid: #ffffff;
+  --text: #172033;
+  --ink: #172033;
+  --text-secondary: #5b667a;
+  --ink-2: #5b667a;
+  --muted: #7c8798;
+  --ink-3: #7c8798;
+  --line: #dde6f2;
+  --eo-color-border: #dde6f2;
+  --eo-color-border-strong: #c8d5e5;
+  --navy-primary: #234a84;
+  --navy-secondary: #1e3f72;
+  --accent: #234a84;
+  --eo-color-accent: #234a84;
+  --accent-soft: #eaf2ff;
+  --hover: #eef4fb;
+  --sidebar-bg: #234a84;
+  --text-on-dark: #ffffff;
+  --shadow-subtle: 0 1px 2px rgba(23, 32, 51, 0.04);
+  --shadow-card: 0 1px 2px rgba(23, 32, 51, 0.04);
+  --shadow-nav-active: none;
+  --eo-shadow-card: 0 1px 2px rgba(23, 32, 51, 0.04);
+  background: #f8fafc !important;
+  color: #172033 !important;
+}
+
+html body .dashboard-shell > .main,
+html body .dashboard-shell .main,
+html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-content {
+  background: #f8fafc !important;
+}
+
+html body .dashboard-shell .sidebar {
+  background: #234a84 !important;
+  border-right-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+html body .dashboard-shell .sidebar :is(.sidebar-brand .brand-logo-name, .nav-section-label, .nav-item, a.nav-item, .sidebar-plan-card-label, .sidebar-plan-card-name, .sidebar-plan-card-usage, .sidebar-footer, .sidebar-footer a) {
+  color: #ffffff !important;
+}
+
+html body .dashboard-shell .sidebar :is(.nav-section-label, .sidebar-plan-card-label, .sidebar-plan-card-usage) {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+html body .dashboard-shell .sidebar :is(.nav-item, a.nav-item):hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+
+html body .dashboard-shell .sidebar :is(.nav-item.active, a.nav-item.active) {
+  background: #ffffff !important;
+  border-left-color: #ffffff !important;
+  color: #234a84 !important;
+  box-shadow: none !important;
+}
+
+html body .dashboard-shell .sidebar .nav-item.active :is(.nav-item-label, .nav-item-meta, .nav-lock-icon, .nav-plan-chip, .nav-unread-chip) {
+  color: #234a84 !important;
+}
+
+html body .dashboard-shell .sidebar :is(.nav-plan-chip, .nav-unread-chip) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+html body .dashboard-shell .sidebar .sidebar-plan-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.card, .panel, .stat, .form, .modal, dialog, .job-card, .customer-card, .worker-card, .metric-card, .dashboard-metric-card, .job-financials-card, .finance-list-card) {
+  background: #ffffff !important;
+  border-color: #dde6f2 !important;
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input) {
+  background: #ffffff !important;
+  border-color: #d5dfec !important;
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  box-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input):focus {
+  border-color: #4f7cc4 !important;
+  box-shadow: 0 0 0 3px rgba(79, 124, 196, 0.13) !important;
+  outline: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn-primary, button.btn-primary, button[type='submit']) {
+  background: #234a84 !important;
+  border-color: #234a84 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn-primary, button.btn-primary, button[type='submit']):hover {
+  background: #1e3f72 !important;
+  border-color: #1e3f72 !important;
+  color: #ffffff !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
+  background: #ffffff !important;
+  border-color: #d5dfec !important;
+  color: #172033 !important;
+  box-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)):hover {
+  background: #eef4fb !important;
+  border-color: #c8d5e5 !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(h1, h2, h3, h4, strong) {
+  color: #172033;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(p, .muted, .page-subtitle, small) {
+  color: #5b667a;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.page-head, .page-header, .dashboard-header) {
+  margin-bottom: 24px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.page-head h1, .page-header h1, .dashboard-header h1) {
+  font-weight: 600 !important;
+  letter-spacing: -0.03em !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(table, .table) {
+  background: #ffffff !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.table th, table th) {
+  color: #5b667a !important;
+  border-color: #e7eef7 !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.table td, table td) {
+  color: #172033 !important;
+  border-color: #e7eef7 !important;
+}
+
+@media (max-width: 760px) {
+  html body .dashboard-shell-mobile,
+  html body :is(.mobile-nav-drawer, .mobile-nav-panel) {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #dde6f2 !important;
+  }
+
+  html body .dashboard-shell {
+    background: #f8fafc !important;
+  }
+}
