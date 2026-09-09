@@ -100,11 +100,10 @@ html body .dashboard-shell :is(
   border-bottom: 0 !important;
 }
 
-/* Hairline is always the full row width, never a short stub over buttons. */
 html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) > * {
   width: 100% !important;
   max-width: 100% !important;
-  border-bottom-width: 0 !important;
+  border: 0 !important;
 }
 
 html body .dashboard-shell .record-actions {
@@ -113,8 +112,8 @@ html body .dashboard-shell .record-actions {
   width: 100% !important;
   max-width: 100% !important;
   margin-top: 12px !important;
-  padding-top: 12px !important;
-  border-top: 1px solid #d5dee5 !important;
+  padding-top: 0 !important;
+  border: 0 !important;
   box-sizing: border-box !important;
 }
 
