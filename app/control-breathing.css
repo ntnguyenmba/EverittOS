@@ -1,5 +1,4 @@
-/* Universal box spacing. Last loaded.
-   Same gap for 2, 3, or more boxes — stacked or side by side. */
+/* Central spacing. Last in layout. Beats older margin:0 on button rows. */
 
 :root {
   --eo-control-pad-y: 12px;
@@ -8,13 +7,12 @@
   --eo-stack-gap: 20px;
 }
 
-body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) {
+html body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box !important;
   min-height: 44px !important;
-  min-width: 0 !important;
   padding: var(--eo-control-pad-y) var(--eo-control-pad-x) !important;
   line-height: 1.25 !important;
   white-space: normal !important;
@@ -22,7 +20,7 @@ body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) 
   overflow: visible !important;
 }
 
-body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions, .filter-row, .page-head .button-row) {
+html body :is(.dashboard-shell, .role-portal-shell, body) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions, .filter-row) {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: stretch !important;
@@ -31,70 +29,63 @@ body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions,
   column-gap: var(--eo-box-gap) !important;
 }
 
+html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
+  margin-left: var(--eo-box-gap) !important;
+  margin-top: 0 !important;
+}
+
 @media (max-width: 700px) {
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) {
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) {
     flex-direction: column !important;
   }
 
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) > :is(.btn, button, a.btn) {
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) {
     width: 100% !important;
     max-width: 100% !important;
     min-height: 48px !important;
   }
 
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) > :nth-child(n+2) {
-    margin-top: var(--eo-box-gap) !important;
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
     margin-left: 0 !important;
+    margin-top: var(--eo-box-gap) !important;
   }
 }
 
-@media (min-width: 701px) {
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions, .settings-actions, .page-head .button-row) {
-    flex-direction: row !important;
-  }
-
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions, .page-head .button-row) > :nth-child(n+2) {
-    margin-top: 0 !important;
-    margin-left: var(--eo-box-gap) !important;
-  }
-}
-
-/* Side-by-side buttons that are not in a row wrapper. */
-body :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
+/* Catch buttons sitting next to each other outside a row class. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(.btn, button.btn, a.btn) + :is(.btn, button.btn, a.btn) {
   margin-left: var(--eo-box-gap) !important;
 }
 
 @media (max-width: 700px) {
-  body :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.btn, button.btn, a.btn) + :is(.btn, button.btn, a.btn) {
     margin-left: 0 !important;
     margin-top: var(--eo-box-gap) !important;
   }
 }
 
-body :is(.input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge) + :is(.input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge, .btn, button, a.btn) {
+html body :is(.input, select, textarea, .card, .panel, .finance-list-card, .list-row) + :is(.input, select, textarea, .card, .panel, .finance-list-card, .list-row, .btn, button) {
   margin-top: var(--eo-box-gap) !important;
 }
 
-body label + :is(.input, input, select, textarea, .btn, button) {
+html body label + :is(.input, input, select, textarea, .btn, button) {
   margin-top: 8px !important;
 }
 
-body .job-financials-card > .job-financials-section + .job-financials-section,
-body .job-financials-section + .job-financials-section {
+html body .job-financials-section + .job-financials-section {
   margin-top: var(--eo-stack-gap) !important;
 }
 
-body .job-financials-section > h4 {
+html body .job-financials-section > h4 {
   margin: 0 0 12px !important;
 }
 
-body .finance-list-card {
+html body .finance-list-card {
   display: grid !important;
   gap: var(--eo-box-gap) !important;
   margin-bottom: var(--eo-stack-gap) !important;
 }
 
-body .job-financials-head {
+html body .job-financials-head {
   display: grid !important;
   gap: 14px !important;
   margin-bottom: var(--eo-stack-gap) !important;
