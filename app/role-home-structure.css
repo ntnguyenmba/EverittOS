@@ -1,19 +1,26 @@
-/* Owner, worker, and client homes: white floating cards on the wallpaper. */
-.owner-home-sheet {
-  display: grid;
-  gap: 16px;
+/* Owner, worker, and client: wallpaper behind, white cards on top. */
+.owner-home-sheet,
+.contractor-content-card,
+.client-portal-jobs {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+  padding: 0 !important;
 }
 
-.contractor-portal-hero,
-.contractor-content-card,
+.contractor-portal-hero {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
 .contractor-next-job,
-.client-next-visit-paper,
-.client-job-card,
-.portal-job-row,
-.list-row.portal-job-row {
+.job-visits-list > .portal-job-row,
+.job-visits-list > .list-row,
+.client-job-card-list > .client-job-card,
+.client-job-card-list > .list-row,
+.client-next-visit-paper {
   background: #ffffff !important;
   color: #132433 !important;
   border: 1px solid #d5dee5 !important;
@@ -32,20 +39,16 @@
   box-shadow: none !important;
 }
 
-.owner-home-sheet h1,
-.contractor-portal-hero h1,
-.client-next-visit-paper h1,
-.contractor-content-card h2,
+.contractor-dashboard h1,
+.contractor-dashboard h2,
 .portal-job-row strong,
 .client-job-card h3 {
   color: #132433 !important;
 }
 
-.owner-home-kicker,
-.contractor-portal-hero .muted,
-.contractor-next-meta,
+.contractor-dashboard .muted,
 .portal-job-date,
-.client-job-secondary {
+.contractor-next-meta {
   color: #526777 !important;
 }
 
@@ -59,39 +62,9 @@
   text-decoration: none;
 }
 
-.owner-home-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.owner-home-actions > * {
-  width: 100%;
-  min-height: 48px !important;
-}
-
-.owner-home-actions .btn-primary {
-  background: #243f53 !important;
-  border-color: #243f53 !important;
-  color: #fff !important;
-}
-
-.owner-home-actions .btn:not(.btn-primary) {
-  background: #fff !important;
-  border-color: rgba(40, 93, 120, 0.28) !important;
-  color: #243f53 !important;
-}
-
 @media (max-width: 760px) {
   .worker-job-link {
     grid-template-columns: 1fr;
     gap: 10px;
-  }
-}
-
-@media (max-width: 420px) {
-  .owner-home-actions {
-    grid-template-columns: 1fr;
   }
 }
