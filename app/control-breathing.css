@@ -116,7 +116,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(.job-detail-shell, .app-
   gap: var(--eo-stack-gap) !important;
 }
 
-/* EverittOS signed-in visual system. */
+/* EverittOS signed-in visual system. Keep this centralized and visual only. */
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) {
   --surface: #ffffff;
   --card: #ffffff;
@@ -146,7 +146,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   color: #172033 !important;
 }
 
-/* Keep the wallpaper visible. Do not turn the page into a white wrapper. */
+/* Keep hero.jpg visible. Never repaint the whole signed-in page white. */
 html body .dashboard-shell,
 html body .dashboard-shell > .main,
 html body .dashboard-shell .main,
@@ -156,42 +156,7 @@ html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-cont
   background-color: transparent !important;
 }
 
-/* Give wallpaper-backed headings a readable treatment without adding boxes. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-) {
-  text-shadow: 0 1px 0 rgba(255,255,255,.88), 0 0 12px rgba(255,255,255,.72);
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header h1,
-  .page-head h1,
-  .dashboard-header h1,
-  .quote-page-head h1,
-  .page-header h2,
-  .page-head h2
-) {
-  color: #102238 !important;
-  -webkit-text-fill-color: #102238 !important;
-  font-weight: 700 !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-subtitle,
-  .page-header p,
-  .page-head p,
-  .dashboard-header p
-) {
-  color: #263b52 !important;
-  -webkit-text-fill-color: #263b52 !important;
-  opacity: 1 !important;
-  font-weight: 500 !important;
-}
-
-/* Structural wrappers remain invisible. */
+/* Structural wrappers stay invisible so wallpaper remains visible between content. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-stage,
   .jobs-list-page,
@@ -231,6 +196,96 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/*
+  Standalone wording gets its own compact white reading surface instead of a
+  glow or a large page wrapper. Typography itself is left to typography.css,
+  restoring the font weights and sizing used before today's visual overrides.
+*/
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header h1,
+  .page-header h2,
+  .page-header h3,
+  .page-header p,
+  .page-head h1,
+  .page-head h2,
+  .page-head h3,
+  .page-head p,
+  .dashboard-header h1,
+  .dashboard-header h2,
+  .dashboard-header h3,
+  .dashboard-header p,
+  .quote-page-head h1,
+  .quote-page-head h2,
+  .quote-page-head p,
+  .page-subtitle,
+  .app-page-stage > h1,
+  .app-page-stage > h2,
+  .app-page-stage > h3,
+  .app-page-stage > h4,
+  .app-page-stage > p,
+  .app-page-stage > label,
+  .jobs-list-page > h1,
+  .jobs-list-page > h2,
+  .jobs-list-page > h3,
+  .jobs-list-page > p,
+  .jobs-list-page > label,
+  .job-detail-shell > h1,
+  .job-detail-shell > h2,
+  .job-detail-shell > h3,
+  .job-detail-shell > p,
+  .job-detail-shell > label,
+  .dashboard-home > h1,
+  .dashboard-home > h2,
+  .dashboard-home > h3,
+  .dashboard-home > p,
+  .today-page > h1,
+  .today-page > h2,
+  .today-page > h3,
+  .today-page > p,
+  .contractor-main > h1,
+  .contractor-main > h2,
+  .contractor-main > h3,
+  .contractor-main > p,
+  .client-main > h1,
+  .client-main > h2,
+  .client-main > h3,
+  .client-main > p,
+  .form > label,
+  .form-grid > label,
+  .job-create-section > label,
+  .quote-compose > label,
+  .quote-workspace > label,
+  .finance-form-block > label,
+  .compact-finance-form > label
+) {
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 9px !important;
+  border: 1px solid rgba(221, 230, 242, 0.96) !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.05) !important;
+  text-shadow: none !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Keep multi-line subtitles readable without stretching them into a full page card. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header p,
+  .page-head p,
+  .dashboard-header p,
+  .quote-page-head p,
+  .page-subtitle
+) {
+  display: block;
+  width: fit-content;
+  max-width: min(100%, 46rem);
 }
 
 html body .dashboard-shell .sidebar {
@@ -274,7 +329,7 @@ html body .dashboard-shell .sidebar .sidebar-plan-card {
   box-shadow: none !important;
 }
 
-/* Actual cards and controls stay bright white for reading. */
+/* Actual records, forms, cards, and working surfaces stay bright white. */
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
   .card,
   .panel,
@@ -284,7 +339,14 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   dialog,
   .job-card,
   .customer-card,
+  .customer-card-row,
   .worker-card,
+  .team-member-card,
+  .record-card,
+  .list-row,
+  .job-row,
+  .contractor-job-row,
+  .client-job-row,
   .metric-card,
   .dashboard-metric-card,
   .job-financials-card,
@@ -301,38 +363,6 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  text-shadow: none !important;
-}
-
-/* Record rows are reading surfaces, not wallpaper text. Page headings stay excluded. */
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
-  .card.customer-card-row,
-  .team-member-card,
-  .record-card:not(.page-head):not(.page-header),
-  .job-row,
-  .contractor-job-row,
-  .client-job-row
-) {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1px solid #dde6f2 !important;
-  border-radius: var(--eo-radius-card, 18px) !important;
-  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
-  color: #172033 !important;
-  -webkit-text-fill-color: #172033 !important;
-  text-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
-  .card.customer-card-row,
-  .team-member-card,
-  .record-card:not(.page-head):not(.page-header),
-  .job-row,
-  .contractor-job-row,
-  .client-job-row
-) :is(h2, h3, h4, strong, p, span, small, .muted, .meta, .secondary-text) {
   text-shadow: none !important;
 }
 
@@ -410,11 +440,37 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   }
 
   html body :is(.dashboard-shell, .role-portal-shell) :is(
-    .page-header,
-    .page-head,
-    .dashboard-header,
-    .quote-page-head
+    .page-header h1,
+    .page-header h2,
+    .page-header h3,
+    .page-header p,
+    .page-head h1,
+    .page-head h2,
+    .page-head h3,
+    .page-head p,
+    .dashboard-header h1,
+    .dashboard-header h2,
+    .dashboard-header h3,
+    .dashboard-header p,
+    .quote-page-head h1,
+    .quote-page-head h2,
+    .quote-page-head p,
+    .page-subtitle,
+    .app-page-stage > h1,
+    .app-page-stage > h2,
+    .app-page-stage > h3,
+    .app-page-stage > h4,
+    .app-page-stage > p,
+    .app-page-stage > label,
+    .form > label,
+    .form-grid > label,
+    .job-create-section > label,
+    .quote-compose > label,
+    .quote-workspace > label
   ) {
-    text-shadow: 0 1px 0 rgba(255,255,255,.94), 0 0 14px rgba(255,255,255,.82);
+    padding: 5px 8px !important;
+    border-radius: 7px !important;
+    box-shadow: 0 1px 2px rgba(23, 32, 51, 0.05) !important;
+    text-shadow: none !important;
   }
 }
