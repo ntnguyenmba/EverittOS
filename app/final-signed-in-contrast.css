@@ -1,0 +1,127 @@
+/* Final contrast pass. Imported after every other signed-in stylesheet. */
+
+:root {
+  --eo-ask-dark: #111922;
+  --eo-float-paper: #ffffff;
+  --eo-float-ink: #172033;
+  --eo-float-muted: #46566a;
+  --eo-float-line: #d5dfec;
+}
+
+/* Ask Everitt returns to the original near-black treatment. */
+html body .dashboard-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]),
+html body .role-portal-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]) {
+  background: var(--eo-ask-dark) !important;
+  background-color: var(--eo-ask-dark) !important;
+  border-color: var(--eo-ask-dark) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html body .dashboard-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]) *,
+html body .role-portal-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]) * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Restore the signed-in role card that the broad transparent rule was erasing. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
+  background: #234a84 !important;
+  background-color: #234a84 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.12) !important;
+  color: #ffffff !important;
+  padding: 16px 20px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner :is(.app-role-banner-context, .app-role-banner-name) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner .app-role-banner-context {
+  color: rgba(255, 255, 255, 0.76) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
+}
+
+/* Page title + intro + existing action become one floating white reading card. */
+html body .dashboard-shell .app-page-stage > div:has(> div > h1),
+html body .role-portal-shell .app-page-stage > div:has(> div > h1),
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.08) !important;
+  padding: 18px 20px !important;
+  color: var(--eo-float-ink) !important;
+}
+
+html body .dashboard-shell .app-page-stage > div:has(> div > h1) :is(h1, h2, h3, p, .muted),
+html body .role-portal-shell .app-page-stage > div:has(> div > h1) :is(h1, h2, h3, p, .muted),
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, p, .muted, .page-subtitle) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+  text-shadow: none !important;
+}
+
+html body .dashboard-shell .app-page-stage > div:has(> div > h1) :is(p, .muted),
+html body .role-portal-shell .app-page-stage > div:has(> div > h1) :is(p, .muted),
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle) {
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+}
+
+/* Team members wording gets its own floating white box without touching its buttons. */
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child {
+  width: fit-content !important;
+  max-width: 100% !important;
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.08) !important;
+  padding: 14px 16px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child :is(h2, p, .muted) {
+  background: transparent !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child :is(p, .muted) {
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+}
+
+/* Search and Role labels stay readable while their existing input boxes remain unchanged. */
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-filters > label {
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.06) !important;
+  padding: 12px !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+}
+
+@media (max-width: 760px) {
+  html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
+    padding: 14px 16px !important;
+    border-radius: 14px !important;
+  }
+
+  html body .dashboard-shell .app-page-stage > div:has(> div > h1),
+  html body .role-portal-shell .app-page-stage > div:has(> div > h1),
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+}
