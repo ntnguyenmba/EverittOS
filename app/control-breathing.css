@@ -141,11 +141,29 @@ html body .page-header,
 html body .owner-home-primary,
 html body .client-next-visit-copy {
   display: grid !important;
-  gap: 12px !important;
+  gap: 8px !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Title block sits close to the first form or list on every page. */
+html body .dashboard-shell .app-page-stage > * + *,
+html body .role-portal-shell .app-page-stage > * + * {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell :is(.page-header, .page-head, .quote-page-head) + *,
+html body .dashboard-shell .page-subtitle + *,
+html body .dashboard-shell .quote-workspace > .page-header + *,
+html body .dashboard-shell .quote-compose-grid {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell .quote-compose {
+  padding-top: 8px !important;
 }
 
 html body .card :is(h1, h2, h3, h4, strong, p),
