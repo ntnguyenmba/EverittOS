@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizeLocale, type Locale } from '@/lib/i18n/config';
 
@@ -91,11 +92,15 @@ function spaceStatusAndPay() {
 }
 
 export function ContractorStaticSections() {
+  const pathname = usePathname() || '/';
   const { locale } = useTranslation();
   const normalized = normalizeLocale(locale);
   const titles = SECTION_TITLES[normalized];
+  const onPortal = pathname.startsWith('/portal/contractor') || pathname.startsWith('/portal/client');
 
   useEffect(() => {
+    if (!onPortal) return;
+
     let attempts = 0;
     let timer: number | undefined;
     let observer: MutationObserver | undefined;
@@ -127,7 +132,7 @@ export function ContractorStaticSections() {
       if (timer) window.clearTimeout(timer);
       observer?.disconnect();
     };
-  }, [normalized, titles.current, titles.past]);
+  }, [normalized, onPortal, titles.current, titles.past]);
 
   return null;
 }
