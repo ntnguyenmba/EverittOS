@@ -8,14 +8,13 @@ import {
   type PhotonFeature
 } from '@/lib/address/parse-photon';
 import type { AddressSuggestion } from '@/lib/address/types';
-import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const PHOTON_ENDPOINT = 'https://photon.komoot.io/api/';
 const CENSUS_ENDPOINT = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';
-const MIN_QUERY_LENGTH = 3;
+const MIN_QUERY_LENGTH = 2;
 const DISPLAY_LIMIT = 8;
 const PROVIDER_LIMIT = 32;
 
@@ -93,14 +92,6 @@ async function fetchCensus(query: string): Promise<AddressSuggestion[]> {
 }
 
 export async function GET(request: Request) {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const url = new URL(request.url);
   const q = (url.searchParams.get('q') || '').trim();
   if (q.length < MIN_QUERY_LENGTH) {

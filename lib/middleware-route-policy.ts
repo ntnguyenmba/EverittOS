@@ -5,7 +5,7 @@ export const AUTH_PREFIXES = [
 export const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'] as const;
 
 export const PUBLIC_API_PREFIXES = [
-  '/api/auth/login','/api/auth/signup','/api/auth/reset-password','/api/auth/reset-session','/api/auth/update-password','/api/auth/config','/api/auth/setup','/api/auth/session','/api/auth/sign-out','/api/auth/signup-rate-limit','/api/stripe/webhook','/api/stripe/router','/api/stripe/capabilities','/api/public/reports','/api/webhooks/apple','/api/webhooks/google-play','/api/team/accept','/api/forms/public','/api/book'
+  '/api/auth/login','/api/auth/signup','/api/auth/reset-password','/api/auth/reset-session','/api/auth/update-password','/api/auth/config','/api/auth/setup','/api/auth/session','/api/auth/sign-out','/api/auth/signup-rate-limit','/api/stripe/webhook','/api/stripe/router','/api/stripe/capabilities','/api/public/reports','/api/webhooks/apple','/api/webhooks/google-play','/api/team/accept','/api/forms/public','/api/book','/api/address/autocomplete','/api/address/timezone'
 ] as const;
 
 export const ROLE_BLOCKED_PREFIXES: ReadonlyArray<{ prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }> = [
