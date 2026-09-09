@@ -1,9 +1,9 @@
-/* Central spacing. Last in layout. Beats older margin:0 on button rows. */
+/* Central spacing. One gap only — do not stack gap + margin. */
 
 :root {
   --eo-control-pad-y: 12px;
   --eo-control-pad-x: 16px;
-  --eo-box-gap: 16px;
+  --eo-box-gap: 12px;
   --eo-stack-gap: 20px;
 }
 
@@ -20,18 +20,19 @@ html body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='butto
   overflow: visible !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, body) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions, .filter-row) {
+html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions) {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: stretch !important;
   gap: var(--eo-box-gap) !important;
-  row-gap: var(--eo-box-gap) !important;
-  column-gap: var(--eo-box-gap) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
-  margin-left: var(--eo-box-gap) !important;
-  margin-top: 0 !important;
+html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) {
+  margin: 0 !important;
+}
+
+html body :is(.input, select, textarea) + :is(.button-row, .btn, button) {
+  margin-top: var(--eo-box-gap) !important;
 }
 
 @media (max-width: 700px) {
@@ -43,28 +44,14 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-act
     width: 100% !important;
     max-width: 100% !important;
     min-height: 48px !important;
-  }
-
-  html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
-    margin-left: 0 !important;
-    margin-top: var(--eo-box-gap) !important;
+    margin: 0 !important;
   }
 }
 
-/* Catch buttons sitting next to each other outside a row class. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(.btn, button.btn, a.btn) + :is(.btn, button.btn, a.btn) {
-  margin-left: var(--eo-box-gap) !important;
-}
-
-@media (max-width: 700px) {
-  html body :is(.dashboard-shell, .role-portal-shell) :is(.btn, button.btn, a.btn) + :is(.btn, button.btn, a.btn) {
-    margin-left: 0 !important;
-    margin-top: var(--eo-box-gap) !important;
+@media (min-width: 701px) {
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions) {
+    flex-direction: row !important;
   }
-}
-
-html body :is(.input, select, textarea, .card, .panel, .finance-list-card, .list-row) + :is(.input, select, textarea, .card, .panel, .finance-list-card, .list-row, .btn, button) {
-  margin-top: var(--eo-box-gap) !important;
 }
 
 html body label + :is(.input, input, select, textarea, .btn, button) {
