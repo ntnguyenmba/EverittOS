@@ -4,9 +4,7 @@ html body .contractor-dashboard,
 html body .client-portal-jobs,
 html body .client-portal-job-detail,
 html body .client-portal-settings,
-html body .owner-home-sheet,
-html body .job-visits-list,
-html body .client-job-card-list {
+html body .owner-home-sheet {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -15,17 +13,9 @@ html body .client-job-card-list {
 html body .card,
 html body .panel,
 html body .settings-card,
-html body .list-row,
-html body .portal-job-row,
-html body .client-job-card,
-html body .client-job-row,
 html body .contractor-next-job,
 html body .client-next-visit-paper,
-html body .finance-list-card,
 html body .job-financials-card,
-html body .team-member-card,
-html body .customer-card-row,
-html body .record-card,
 html body .role-summary-card {
   background: #ffffff !important;
   color: #132433 !important;
@@ -34,6 +24,63 @@ html body .role-summary-card {
   box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
   padding: 18px 20px !important;
   text-shadow: none !important;
+}
+
+/* Lists share one paper and a thin line between rows. */
+html body :is(
+  .job-visits-list,
+  .client-job-card-list,
+  .jobs-list,
+  .jobs-list-body,
+  .jobs-mobile-table-wrap,
+  .team-list,
+  .team-member-list,
+  .customers-list,
+  .customer-list,
+  .finance-expense-list
+) {
+  display: block !important;
+  background: #ffffff !important;
+  border: 1px solid #d5dee5 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
+  padding: 8px 18px !important;
+  gap: 0 !important;
+}
+
+html body :is(
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+) {
+  background: transparent !important;
+  color: #132433 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d5dee5 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 16px 0 !important;
+  margin: 0 !important;
+}
+
+html body :is(
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+):last-child {
+  border-bottom: 0 !important;
 }
 
 html body .contractor-portal-hero,
@@ -120,49 +167,4 @@ html body .page-actions {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-}
-
-html body :is(
-  .job-visits-list,
-  .client-job-card-list,
-  .jobs-list,
-  .jobs-list-body,
-  .team-list,
-  .team-member-list,
-  .customers-list,
-  .customer-list,
-  .finance-expense-list
-) {
-  display: grid !important;
-  gap: 14px !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Thin line between every stacked list row — jobs, team, customers, all roles. */
-html body :is(
-  .list-row,
-  .portal-job-row,
-  .client-job-card,
-  .client-job-row,
-  .customer-card-row,
-  .team-member-card,
-  .finance-list-card,
-  .record-card,
-  .quote-row
-) + :is(
-  .list-row,
-  .portal-job-row,
-  .client-job-card,
-  .client-job-row,
-  .customer-card-row,
-  .team-member-card,
-  .finance-list-card,
-  .record-card,
-  .quote-row
-) {
-  box-shadow:
-    0 14px 30px rgba(27, 45, 60, 0.12),
-    0 -8px 0 -7px #c9d4dc !important;
 }
