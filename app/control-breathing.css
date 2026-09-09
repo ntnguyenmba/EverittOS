@@ -88,9 +88,9 @@ html body .client-main :is(
   text-shadow: none !important;
 }
 
-html body .dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p, span),
-html body .role-portal-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p, span),
-html body .contractor-dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card) :is(h1, h2, h3, h4, strong, p, span) {
+html body .dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p),
+html body .role-portal-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p),
+html body .contractor-dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card) :is(h1, h2, h3, h4, strong, p) {
   color: #132433 !important;
   -webkit-text-fill-color: #132433 !important;
   text-shadow: none !important;
@@ -104,6 +104,19 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) .portal-finance-amount {
   color: #243f53 !important;
   -webkit-text-fill-color: #243f53 !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn, a.btn, button.btn) {
+  width: auto !important;
+  min-width: max-content !important;
+  max-width: 100% !important;
+  min-height: 44px !important;
+  padding: 10px 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn-primary, button[type='submit']) {
@@ -125,11 +138,33 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   -webkit-text-fill-color: #132433 !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.status-badge, .badge) {
+/* Words in chips and badges must not be squeezed. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
+  .status-badge,
+  .badge,
+  .status-pill,
+  .chip,
+  .pill,
+  .eyebrow
+) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 32px !important;
+  padding: 6px 14px !important;
+  box-sizing: border-box !important;
+  border-radius: 999px !important;
   background: #eef3f5 !important;
   border: 1px solid #d5dee5 !important;
   color: #31495b !important;
   -webkit-text-fill-color: #31495b !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.button-row, .inline-actions, .page-actions, .portal-client-nav) {
