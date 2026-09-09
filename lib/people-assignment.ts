@@ -1,14 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeRole } from '@/lib/roles';
 
-/**
- * People-first assignment helpers.
- *
- * - organization_members are the primary source for assignees.
- * - workers is compatibility storage for schedule APIs and job_assignments.
- * - jobs.assigned_to stores workers.id (canonical). Legacy rows may still store auth user IDs.
- */
-
 export type PersonAssignmentOption = {
   userId: string;
   workerId: string | null;
@@ -104,4 +96,133 @@ export async function getPeopleForAssignment(
   }
 
   return options;
+}
+
+export async function workerIdForPerson(
+  supabase: SupabaseClient,
+  organizationId: string,
+  userId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('workers')
+    .select('id, active')
+    .eq('organization_id', organizationId)
+    .eq('auth_user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(20);
+
+  const rows = data || [];
+  const active = rows.find((row) => row.active !== false);
+  return active?.id ?? rows[0]?.id ?? null;
+}
+
+async function workerIdForEmail(
+  supabase: SupabaseClient,
+  organizationId: string,
+  email: string | null | undefined
+): Promise<string | null> {
+  const normalized = String(email || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return null;
+
+  const { data } = await supabase
+    .from('workers')
+    .select('id, email, auth_user_id, active')
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: true })
+    .limit(50);
+
+  const match = (data || []).find((row) => {
+    const rowEmail = String(row.email || '')
+      .trim()
+      .toLowerCase();
+    return rowEmail === normalized && row.active !== false;
+  });
+  return match?.id ?? null;
+}
+
+export async function ensureWorkerForPerson(
+  supabase: SupabaseClient,
+  organizationId: string,
+  userId: string,
+  displayName: string,
+  ownerUserId?: string | null,
+  email?: string | null
+): Promise<string> {
+  const existing = await workerIdForPerson(supabase, organizationId, userId);
+  if (existing) return existing;
+
+  const byEmail = await workerIdForEmail(supabase, organizationId, email);
+  if (byEmail) {
+    const { error: linkError } = await supabase
+      .from('workers')
+      .update({
+        auth_user_id: userId,
+        active: true,
+        email: email?.trim() || undefined,
+        name: displayName.trim() || undefined
+      })
+      .eq('id', byEmail)
+      .eq('organization_id', organizationId);
+
+    if (linkError) {
+      throw new Error(linkError.message || 'Unable to link existing crew record for this person.');
+    }
+    return byEmail;
+  }
+
+  const { data, error } = await supabase
+    .from('workers')
+    .insert({
+      organization_id: organizationId,
+      user_id: ownerUserId || userId,
+      auth_user_id: userId,
+      email: email?.trim() || null,
+      name: displayName.trim() || 'Team member',
+      active: true
+    })
+    .select('id')
+    .single();
+
+  if (error || !data?.id) {
+    const raced = await workerIdForPerson(supabase, organizationId, userId);
+    if (raced) return raced;
+    const racedEmail = await workerIdForEmail(supabase, organizationId, email);
+    if (racedEmail) return racedEmail;
+    throw new Error(error?.message || 'Unable to link crew record for this person.');
+  }
+
+  return data.id;
+}
+
+export function resolveAssignedUserId(
+  assignedTo: string | null | undefined,
+  people: PersonAssignmentOption[]
+): string {
+  if (!assignedTo) return '';
+
+  const direct = people.find((person) => person.userId === assignedTo);
+  if (direct) return direct.userId;
+
+  const viaWorker = people.find((person) => person.workerId === assignedTo);
+  if (viaWorker) return viaWorker.userId;
+
+  return assignedTo;
+}
+
+export async function assignedToForScheduleApi(
+  supabase: SupabaseClient,
+  organizationId: string,
+  userId: string | null,
+  displayName: string,
+  ownerUserId?: string | null
+): Promise<string | null> {
+  if (!userId) return null;
+
+  const person = (await getPeopleForAssignment(supabase, organizationId)).find((item) => item.userId === userId);
+  if (person?.workerId) return person.workerId;
+  if (person && person.userId === person.workerId) return person.workerId;
+
+  return ensureWorkerForPerson(supabase, organizationId, userId, displayName, ownerUserId, null);
 }
