@@ -50,9 +50,14 @@ html body .role-portal-shell .app-page-content .app-role-banner .app-role-banner
   -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
 }
 
-/* Universal signed-in page heading card. This catches PageHeader and custom page-header variants. */
-html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
-html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+/* Shared white reading surface. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
+),
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, section, article):has(> div:first-child > :is(h1, h2, h3)) {
   background: var(--eo-float-paper) !important;
   background-color: var(--eo-float-paper) !important;
   border: 1px solid var(--eo-float-line) !important;
@@ -64,8 +69,14 @@ html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .da
   -webkit-backdrop-filter: none !important;
 }
 
-html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, h4, p, .muted, .page-subtitle, .eyebrow),
-html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, h4, p, .muted, .page-subtitle, .eyebrow) {
+/* Keep all text inside those shared reading surfaces plain and readable. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
+) :is(h1, h2, h3, h4, p, .muted, .page-subtitle, .eyebrow),
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, section, article):has(> div:first-child > :is(h1, h2, h3)) :is(h1, h2, h3, h4, p, .muted, .page-subtitle) {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -74,8 +85,13 @@ html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .da
   -webkit-text-fill-color: var(--eo-float-ink) !important;
 }
 
-html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle),
-html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle) {
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
+) :is(p, .muted, .page-subtitle),
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, section, article):has(> div:first-child > :is(h1, h2, h3)) :is(p, .muted, .page-subtitle) {
   color: var(--eo-float-muted) !important;
   -webkit-text-fill-color: var(--eo-float-muted) !important;
 }
@@ -149,6 +165,38 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
   -webkit-text-fill-color: var(--eo-float-muted) !important;
 }
 
+/* Generic loose heading + description clusters with no wrapper class. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(div, section, article) > :is(h1, h2, h3, h4):has(+ p):not(.card *),
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(div, section, article) > :is(h1, h2, h3, h4):has(+ .muted):not(.card *) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-bottom: 0 !important;
+  padding: 12px 14px 4px !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-bottom: 0 !important;
+  border-radius: 14px 14px 0 0 !important;
+  background: var(--eo-float-paper) !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+  box-shadow: var(--eo-float-shadow) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(div, section, article) > :is(h1, h2, h3, h4) + :is(p, .muted):not(.card *) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 0 !important;
+  padding: 4px 14px 12px !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 14px 14px !important;
+  background: var(--eo-float-paper) !important;
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+  box-shadow: var(--eo-float-shadow) !important;
+  text-shadow: none !important;
+}
+
 /* Every field label that sits over wallpaper gets its own white reading surface.
    Inputs, selects, textareas, buttons, records, and existing cards keep their current styling. */
 html body :is(.dashboard-shell, .role-portal-shell) .app-page-content label:has(> :is(input, select, textarea, .input)) {
@@ -197,8 +245,8 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
     border-radius: 14px !important;
   }
 
-  html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
-  html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+  html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+  html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, section, article):has(> div:first-child > :is(h1, h2, h3)),
   html body .dashboard-shell .app-page-content .owner-home-primary {
     padding: 16px !important;
     border-radius: 14px !important;
