@@ -6,6 +6,19 @@ import { canAssignAdminRole, canManageTeam, canModifyTeamMember, isAssignableJob
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
 import { getPeopleForAssignment } from '@/lib/people-assignment';
 
+function isCreateJobRequest(request: Request) {
+  const referer = request.headers.get('referer');
+  if (!referer) return false;
+
+  try {
+    const requestUrl = new URL(request.url);
+    const refererUrl = new URL(referer);
+    return refererUrl.origin === requestUrl.origin && (refererUrl.pathname === '/jobs/new' || refererUrl.pathname === '/jobs/create');
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const supabase = await createServerSupabase();
   const admin = createAdminSupabase();
@@ -22,7 +35,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Workspace not found.' }, { status: 404 });
   }
 
-  const assignableOnly = new URL(request.url).searchParams.get('assignable') === '1';
+  const assignableOnly = new URL(request.url).searchParams.get('assignable') === '1' || isCreateJobRequest(request);
   if (assignableOnly) {
     const people = await getPeopleForAssignment(admin, org.organizationId);
     return NextResponse.json({
