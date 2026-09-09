@@ -198,94 +198,50 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   -webkit-backdrop-filter: none !important;
 }
 
-/*
-  Standalone wording gets its own compact white reading surface instead of a
-  glow or a large page wrapper. Typography itself is left to typography.css,
-  restoring the font weights and sizing used before today's visual overrides.
-*/
+/* One restrained reading panel for each page heading group. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header h1,
-  .page-header h2,
-  .page-header h3,
-  .page-header p,
-  .page-head h1,
-  .page-head h2,
-  .page-head h3,
-  .page-head p,
-  .dashboard-header h1,
-  .dashboard-header h2,
-  .dashboard-header h3,
-  .dashboard-header p,
-  .quote-page-head h1,
-  .quote-page-head h2,
-  .quote-page-head p,
-  .page-subtitle,
-  .app-page-stage > h1,
-  .app-page-stage > h2,
-  .app-page-stage > h3,
-  .app-page-stage > h4,
-  .app-page-stage > p,
-  .app-page-stage > label,
-  .jobs-list-page > h1,
-  .jobs-list-page > h2,
-  .jobs-list-page > h3,
-  .jobs-list-page > p,
-  .jobs-list-page > label,
-  .job-detail-shell > h1,
-  .job-detail-shell > h2,
-  .job-detail-shell > h3,
-  .job-detail-shell > p,
-  .job-detail-shell > label,
-  .dashboard-home > h1,
-  .dashboard-home > h2,
-  .dashboard-home > h3,
-  .dashboard-home > p,
-  .today-page > h1,
-  .today-page > h2,
-  .today-page > h3,
-  .today-page > p,
-  .contractor-main > h1,
-  .contractor-main > h2,
-  .contractor-main > h3,
-  .contractor-main > p,
-  .client-main > h1,
-  .client-main > h2,
-  .client-main > h3,
-  .client-main > p,
-  .form > label,
-  .form-grid > label,
-  .job-create-section > label,
-  .quote-compose > label,
-  .quote-workspace > label,
-  .finance-form-block > label,
-  .compact-finance-form > label
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
 ) {
-  width: fit-content;
-  max-width: 100%;
-  padding: 5px 9px !important;
-  border: 1px solid rgba(221, 230, 242, 0.96) !important;
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  width: 100% !important;
+  max-width: min(100%, 56rem) !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(221, 230, 242, 0.82) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.90) !important;
   color: #172033 !important;
-  -webkit-text-fill-color: #172033 !important;
-  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.05) !important;
+  box-shadow: 0 4px 16px rgba(23, 32, 51, 0.07) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   text-shadow: none !important;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 
-/* Keep multi-line subtitles readable without stretching them into a full page card. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header p,
-  .page-head p,
-  .dashboard-header p,
-  .quote-page-head p,
-  .page-subtitle
-) {
-  display: block;
-  width: fit-content;
-  max-width: min(100%, 46rem);
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
+) :is(h1, h2, h3, p, .page-subtitle) {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head
+) :is(p, .page-subtitle) {
+  color: #46566a !important;
+  -webkit-text-fill-color: #46566a !important;
 }
 
 html body .dashboard-shell .sidebar {
@@ -440,37 +396,13 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   }
 
   html body :is(.dashboard-shell, .role-portal-shell) :is(
-    .page-header h1,
-    .page-header h2,
-    .page-header h3,
-    .page-header p,
-    .page-head h1,
-    .page-head h2,
-    .page-head h3,
-    .page-head p,
-    .dashboard-header h1,
-    .dashboard-header h2,
-    .dashboard-header h3,
-    .dashboard-header p,
-    .quote-page-head h1,
-    .quote-page-head h2,
-    .quote-page-head p,
-    .page-subtitle,
-    .app-page-stage > h1,
-    .app-page-stage > h2,
-    .app-page-stage > h3,
-    .app-page-stage > h4,
-    .app-page-stage > p,
-    .app-page-stage > label,
-    .form > label,
-    .form-grid > label,
-    .job-create-section > label,
-    .quote-compose > label,
-    .quote-workspace > label
+    .page-header,
+    .page-head,
+    .dashboard-header,
+    .quote-page-head
   ) {
-    padding: 5px 8px !important;
-    border-radius: 7px !important;
-    box-shadow: 0 1px 2px rgba(23, 32, 51, 0.05) !important;
-    text-shadow: none !important;
+    padding: 16px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
   }
 }
