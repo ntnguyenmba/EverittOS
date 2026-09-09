@@ -1,4 +1,4 @@
-/* One look for every signed-in view: owner, worker, client. */
+/* One look: one sheet, thin line between entries only. */
 
 html body .contractor-dashboard,
 html body .client-portal-jobs,
@@ -16,7 +16,8 @@ html body .settings-card,
 html body .contractor-next-job,
 html body .client-next-visit-paper,
 html body .job-financials-card,
-html body .role-summary-card {
+html body .role-summary-card,
+html body .team-directory-card {
   background: #ffffff !important;
   color: #132433 !important;
   border: 1px solid #d5dee5 !important;
@@ -72,13 +73,10 @@ html body .role-portal-shell :is(
   .team-member-card,
   .finance-list-card
 ) {
-  display: block !important;
   width: 100% !important;
-  max-width: 100% !important;
   background: transparent !important;
   color: #132433 !important;
   border: 0 !important;
-  border-top: 0 !important;
   border-bottom: 1px solid #d5dee5 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -101,34 +99,25 @@ html body .dashboard-shell :is(
   border-bottom: 0 !important;
 }
 
-html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) *,
-html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) .record-actions {
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card) .record-actions,
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card) * {
   border-top: 0 !important;
-  border-bottom: 0 !important;
-  box-shadow: none !important;
 }
 
-html body .dashboard-shell .record-actions,
-html body .dashboard-shell .customer-card-row .record-actions,
-html body .dashboard-shell .card.customer-card-row .record-actions,
-html body .customer-card-row .record-actions,
-html body .dashboard-shell .team-member-actions {
+html body .dashboard-shell .record-actions {
   display: flex !important;
-  flex-direction: column !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: auto !important;
   margin-top: 12px !important;
   padding-top: 0 !important;
-  border: 0 none !important;
-  border-top: 0 none !important;
-  background-image: none !important;
-  box-sizing: border-box !important;
+  border: 0 !important;
 }
 
-html body .dashboard-shell .record-actions .btn,
-html body .dashboard-shell .customer-card-row .record-actions .btn {
-  width: 100% !important;
-  max-width: 100% !important;
+html body .dashboard-shell .record-actions .btn {
+  width: auto !important;
+  min-height: 44px !important;
 }
 
 html body .contractor-portal-hero,
@@ -154,10 +143,7 @@ html body .contractor-portal-hero :is(h1, h2, p) {
   text-shadow: none !important;
 }
 
-html body .muted,
-html body .portal-job-date,
-html body .portal-finance-empty,
-html body .contractor-worker-name {
+html body .muted {
   color: #526777 !important;
 }
 
