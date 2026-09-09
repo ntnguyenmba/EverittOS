@@ -24,10 +24,11 @@
   --eo-space-5: 20px;
   --eo-space-6: 32px;
   --eo-label-gap: var(--eo-space-2);
-  --eo-control-gap: var(--eo-space-3);
+  --eo-control-gap: var(--eo-space-4);
   --eo-heading-gap: var(--eo-space-4);
   --eo-section-gap: var(--eo-space-5);
   --eo-card-padding: var(--eo-space-5);
+  --eo-box-gap: var(--eo-space-4);
 
   /* Shape and depth */
   --eo-radius-control: 12px;
@@ -63,7 +64,7 @@
   --job-label-gap: var(--eo-space-1);
   --job-block-gap: var(--eo-space-4);
   --job-action-gap: var(--eo-space-5);
-  --job-button-gap: var(--eo-space-3);
+  --job-button-gap: var(--eo-space-4);
   --job-card-pad: var(--eo-card-padding);
 }
 
@@ -71,6 +72,6 @@
   :root {
     --eo-section-gap: var(--eo-space-4);
     --eo-card-padding: var(--eo-space-4);
-    --job-button-gap: 10px;
+    --job-button-gap: var(--eo-space-4);
   }
 }
