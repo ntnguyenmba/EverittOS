@@ -1,11 +1,97 @@
-/* Role homes share the owner stage. Wrappers stay open so cards can float. */
-.owner-home-sheet,.client-next-visit-paper,.contractor-portal-hero,.contractor-content-card{width:100%!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.owner-home-sheet{display:grid;gap:16px}.owner-home-sheet .page-head,.owner-home-sheet .page-header{margin:0!important;padding:0 0 12px!important;border-bottom:1px solid rgba(19,36,51,.10)}.owner-home-sheet h1{color:#132433!important;font-weight:600!important;font-size:28px!important;letter-spacing:-.025em!important;line-height:1.1!important}.owner-home-primary{display:grid;gap:6px}.owner-home-kicker{color:#526777!important;font-size:13px;font-weight:500}.owner-home-primary h2{margin:0!important;color:#132433!important;font-size:22px!important;font-weight:600!important;letter-spacing:-.02em!important;line-height:1.15!important}.owner-home-primary p{margin:2px 0 0!important;color:#526777!important;line-height:1.45!important}.owner-home-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}.owner-home-actions>*{width:100%;min-height:48px!important}.owner-home-actions .btn-primary{background:#243f53!important;border-color:#243f53!important;color:#fff!important}.owner-home-actions .btn:not(.btn-primary){background:#fff!important;border-color:rgba(40,93,120,.28)!important;color:#243f53!important}.owner-load-note{margin-top:2px;padding-top:12px;border-top:1px solid rgba(19,36,51,.10)}
-.job-visits-list,.client-job-card-list{display:grid!important;gap:14px!important;margin-top:12px!important;background:transparent!important;border:0!important;box-shadow:none!important}
-.worker-job-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;width:100%;color:inherit;text-decoration:none}
-.worker-job-link:hover strong,.worker-job-link:focus-visible strong{text-decoration:underline;text-underline-offset:3px}
-.contractor-more,.client-more{margin-top:16px;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
-.contractor-more>summary,.client-more>summary{min-height:48px;padding:12px 0;display:flex;align-items:center;cursor:pointer;list-style:none}
-.contractor-more>summary::-webkit-details-marker,.client-more>summary::-webkit-details-marker{display:none}
-@media(max-width:760px){.owner-home-actions{grid-template-columns:1fr 1fr}.worker-job-link{grid-template-columns:1fr;gap:10px}.contractor-more>.button-row{display:grid;grid-template-columns:1fr}.contractor-more>.button-row>*{width:100%}}
-@media(max-width:420px){.owner-home-actions{grid-template-columns:1fr}}
+/* Owner, worker, and client homes: white floating cards on the wallpaper. */
+.owner-home-sheet {
+  display: grid;
+  gap: 16px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.contractor-portal-hero,
+.contractor-content-card,
+.contractor-next-job,
+.client-next-visit-paper,
+.client-job-card,
+.portal-job-row,
+.list-row.portal-job-row {
+  background: #ffffff !important;
+  color: #132433 !important;
+  border: 1px solid #d5dee5 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
+  padding: 18px 20px !important;
+}
+
+.job-visits-list,
+.client-job-card-list {
+  display: grid !important;
+  gap: 14px !important;
+  margin-top: 12px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.owner-home-sheet h1,
+.contractor-portal-hero h1,
+.client-next-visit-paper h1,
+.contractor-content-card h2,
+.portal-job-row strong,
+.client-job-card h3 {
+  color: #132433 !important;
+}
+
+.owner-home-kicker,
+.contractor-portal-hero .muted,
+.contractor-next-meta,
+.portal-job-date,
+.client-job-secondary {
+  color: #526777 !important;
+}
+
+.worker-job-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.owner-home-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.owner-home-actions > * {
+  width: 100%;
+  min-height: 48px !important;
+}
+
+.owner-home-actions .btn-primary {
+  background: #243f53 !important;
+  border-color: #243f53 !important;
+  color: #fff !important;
+}
+
+.owner-home-actions .btn:not(.btn-primary) {
+  background: #fff !important;
+  border-color: rgba(40, 93, 120, 0.28) !important;
+  color: #243f53 !important;
+}
+
+@media (max-width: 760px) {
+  .worker-job-link {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .owner-home-actions {
+    grid-template-columns: 1fr;
+  }
+}
