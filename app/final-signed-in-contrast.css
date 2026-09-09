@@ -50,6 +50,97 @@ html body .role-portal-shell .app-page-content .app-role-banner .app-role-banner
   -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
 }
 
+/* Every real signed-in content card is readable in every role view, including owner, manager, worker, contractor, and client. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .card,
+  .panel,
+  .form,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .client-content-card,
+  .portal-card,
+  .role-dashboard-card,
+  .role-summary-card,
+  .client-job-card,
+  .worker-job-card,
+  .team-member-card,
+  .customer-card-row,
+  .job-card,
+  .record-card
+):not(.app-role-banner) {
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border-color: var(--eo-float-line) !important;
+  color: var(--eo-float-ink) !important;
+  box-shadow: var(--eo-float-shadow) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .card,
+  .panel,
+  .form,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .client-content-card,
+  .portal-card,
+  .role-dashboard-card,
+  .role-summary-card,
+  .client-job-card,
+  .worker-job-card,
+  .team-member-card,
+  .customer-card-row,
+  .job-card,
+  .record-card
+):not(.app-role-banner) :is(h1, h2, h3, h4, h5, strong, label, a) {
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .card,
+  .panel,
+  .form,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .client-content-card,
+  .portal-card,
+  .role-dashboard-card,
+  .role-summary-card,
+  .client-job-card,
+  .worker-job-card,
+  .team-member-card,
+  .customer-card-row,
+  .job-card,
+  .record-card
+):not(.app-role-banner) :is(p, span, small, .muted) {
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .card,
+  .panel,
+  .form,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .client-content-card,
+  .portal-card,
+  .role-dashboard-card,
+  .role-summary-card,
+  .client-job-card,
+  .worker-job-card,
+  .team-member-card,
+  .customer-card-row,
+  .job-card,
+  .record-card
+):not(.app-role-banner) :is(.muted, .contractor-worker-name, .contractor-next-meta, .portal-job-date) {
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+}
+
 /* Shared white reading surface. */
 html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
   .page-header,
@@ -69,7 +160,6 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, s
   -webkit-backdrop-filter: none !important;
 }
 
-/* Keep all text inside those shared reading surfaces plain and readable. */
 html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
   .page-header,
   .page-head,
@@ -197,8 +287,7 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(div, s
   text-shadow: none !important;
 }
 
-/* Every field label that sits over wallpaper gets its own white reading surface.
-   Inputs, selects, textareas, buttons, records, and existing cards keep their current styling. */
+/* Every field label that sits over wallpaper gets its own white reading surface. */
 html body :is(.dashboard-shell, .role-portal-shell) .app-page-content label:has(> :is(input, select, textarea, .input)) {
   background: var(--eo-float-paper) !important;
   background-color: var(--eo-float-paper) !important;
