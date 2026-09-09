@@ -26,10 +26,18 @@ type WorkerRow = {
   id: string;
   name: string;
   auth_user_id?: string | null;
+  worker_type?: string | null;
 };
+
+const ASSIGNABLE_MEMBER_ROLES = ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead'];
 
 function memberName(member: MemberRow): string {
   return member.profiles?.full_name?.trim() || member.profiles?.email?.trim() || 'Pending profile';
+}
+
+function isClientLikeWorker(worker: WorkerRow) {
+  const type = String(worker.worker_type || '').toLowerCase();
+  return type === 'client' || type === 'customer' || type === 'viewer';
 }
 
 export async function getPeopleForAssignment(
@@ -42,11 +50,11 @@ export async function getPeopleForAssignment(
       .select('user_id, role')
       .eq('organization_id', organizationId)
       .eq('active', true)
-      .in('role', ['manager', 'employee', 'contractor', 'staff', 'crew_lead', 'admin'])
+      .in('role', ASSIGNABLE_MEMBER_ROLES)
       .order('created_at', { ascending: true }),
     supabase
       .from('workers')
-      .select('id, name, auth_user_id')
+      .select('id, name, auth_user_id, worker_type')
       .eq('organization_id', organizationId)
       .order('name', { ascending: true })
   ]);
@@ -69,7 +77,7 @@ export async function getPeopleForAssignment(
     role: row.role,
     profiles: profileMap.get(row.user_id) || null
   }));
-  const workers = (workersRes.data || []) as WorkerRow[];
+  const workers = ((workersRes.data || []) as WorkerRow[]).filter((worker) => !isClientLikeWorker(worker));
   const workerByAuthUser = new Map(
     workers
       .filter((worker) => worker.auth_user_id)
@@ -91,139 +99,9 @@ export async function getPeopleForAssignment(
       userId: worker.id,
       workerId: worker.id,
       name: worker.name,
-      role: 'crew'
+      role: 'contractor'
     });
   }
 
   return options;
-}
-
-export async function workerIdForPerson(
-  supabase: SupabaseClient,
-  organizationId: string,
-  userId: string
-): Promise<string | null> {
-  const { data } = await supabase
-    .from('workers')
-    .select('id, active')
-    .eq('organization_id', organizationId)
-    .eq('auth_user_id', userId)
-    .order('created_at', { ascending: true })
-    .limit(20);
-
-  const rows = data || [];
-  const active = rows.find((row) => row.active !== false);
-  return active?.id ?? rows[0]?.id ?? null;
-}
-
-async function workerIdForEmail(
-  supabase: SupabaseClient,
-  organizationId: string,
-  email: string | null | undefined
-): Promise<string | null> {
-  const normalized = String(email || '')
-    .trim()
-    .toLowerCase();
-  if (!normalized) return null;
-
-  const { data } = await supabase
-    .from('workers')
-    .select('id, email, auth_user_id, active')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: true })
-    .limit(50);
-
-  const match = (data || []).find((row) => {
-    const rowEmail = String(row.email || '')
-      .trim()
-      .toLowerCase();
-    return rowEmail === normalized && row.active !== false;
-  });
-  return match?.id ?? null;
-}
-
-export async function ensureWorkerForPerson(
-  supabase: SupabaseClient,
-  organizationId: string,
-  userId: string,
-  displayName: string,
-  ownerUserId?: string | null,
-  email?: string | null
-): Promise<string> {
-  const existing = await workerIdForPerson(supabase, organizationId, userId);
-  if (existing) return existing;
-
-  const byEmail = await workerIdForEmail(supabase, organizationId, email);
-  if (byEmail) {
-    const { error: linkError } = await supabase
-      .from('workers')
-      .update({
-        auth_user_id: userId,
-        active: true,
-        email: email?.trim() || undefined,
-        name: displayName.trim() || undefined
-      })
-      .eq('id', byEmail)
-      .eq('organization_id', organizationId);
-
-    if (linkError) {
-      throw new Error(linkError.message || 'Unable to link existing crew record for this person.');
-    }
-    return byEmail;
-  }
-
-  const { data, error } = await supabase
-    .from('workers')
-    .insert({
-      organization_id: organizationId,
-      user_id: ownerUserId || userId,
-      auth_user_id: userId,
-      email: email?.trim() || null,
-      name: displayName.trim() || 'Team member',
-      active: true
-    })
-    .select('id')
-    .single();
-
-  if (error || !data?.id) {
-    // Concurrent insert of same auth/email — reuse the winner.
-    const raced = await workerIdForPerson(supabase, organizationId, userId);
-    if (raced) return raced;
-    const racedEmail = await workerIdForEmail(supabase, organizationId, email);
-    if (racedEmail) return racedEmail;
-    throw new Error(error?.message || 'Unable to link crew record for this person.');
-  }
-
-  return data.id;
-}
-
-export function resolveAssignedUserId(
-  assignedTo: string | null | undefined,
-  people: PersonAssignmentOption[]
-): string {
-  if (!assignedTo) return '';
-
-  const direct = people.find((person) => person.userId === assignedTo);
-  if (direct) return direct.userId;
-
-  const viaWorker = people.find((person) => person.workerId === assignedTo);
-  if (viaWorker) return viaWorker.userId;
-
-  return assignedTo;
-}
-
-export async function assignedToForScheduleApi(
-  supabase: SupabaseClient,
-  organizationId: string,
-  userId: string | null,
-  displayName: string,
-  ownerUserId?: string | null
-): Promise<string | null> {
-  if (!userId) return null;
-
-  const person = (await getPeopleForAssignment(supabase, organizationId)).find((item) => item.userId === userId);
-  if (person?.workerId) return person.workerId;
-  if (person && person.userId === person.workerId) return person.workerId;
-
-  return ensureWorkerForPerson(supabase, organizationId, userId, displayName, ownerUserId, null);
 }
