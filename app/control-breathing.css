@@ -146,7 +146,6 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   color: #172033 !important;
 }
 
-/* Keep hero.jpg visible. Never repaint the whole signed-in page white. */
 html body .dashboard-shell,
 html body .dashboard-shell > .main,
 html body .dashboard-shell .main,
@@ -156,7 +155,6 @@ html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-cont
   background-color: transparent !important;
 }
 
-/* Structural wrappers stay invisible so wallpaper remains visible between content. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-stage,
   .jobs-list-page,
@@ -177,7 +175,6 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   .list,
   .list-group,
   .jobs-table-card,
-  .jobs-advanced-filters,
   .dashboard-revenue-grid,
   .metric-grid,
   .stats-grid,
@@ -198,13 +195,8 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   -webkit-backdrop-filter: none !important;
 }
 
-/* One restrained reading panel for each page heading group. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-) {
+/* Main page title and subtitle share one restrained translucent panel. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
   width: 100% !important;
   max-width: min(100%, 56rem) !important;
   padding: 18px 20px !important;
@@ -218,12 +210,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-) :is(h1, h2, h3, p, .page-subtitle) {
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, p, .page-subtitle) {
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -234,12 +221,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   -webkit-text-fill-color: currentColor !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-) :is(p, .page-subtitle) {
+html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .page-subtitle) {
   color: #46566a !important;
   -webkit-text-fill-color: #46566a !important;
 }
@@ -322,6 +304,54 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   text-shadow: none !important;
 }
 
+/* Logical work groups get one white surface, not loose labels over wallpaper. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .team-directory-card,
+  .team-directory-filters,
+  .jobs-advanced-filters,
+  .quote-compose,
+  .quote-workspace,
+  .job-create-section,
+  .finance-form-block,
+  .compact-finance-form,
+  .client-summary-card,
+  .settings-card,
+  .job-financials-card,
+  .finance-list-card
+) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dde6f2 !important;
+  border-radius: var(--eo-radius-card, 18px) !important;
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
+  color: #172033 !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card {
+  padding: 20px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card :is(.team-directory-header, .team-directory-filters, .segmented-control, .team-directory-state, .team-member-list) {
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card .team-directory-filters {
+  padding: 16px !important;
+  margin-top: 16px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card :is(h2, h3, label, p, .muted) {
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card .muted {
+  color: #5b667a !important;
+  -webkit-text-fill-color: #5b667a !important;
+}
+
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input) {
   background: #ffffff !important;
   border-color: #d5dfec !important;
@@ -395,14 +425,17 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
     background-color: transparent !important;
   }
 
-  html body :is(.dashboard-shell, .role-portal-shell) :is(
-    .page-header,
-    .page-head,
-    .dashboard-header,
-    .quote-page-head
-  ) {
+  html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
     padding: 16px !important;
     border-radius: 14px !important;
     background: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card {
+    padding: 16px !important;
+  }
+
+  html body :is(.dashboard-shell, .role-portal-shell) .team-directory-card .team-directory-filters {
+    padding: 14px !important;
   }
 }
