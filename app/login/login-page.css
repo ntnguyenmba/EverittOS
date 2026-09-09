@@ -63,7 +63,7 @@
 
 .login-origin-story p {
   margin: 0;
-  color: #31495b;
+  color: #132433;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.55;
@@ -90,7 +90,7 @@
 }
 
 .auth-tech-card:has(.login-origin-story) .auth-card-description {
-  color: #31495b;
+  color: #132433;
   font-size: 13.5px;
   font-weight: 500;
   line-height: 1.68;
@@ -127,7 +127,7 @@
 .auth-tech-card:has(.login-origin-story) .btn { min-height: 50px; }
 
 .auth-tech-card:has(.login-origin-story) .input::placeholder {
-  color: #526777 !important;
+  color: #31495b !important;
   opacity: 1 !important;
   font-weight: 500;
 }
@@ -139,27 +139,39 @@
 
 .auth-tech-card:has(.login-origin-story) .auth-legal-note {
   margin-top: 14px;
-  color: #31495b;
+  color: #132433;
   font-size: 12px;
   line-height: 1.4;
 }
 
-/* Color only: same ink as the signed-in app. Fonts stay as-is. */
+/* Login font color only — same ink as the app. Do not change type or layout. */
 .auth-tech-page,
 .auth-tech-page .auth-tech-card,
+.auth-tech-page h1,
+.auth-tech-page h2,
+.auth-tech-page h3,
+.auth-tech-page p,
 .auth-tech-page label,
-.auth-tech-page .input {
-  color: #132433;
+.auth-tech-page span,
+.auth-tech-page .input,
+.auth-tech-page .auth-card-subtitle,
+.auth-tech-page .auth-card-description,
+.auth-tech-page .auth-legal-note,
+.auth-tech-page .login-origin-story p {
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
 }
 
 .auth-tech-page a:not(.btn) {
-  color: #243f53;
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
 }
 
 .auth-tech-page .btn-primary {
   background: #243f53;
   border-color: #243f53;
-  color: #ffffff;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 @media (max-width: 760px) {
