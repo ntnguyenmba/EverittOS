@@ -1,4 +1,5 @@
-/* Universal box spacing. Last loaded. 2, 3, or more boxes use the same gap. */
+/* Universal box spacing. Last loaded.
+   Same gap for 2, 3, or more boxes — stacked or side by side. */
 
 :root {
   --eo-control-pad-y: 12px;
@@ -21,47 +22,56 @@ body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) 
   overflow: visible !important;
 }
 
-/* Any action stack — two, three, or more — keeps the same gap. */
-body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions, .filter-row, .page-head, .page-head .button-row) {
+body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .settings-actions, .filter-row, .page-head .button-row) {
   display: flex !important;
   flex-wrap: wrap !important;
-  flex-direction: column !important;
   align-items: stretch !important;
   gap: var(--eo-box-gap) !important;
   row-gap: var(--eo-box-gap) !important;
   column-gap: var(--eo-box-gap) !important;
 }
 
-body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head, .page-head .button-row) > :nth-child(n+2) {
-  margin-top: var(--eo-box-gap) !important;
-}
-
-@media (min-width: 701px) {
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions, .settings-actions) {
-    flex-direction: row !important;
-  }
-
-  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions) > :nth-child(n+2) {
-    margin-top: 0 !important;
-  }
-}
-
 @media (max-width: 700px) {
+  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) {
+    flex-direction: column !important;
+  }
+
   body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) > :is(.btn, button, a.btn) {
     width: 100% !important;
     max-width: 100% !important;
     min-height: 48px !important;
   }
+
+  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions, .page-head .button-row) > :nth-child(n+2) {
+    margin-top: var(--eo-box-gap) !important;
+    margin-left: 0 !important;
+  }
 }
 
-/* Consecutive boxes of any count: 1 then 2 then 3 then 4… */
-body :is(.btn, button, a.btn, .input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge) + :is(.btn, button, a.btn, .input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge) {
-  margin-top: var(--eo-box-gap) !important;
+@media (min-width: 701px) {
+  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions, .settings-actions, .page-head .button-row) {
+    flex-direction: row !important;
+  }
+
+  body :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .page-actions, .page-head .button-row) > :nth-child(n+2) {
+    margin-top: 0 !important;
+    margin-left: var(--eo-box-gap) !important;
+  }
 }
 
-body .page-head > :nth-child(n+2),
-body .page-head .button-row > :nth-child(n+2),
-body .job-detail-actions > :nth-child(n+2) {
+/* Side-by-side buttons that are not in a row wrapper. */
+body :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
+  margin-left: var(--eo-box-gap) !important;
+}
+
+@media (max-width: 700px) {
+  body :is(.btn, button, a.btn) + :is(.btn, button, a.btn) {
+    margin-left: 0 !important;
+    margin-top: var(--eo-box-gap) !important;
+  }
+}
+
+body :is(.input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge) + :is(.input, input, select, textarea, .card, .panel, .finance-list-card, .list-row, .status, .status-pill, .status-badge, .btn, button, a.btn) {
   margin-top: var(--eo-box-gap) !important;
 }
 
