@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { isSessionExemptPath } from '@/lib/session-policy';
 
 function clearLabel(): string {
   const lang = document.documentElement.lang.toLowerCase();
@@ -16,7 +18,11 @@ function setNativeValue(input: HTMLInputElement, value: string) {
 }
 
 export function AskEverittQuickClear() {
+  const pathname = usePathname() || '/';
+
   useEffect(() => {
+    if (isSessionExemptPath(pathname)) return;
+
     let activeInput: HTMLInputElement | null = null;
     let activeButton: HTMLButtonElement | null = null;
     let cleanupInput: (() => void) | null = null;
@@ -70,7 +76,7 @@ export function AskEverittQuickClear() {
       cleanupInput?.();
       activeButton?.remove();
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <style jsx global>{`

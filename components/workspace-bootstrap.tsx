@@ -6,8 +6,13 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { isSessionExemptPath } from '@/lib/session-policy';
 import { supabase } from '@/lib/supabase';
 
+function readyKey(userId: string) {
+  return `eo_workspace_ready:${userId}`;
+}
+
 /**
  * Ensures every signed-in user has a personal workspace without blocking navigation.
+ * Runs once per user session after a workspace is confirmed.
  */
 export function WorkspaceBootstrap() {
   const pathname = usePathname() || '/';
@@ -23,12 +28,23 @@ export function WorkspaceBootstrap() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      try {
+        if (window.sessionStorage.getItem(readyKey(user.id)) === '1') return;
+      } catch {
+        /* storage blocked */
+      }
+
       let org = await fetchOrganizationContext(user.id);
       if (org?.organizationId) {
         try {
+          window.sessionStorage.setItem(readyKey(user.id), '1');
+        } catch {
+          /* storage blocked */
+        }
+        try {
           await fetch('/api/workspace/ensure', { method: 'POST' });
         } catch {
-          /* company repair retries on next navigation */
+          /* company repair retries on next cold start */
         }
         return;
       }
@@ -38,6 +54,11 @@ export function WorkspaceBootstrap() {
         await fetch('/api/auth/setup', { method: 'POST' });
         org = await fetchOrganizationContext(user.id);
         if (org?.organizationId) {
+          try {
+            window.sessionStorage.setItem(readyKey(user.id), '1');
+          } catch {
+            /* storage blocked */
+          }
           await fetch('/api/workspace/ensure', { method: 'POST' });
         }
       } catch {
