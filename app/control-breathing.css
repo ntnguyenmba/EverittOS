@@ -1,10 +1,11 @@
-/* Central spacing. Medium air: not flush, not sparse. */
+/* Central spacing. One gap per stack — never gap plus extra margin. */
 
 :root {
   --eo-control-pad-y: 10px;
   --eo-control-pad-x: 14px;
   --eo-box-gap: 12px;
   --eo-stack-gap: 16px;
+  --eo-field-gap: 10px;
 }
 
 html body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) {
@@ -31,10 +32,6 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-act
   margin: 0 !important;
 }
 
-html body :is(.input, select, textarea) + :is(.button-row, .btn, button) {
-  margin-top: var(--eo-box-gap) !important;
-}
-
 @media (max-width: 700px) {
   html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) {
     flex-direction: column !important;
@@ -54,25 +51,40 @@ html body :is(.input, select, textarea) + :is(.button-row, .btn, button) {
   }
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel, .job-financials-card, .job-create-section) > * + * {
-  margin-top: var(--eo-stack-gap) !important;
+html body .unified-job-form {
+  gap: var(--eo-stack-gap) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel) > :is(h3, h4) + :is(p, .muted) {
+html body :is(.job-create-section, .client-summary-card, .compact-finance-form, .finance-form-block) {
+  display: grid !important;
+  gap: var(--eo-field-gap) !important;
+}
+
+html body :is(.job-create-section, .client-summary-card, .form, .compact-finance-form, .finance-form-block) > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+html body :is(.job-create-section, .client-summary-card, .form) label {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+html body :is(.job-create-section, .client-summary-card, .form) label > :is(input, select, textarea, .input) {
+  margin-top: 0 !important;
+}
+
+html body :is(.form, .card, .panel) > :is(h3, h4) + :is(p, .muted) {
   margin-top: 8px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel) > :is(p, .muted) + :is(.list-row, .button-row, .btn) {
+html body :is(.form, .card, .panel) > :is(p, .muted) + :is(.list-row, .button-row, .btn) {
   margin-top: 12px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .form .list-row {
+html body .form .list-row {
   padding: 12px 0 !important;
   margin-top: 12px !important;
-}
-
-html body label + :is(.input, input, select, textarea, .btn, button) {
-  margin-top: 8px !important;
 }
 
 html body :is(.finance-note, .job-financials-card .muted) {
