@@ -1,5 +1,4 @@
-/* Single signed-in visual authority.
-   Wallpaper shows around cards. All readable copy lives on a white card. */
+/* Single signed-in visual authority for owner, worker, and client. */
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .app-page-stage,
@@ -8,14 +7,11 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   .contractor-main,
   .client-main,
   .client-portal-jobs,
-  .client-portal-job-detail,
-  .client-portal-settings,
   .job-visits-list,
   .client-job-card-list,
   .client-jobs-list
 ) {
   background: transparent !important;
-  background-color: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
 }
@@ -23,87 +19,96 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .job-visits-list,
   .client-job-card-list,
-  .client-jobs-list,
-  .owner-home-sheet,
-  .app-page-stage
+  .client-jobs-list
 ) {
   display: grid !important;
   gap: 14px !important;
+  margin-top: 12px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
+html body .dashboard-shell :is(
   .card,
   .panel,
   .settings-card,
-  .finance-list-card,
-  .job-financials-card,
   .list-row,
   .portal-job-row,
   .client-job-card,
   .client-job-row,
-  .customer-card-row,
+  .contractor-job-card,
+  .contractor-history-card,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .contractor-next-job,
+  .client-next-visit-paper,
+  .finance-list-card,
+  .job-financials-card,
   .team-member-card,
+  .customer-card-row,
   .record-card,
-  .dashboard-metric-card,
-  .role-summary-card,
+  .role-summary-card
+),
+html body .role-portal-shell :is(
+  .card,
+  .panel,
+  .settings-card,
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .contractor-job-card,
+  .contractor-history-card,
   .contractor-portal-hero,
   .contractor-content-card,
   .contractor-next-job,
   .client-next-visit-paper
+),
+html body .contractor-dashboard-shell :is(
+  .card,
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .contractor-next-job
+),
+html body .client-main :is(
+  .card,
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-next-visit-paper
 ) {
-  background: var(--eo-color-surface) !important;
-  background-color: var(--eo-color-surface) !important;
-  color: var(--eo-color-text) !important;
-  -webkit-text-fill-color: var(--eo-color-text) !important;
-  border: 1px solid var(--eo-color-border) !important;
-  border-radius: var(--eo-radius-card) !important;
-  box-shadow: var(--eo-shadow-card) !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #132433 !important;
+  border: 1px solid #d5dee5 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
   padding: 18px 20px !important;
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-  .card,
-  .panel,
-  .list-row,
-  .portal-job-row,
-  .client-job-card,
-  .client-job-row,
-  .settings-card,
-  .contractor-portal-hero,
-  .contractor-content-card,
-  .contractor-next-job,
-  .client-next-visit-paper
-) :is(h1, h2, h3, h4, h5, strong, label, p, span) {
-  color: var(--eo-color-text) !important;
-  -webkit-text-fill-color: var(--eo-color-text) !important;
+html body .dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p, span),
+html body .role-portal-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card, .contractor-next-job) :is(h1, h2, h3, h4, strong, p, span),
+html body .contractor-dashboard-shell :is(.card, .list-row, .portal-job-row, .contractor-portal-hero, .contractor-content-card) :is(h1, h2, h3, h4, strong, p, span) {
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.muted, .page-subtitle, .portal-job-date, .portal-finance-empty, .client-job-secondary) {
-  color: var(--eo-color-text-secondary) !important;
-  -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.muted, .portal-job-date, .portal-finance-empty) {
+  color: #31495b !important;
+  -webkit-text-fill-color: #31495b !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.portal-finance-amount, .client-next-balance strong) {
-  color: var(--eo-color-brand) !important;
-  -webkit-text-fill-color: var(--eo-color-brand) !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn, a.btn, button.btn) {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 44px !important;
-  padding: 10px 14px !important;
-  border-radius: var(--eo-radius-control) !important;
-  line-height: 1.25 !important;
-  text-shadow: none !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) .portal-finance-amount {
+  color: #243f53 !important;
+  -webkit-text-fill-color: #243f53 !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn-primary, button[type='submit']) {
-  background: var(--eo-color-brand) !important;
-  border-color: var(--eo-color-brand) !important;
+  background: #243f53 !important;
+  border-color: #243f53 !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
@@ -114,82 +119,21 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
-  background: var(--eo-color-surface) !important;
-  border-color: var(--eo-color-border-strong) !important;
-  color: var(--eo-color-text) !important;
-  -webkit-text-fill-color: var(--eo-color-text) !important;
+  background: #ffffff !important;
+  border-color: #b8c7d1 !important;
+  color: #132433 !important;
+  -webkit-text-fill-color: #132433 !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.status-badge, .badge, .status-pill) {
-  background: var(--eo-color-surface-subtle) !important;
-  border: 1px solid var(--eo-color-border) !important;
-  color: var(--eo-color-text-secondary) !important;
-  -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.status-badge, .badge) {
+  background: #eef3f5 !important;
+  border: 1px solid #d5dee5 !important;
+  color: #31495b !important;
+  -webkit-text-fill-color: #31495b !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-  .button-row,
-  .inline-actions,
-  .record-actions,
-  .job-detail-actions,
-  .page-actions,
-  .owner-home-actions,
-  .portal-client-nav
-) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.button-row, .inline-actions, .page-actions, .portal-client-nav) {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-  .button-row,
-  .inline-actions,
-  .record-actions,
-  .job-detail-actions,
-  .page-actions,
-  .portal-client-nav
-) > * {
-  margin: 0 !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.form, .job-create-section, .client-summary-card) {
-  display: grid !important;
-  gap: 12px !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) label {
-  display: grid !important;
-  gap: 6px !important;
-  color: var(--eo-color-text) !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(input, select, textarea, .input) {
-  background: var(--eo-color-surface) !important;
-  color: var(--eo-color-text) !important;
-  -webkit-text-fill-color: var(--eo-color-text) !important;
-  border: 1px solid var(--eo-color-border-strong) !important;
-}
-
-@media (max-width: 700px) {
-  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-    .button-row,
-    .inline-actions,
-    .record-actions,
-    .job-detail-actions,
-    .page-actions,
-    .portal-client-nav
-  ) {
-    flex-direction: column !important;
-  }
-
-  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-    .button-row,
-    .inline-actions,
-    .record-actions,
-    .job-detail-actions,
-    .page-actions,
-    .portal-client-nav
-  ) > :is(.btn, button, a.btn) {
-    width: 100% !important;
-  }
 }
