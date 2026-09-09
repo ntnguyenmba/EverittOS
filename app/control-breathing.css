@@ -1,5 +1,5 @@
 /* Single signed-in visual authority.
-   Owner, worker, and client use the same floating cards and tokens. */
+   Wallpaper shows around cards. All readable copy lives on a white card. */
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .app-page-stage,
@@ -10,8 +10,6 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   .client-portal-jobs,
   .client-portal-job-detail,
   .client-portal-settings,
-  .contractor-content-card,
-  .client-next-visit-paper,
   .job-visits-list,
   .client-job-card-list,
   .client-jobs-list
@@ -20,14 +18,6 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   background-color: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
-  .contractor-content-card,
-  .client-next-visit-paper
-) {
-  padding: 0 !important;
-  margin: 0 !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
@@ -55,7 +45,11 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   .team-member-card,
   .record-card,
   .dashboard-metric-card,
-  .role-summary-card
+  .role-summary-card,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .contractor-next-job,
+  .client-next-visit-paper
 ) {
   background: var(--eo-color-surface) !important;
   background-color: var(--eo-color-surface) !important;
@@ -75,8 +69,12 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
   .portal-job-row,
   .client-job-card,
   .client-job-row,
-  .settings-card
-) :is(h1, h2, h3, h4, h5, strong, label, p) {
+  .settings-card,
+  .contractor-portal-hero,
+  .contractor-content-card,
+  .contractor-next-job,
+  .client-next-visit-paper
+) :is(h1, h2, h3, h4, h5, strong, label, p, span) {
   color: var(--eo-color-text) !important;
   -webkit-text-fill-color: var(--eo-color-text) !important;
   text-shadow: none !important;
@@ -106,6 +104,11 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell,
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn-primary, button[type='submit']) {
   background: var(--eo-color-brand) !important;
   border-color: var(--eo-color-brand) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn-primary, button[type='submit']) * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
