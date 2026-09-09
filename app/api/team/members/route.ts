@@ -5,7 +5,7 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canAssignAdminRole, canManageTeam, canModifyTeamMember, isAssignableJobWorkerRole, normalizeRole } from '@/lib/roles';
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
 
-export async function GET(request: Request) {
+export async function GET() {
   const supabase = await createServerSupabase();
   const admin = createAdminSupabase();
   const {
@@ -21,8 +21,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Workspace not found.' }, { status: 404 });
   }
 
-  const assignableOnly = new URL(request.url).searchParams.get('assignable') === '1';
-
   const { data: memberRows, error } = await admin
     .from('organization_members')
     .select('user_id, role, active, created_at')
@@ -34,7 +32,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const rows = (memberRows || []).filter((member) => !assignableOnly || isAssignableJobWorkerRole(member.role));
+  const rows = (memberRows || []).filter((member) => isAssignableJobWorkerRole(member.role));
   const ids = rows.map((member) => member.user_id).filter(Boolean);
   const { data: profileRows } = ids.length
     ? await admin.from('profiles').select('id, email, full_name, updated_at').in('id', ids)
