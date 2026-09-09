@@ -1,16 +1,20 @@
 /* Single signed-in visual authority.
-   Uses design/tokens.css. Owner, worker, and client share the same floating cards. */
+   Owner, worker, and client use the same floating cards and tokens. */
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .app-page-stage,
   .app-page-content,
   .contractor-dashboard,
+  .contractor-main,
+  .client-main,
   .client-portal-jobs,
   .client-portal-job-detail,
   .client-portal-settings,
   .contractor-content-card,
+  .client-next-visit-paper,
   .job-visits-list,
-  .client-job-card-list
+  .client-job-card-list,
+  .client-jobs-list
 ) {
   background: transparent !important;
   background-color: transparent !important;
@@ -18,14 +22,18 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   box-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .contractor-content-card {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
+  .contractor-content-card,
+  .client-next-visit-paper
+) {
   padding: 0 !important;
   margin: 0 !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .job-visits-list,
   .client-job-card-list,
+  .client-jobs-list,
   .owner-home-sheet,
   .app-page-stage
 ) {
@@ -33,7 +41,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   gap: 14px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .card,
   .panel,
   .settings-card,
@@ -42,6 +50,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   .list-row,
   .portal-job-row,
   .client-job-card,
+  .client-job-row,
   .customer-card-row,
   .team-member-card,
   .record-card,
@@ -59,12 +68,13 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .card,
   .panel,
   .list-row,
   .portal-job-row,
   .client-job-card,
+  .client-job-row,
   .settings-card
 ) :is(h1, h2, h3, h4, h5, strong, label, p) {
   color: var(--eo-color-text) !important;
@@ -72,17 +82,17 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.muted, .page-subtitle, .portal-job-date, .portal-finance-empty) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.muted, .page-subtitle, .portal-job-date, .portal-finance-empty, .client-job-secondary) {
   color: var(--eo-color-text-secondary) !important;
   -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) .portal-finance-amount {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.portal-finance-amount, .client-next-balance strong) {
   color: var(--eo-color-brand) !important;
   -webkit-text-fill-color: var(--eo-color-brand) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn, a.btn, button.btn) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn, a.btn, button.btn) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -93,62 +103,64 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn-primary, button[type='submit']) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn-primary, button[type='submit']) {
   background: var(--eo-color-brand) !important;
   border-color: var(--eo-color-brand) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
   background: var(--eo-color-surface) !important;
   border-color: var(--eo-color-border-strong) !important;
   color: var(--eo-color-text) !important;
   -webkit-text-fill-color: var(--eo-color-text) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.status-badge, .badge, .status-pill) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.status-badge, .badge, .status-pill) {
   background: var(--eo-color-surface-subtle) !important;
   border: 1px solid var(--eo-color-border) !important;
   color: var(--eo-color-text-secondary) !important;
   -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .button-row,
   .inline-actions,
   .record-actions,
   .job-detail-actions,
   .page-actions,
-  .owner-home-actions
+  .owner-home-actions,
+  .portal-client-nav
 ) {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
   .button-row,
   .inline-actions,
   .record-actions,
   .job-detail-actions,
-  .page-actions
+  .page-actions,
+  .portal-client-nav
 ) > * {
   margin: 0 !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.form, .job-create-section, .client-summary-card) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(.form, .job-create-section, .client-summary-card) {
   display: grid !important;
   gap: 12px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) label {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) label {
   display: grid !important;
   gap: 6px !important;
   color: var(--eo-color-text) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(input, select, textarea, .input) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(input, select, textarea, .input) {
   background: var(--eo-color-surface) !important;
   color: var(--eo-color-text) !important;
   -webkit-text-fill-color: var(--eo-color-text) !important;
@@ -156,22 +168,24 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell)
 }
 
 @media (max-width: 700px) {
-  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
     .button-row,
     .inline-actions,
     .record-actions,
     .job-detail-actions,
-    .page-actions
+    .page-actions,
+    .portal-client-nav
   ) {
     flex-direction: column !important;
   }
 
-  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell, .client-main) :is(
     .button-row,
     .inline-actions,
     .record-actions,
     .job-detail-actions,
-    .page-actions
+    .page-actions,
+    .portal-client-nav
   ) > :is(.btn, button, a.btn) {
     width: 100% !important;
   }
