@@ -90,7 +90,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           isolation: isolate;
           min-height: 100svh;
           width: 100%;
-          max-width: 100vw;
+          max-width: 100%;
           display: block;
           overflow-x: clip;
           background: var(--eo-color-page);
@@ -106,7 +106,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           background-repeat: no-repeat;
           opacity: 0.62;
           filter: saturate(0.82) contrast(1.02) brightness(0.92);
-          transform: scale(1.015);
+          transform: none;
         }
         .dashboard-shell-overlay {
           position: fixed;
@@ -125,6 +125,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           z-index: 42;
           display: block;
           width: 100%;
+          max-width: 100%;
           padding: var(--eo-space-2) max(var(--eo-space-5), env(safe-area-inset-right)) 0 max(var(--eo-space-5), env(safe-area-inset-left));
           box-sizing: border-box;
         }
