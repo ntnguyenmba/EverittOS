@@ -1,0 +1,100 @@
+/* Keep every signed-in view inside the phone width.
+   Do not use 100vw here: on iOS it is wider than the visible screen and
+   makes the logo/menu jump to the edges when the page is touched. */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+html {
+  overflow-x: clip;
+}
+
+body {
+  position: relative;
+  touch-action: pan-y;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.shared-hamburger-shell,
+.app-shell,
+.portal-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: clip !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell-background,
+.dashboard-shell-overlay {
+  width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+}
+
+.dashboard-shell-header,
+.mobile-nav,
+.mobile-nav-bar,
+.dashboard-shell > .main,
+.app-page-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.mobile-nav-bar {
+  padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+}
+
+.mobile-nav-top-logo,
+.mobile-nav-menu-btn {
+  flex: 0 0 auto;
+  transform: none !important;
+}
+
+.dashboard-shell > .main,
+.app-page-content,
+.app-page-content > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.app-page-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ask-everitt,
+.ask-everitt-command,
+.app-role-banner,
+.card,
+.unified-job-form {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell,
+  .role-portal-shell {
+    overflow-x: clip !important;
+  }
+}
