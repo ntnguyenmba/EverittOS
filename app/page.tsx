@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
+import { BillingPlansGrid } from '@/components/billing-plans-grid';
 import './marketing-home.css';
 
 export const metadata: Metadata = {
@@ -348,27 +349,7 @@ export default async function HomePage() {
             <p>Choose the plan that fits your business today. Your workspace and records stay together as you grow.</p>
           </div>
 
-          <div className="marketing-price-grid">
-            {c.plans.map((plan) => (
-              <article
-                className={`marketing-price-card${plan.featured ? ' marketing-price-card-featured' : ''}`}
-                key={plan.name}
-              >
-                {plan.featured ? <span className="marketing-price-badge">Most popular</span> : null}
-                <h3>{plan.name}</h3>
-                <div className="marketing-price">
-                  {plan.price} <span>{plan.period}</span>
-                </div>
-                <p>{plan.description}</p>
-                <ul>
-                  {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
-                </ul>
-                <Link className="marketing-button" href={plan.href}>
-                  {plan.label}
-                </Link>
-              </article>
-            ))}
-          </div>
+          <BillingPlansGrid currentPlan="free" publicMode />
         </div>
       </section>
 

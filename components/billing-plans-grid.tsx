@@ -21,6 +21,7 @@ type BillingPlansGridProps = {
   onOpenPortal?: () => void;
   portalLoading?: boolean;
   onNativePurchaseSuccess?: () => void;
+  publicMode?: boolean;
 };
 
 type LocalPlanCopy = {
@@ -58,9 +59,9 @@ const planCopy: Record<'en' | 'es' | 'vi', Record<EverittosPlan, LocalPlanCopy>>
 };
 
 const uiCopy = {
-  en: { popular: 'Popular', storePrice: 'Store price shown at purchase', limits: 'plan limits', choose: 'Choose', unavailable: 'Unavailable', manage: 'Manage subscription', opening: 'Opening…', renewStore: 'Subscriptions renew automatically until canceled in the App Store or Google Play. Deleting your EverittOS account does not cancel a store subscription.', renewWeb: 'Subscriptions renew monthly until canceled.' },
-  es: { popular: 'Popular', storePrice: 'El precio de la tienda se muestra al comprar', limits: 'límites del plan', choose: 'Elegir', unavailable: 'No disponible', manage: 'Administrar suscripción', opening: 'Abriendo…', renewStore: 'Las suscripciones se renuevan automáticamente hasta que las canceles en App Store o Google Play. Eliminar tu cuenta de EverittOS no cancela una suscripción de la tienda.', renewWeb: 'Las suscripciones se renuevan mensualmente hasta que se cancelen.' },
-  vi: { popular: 'Phổ biến', storePrice: 'Giá trên cửa hàng sẽ hiển thị khi mua', limits: 'giới hạn gói', choose: 'Chọn', unavailable: 'Không khả dụng', manage: 'Quản lý gói đăng ký', opening: 'Đang mở…', renewStore: 'Gói đăng ký tự động gia hạn cho đến khi bạn hủy trong App Store hoặc Google Play. Xóa tài khoản EverittOS không hủy gói đăng ký trên cửa hàng.', renewWeb: 'Gói đăng ký gia hạn hàng tháng cho đến khi bị hủy.' }
+  en: { popular: 'Popular', startFree: 'Create free account', haveAccount: 'Already have an account?', signIn: 'Sign in', storePrice: 'Store price shown at purchase', limits: 'plan limits', choose: 'Choose', unavailable: 'Unavailable', manage: 'Manage subscription', opening: 'Opening…', renewStore: 'Subscriptions renew automatically until canceled in the App Store or Google Play. Deleting your EverittOS account does not cancel a store subscription.', renewWeb: 'Subscriptions renew monthly until canceled.' },
+  es: { popular: 'Popular', startFree: 'Crear cuenta gratis', haveAccount: '¿Ya tiene una cuenta?', signIn: 'Iniciar sesión', storePrice: 'El precio de la tienda se muestra al comprar', limits: 'límites del plan', choose: 'Elegir', unavailable: 'No disponible', manage: 'Administrar suscripción', opening: 'Abriendo…', renewStore: 'Las suscripciones se renuevan automáticamente hasta que las canceles en App Store o Google Play. Eliminar tu cuenta de EverittOS no cancela una suscripción de la tienda.', renewWeb: 'Las suscripciones se renuevan mensualmente hasta que se cancelen.' },
+  vi: { popular: 'Phổ biến', startFree: 'Tạo tài khoản miễn phí', haveAccount: 'Đã có tài khoản?', signIn: 'Đăng nhập', storePrice: 'Giá trên cửa hàng sẽ hiển thị khi mua', limits: 'giới hạn gói', choose: 'Chọn', unavailable: 'Không khả dụng', manage: 'Quản lý gói đăng ký', opening: 'Đang mở…', renewStore: 'Gói đăng ký tự động gia hạn cho đến khi bạn hủy trong App Store hoặc Google Play. Xóa tài khoản EverittOS không hủy gói đăng ký trên cửa hàng.', renewWeb: 'Gói đăng ký gia hạn hàng tháng cho đến khi bị hủy.' }
 } as const;
 
 const shellStyle: CSSProperties = { width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'visible' };
@@ -88,7 +89,7 @@ const nativeCheckoutAvailable: Partial<Record<PaidPlanKey, boolean>> = {
   enterprise: true
 };
 
-export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscription = false, portalAvailable = false, onOpenPortal, portalLoading = false, onNativePurchaseSuccess }: BillingPlansGridProps) {
+export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscription = false, portalAvailable = false, onOpenPortal, portalLoading = false, onNativePurchaseSuccess, publicMode = false }: BillingPlansGridProps) {
   const { t, locale } = useTranslation();
   const language: 'en' | 'es' | 'vi' = locale === 'es' || locale === 'vi' ? locale : 'en';
   const c = uiCopy[language];
@@ -96,13 +97,15 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
   const isFreeUser = normalizedCurrent === 'free';
   const billingVisibility = resolveBillingVisibility();
   const nativePlatform = getAppPlatform();
-  const visiblePlans = billingVisibility.allowNativeStorePurchase && nativePlatform === 'android'
-    ? BILLING_PLANS.filter((tier) => tier.id === 'free' || tier.id === 'pro' || tier.id === 'business')
-    : BILLING_PLANS;
+  const visiblePlans = publicMode
+    ? BILLING_PLANS
+    : billingVisibility.allowNativeStorePurchase && nativePlatform === 'android'
+      ? BILLING_PLANS.filter((tier) => tier.id === 'free' || tier.id === 'pro' || tier.id === 'business')
+      : BILLING_PLANS;
   const [checkoutAvailableByPlan, setCheckoutAvailableByPlan] = useState<Partial<Record<PaidPlanKey, boolean>>>({});
 
   useEffect(() => {
-    if (!billingVisibility.allowCheckout) return;
+    if (publicMode || !billingVisibility.allowCheckout) return;
     let cancelled = false;
     async function loadCapabilities() {
       const res = await fetch('/api/stripe/capabilities', { cache: 'no-store' });
@@ -114,7 +117,7 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
     }
     void loadCapabilities();
     return () => { cancelled = true; };
-  }, [billingVisibility.allowCheckout]);
+  }, [publicMode, billingVisibility.allowCheckout]);
 
   const planAvailability = billingVisibility.allowNativeStorePurchase ? nativeCheckoutAvailable : checkoutAvailableByPlan;
 
@@ -125,14 +128,14 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
         {visiblePlans.map((tier) => {
           const localized = planCopy[language][tier.id];
           const ui = resolveBillingPlanCardUi({ currentPlan: normalizedCurrent, targetPlan: tier.id, hasActiveSubscription: isFreeUser ? false : hasActiveSubscription, portalAvailable, checkoutAvailableByPlan: planAvailability });
-          const isCurrent = ui.kind === 'current';
+          const isCurrent = !publicMode && ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
           const emphasizedCardStyle = isCurrent || isHighlighted ? { ...cardStyle, borderColor: 'rgba(47, 95, 143, 0.36)', boxShadow: '0 0 0 1px rgba(47, 95, 143, 0.16), 0 14px 34px rgba(37, 54, 74, 0.07)' } : cardStyle;
           const price = language === 'en' ? tier.priceLabel : tier.priceLabel.replace('/month', language === 'es' ? '/mes' : '/tháng');
           const actionLabel = ui.kind === 'current' ? t('billing.currentPlanBadge') : ui.kind === 'portal' ? c.manage : ui.kind === 'unavailable' ? c.unavailable : `${c.choose} ${localized.name}`;
           const isPaidTier = tier.id !== 'free';
           return (
-            <article key={tier.id} className={['pricing-plan-card','billing-plan-card',isCurrent ? 'current-plan' : '',isHighlighted ? 'highlighted' : '',tier.featured ? 'featured-plan' : ''].filter(Boolean).join(' ')} data-plan-id={tier.id} data-plan-action={ui.kind} style={emphasizedCardStyle}>
+            <article key={tier.id} className={['pricing-plan-card','billing-plan-card',isCurrent ? 'current-plan' : '',isHighlighted ? 'highlighted' : '',tier.featured ? 'featured-plan' : ''].filter(Boolean).join(' ')} data-plan-id={tier.id} data-plan-action={publicMode ? 'signup' : ui.kind} style={emphasizedCardStyle}>
               <div className="billing-plan-card-body" style={mainStyle}>
                 <div style={badgeRowStyle}>{isCurrent ? <span style={badgeStyle}>{t('billing.currentPlanBadge')}</span> : null}{tier.featured && !isCurrent ? <span style={badgeStyle}>{c.popular}</span> : null}</div>
                 <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.25 }}>{localized.name}</h3>
@@ -143,13 +146,26 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
                 <div className="billing-plan-limits" aria-label={`${localized.name} ${c.limits}`} style={limitsStyle}>{localized.limits.map((limit) => <span key={limit} style={limitStyle}>{limit}</span>)}</div>
               </div>
               <div className="billing-plan-card-footer" style={footerStyle}>
-                {ui.kind === 'current' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
-                {ui.kind === 'checkout' && billingVisibility.allowCheckout ? <PlanCheckoutButton plan={ui.plan} label={actionLabel} requireRefundAck={false} disabled={!ui.checkoutAvailable} className="btn btn-primary btn-block" /> : null}
-                {ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase ? <NativeStoreSubscribeButton plan={ui.plan} label={actionLabel} onSuccess={() => onNativePurchaseSuccess?.()} /> : null}
-                {ui.kind === 'checkout' && !billingVisibility.allowCheckout && !billingVisibility.allowNativeStorePurchase ? <p className="billing-plan-current-label" style={currentStyle}>{nativeBillingNotice(locale)}</p> : null}
-                {ui.kind === 'unavailable' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
-                {ui.kind === 'portal' && onOpenPortal && billingVisibility.allowPortal ? <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>{portalLoading ? c.opening : actionLabel}</button> : null}
-                {ui.kind === 'downgrade_contact' ? <a className="btn btn-block" href={ui.href}>{actionLabel}</a> : null}
+                {publicMode ? (
+                  <>
+                    <Link className="btn btn-primary btn-block" href={`/signup?plan=${tier.id}`}>
+                      {tier.id === 'free' ? c.startFree : actionLabel}
+                    </Link>
+                    <p style={{ ...noteStyle, textAlign: 'center' }}>
+                      {c.haveAccount}{' '}
+                      <Link href={'/login?plan=' + tier.id + '&next=' + encodeURIComponent(tier.id === 'free' ? '/dashboard' : `/settings/billing?upgrade=${tier.id}`)}>
+                        {c.signIn}
+                      </Link>
+                    </p>
+                  </>
+                ) : null}
+                {!publicMode && ui.kind === 'current' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
+                {!publicMode && ui.kind === 'checkout' && billingVisibility.allowCheckout ? <PlanCheckoutButton plan={ui.plan} label={actionLabel} requireRefundAck={false} disabled={!ui.checkoutAvailable} className="btn btn-primary btn-block" /> : null}
+                {!publicMode && ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase ? <NativeStoreSubscribeButton plan={ui.plan} label={actionLabel} onSuccess={() => onNativePurchaseSuccess?.()} /> : null}
+                {!publicMode && ui.kind === 'checkout' && !billingVisibility.allowCheckout && !billingVisibility.allowNativeStorePurchase ? <p className="billing-plan-current-label" style={currentStyle}>{nativeBillingNotice(locale)}</p> : null}
+                {!publicMode && ui.kind === 'unavailable' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
+                {!publicMode && ui.kind === 'portal' && onOpenPortal && billingVisibility.allowPortal ? <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>{portalLoading ? c.opening : actionLabel}</button> : null}
+                {!publicMode && ui.kind === 'downgrade_contact' ? <a className="btn btn-block" href={ui.href}>{actionLabel}</a> : null}
               </div>
             </article>
           );
