@@ -13,7 +13,6 @@ export function normalizeRole(value: string | null | undefined): UserRole {
   return 'employee';
 }
 
-/** DB role string for inserts */
 export function roleToDb(role: UserRole): string {
   return role;
 }
@@ -52,6 +51,12 @@ export function isOwnerOrAdmin(role: UserRole): boolean {
 
 export function isStaffRole(role: UserRole): boolean {
   return role === 'employee' || role === 'contractor' || role === 'viewer';
+}
+
+/** People who can be assigned to do a job. Clients and viewers never belong here. */
+export function isAssignableJobWorkerRole(role: string | null | undefined): boolean {
+  const normalized = normalizeRole(role);
+  return normalized !== 'client' && normalized !== 'viewer';
 }
 
 export function canViewTeamAuditHistory(role: UserRole): boolean {
