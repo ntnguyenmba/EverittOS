@@ -44,6 +44,12 @@ function databaseIntervalUnit(unit: ScheduleBody['unit']) {
   return 'weeks';
 }
 
+function currentJobIdFromRequest(request: Request) {
+  const referer = request.headers.get('referer') || '';
+  const match = referer.match(/\/jobs\/([0-9a-fA-F-]{36})(?:[/?#]|$)/);
+  return match && isValidUuid(match[1]) ? match[1] : null;
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
@@ -51,6 +57,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   if (!isValidUuid(id)) return NextResponse.json({ error: 'Invalid series id.' }, { status: 400 });
 
+  const currentJobId = currentJobIdFromRequest(request);
   const body = (await request.json().catch(() => ({}))) as ScheduleBody;
   const interval = Math.max(1, Math.min(52, Math.floor(Number(body.interval || 1))));
   const unit = body.unit === 'day' || body.unit === 'month' ? body.unit : 'week';
@@ -115,12 +122,25 @@ export async function PATCH(request: Request, context: RouteContext) {
   const replaceableIds = (futureRows || [])
     .filter((job) => !isCompletedLikeStatus(job.status))
     .map((job) => String(job.id));
+  const deletableIds = currentJobId ? replaceableIds.filter((jobId) => jobId !== currentJobId) : replaceableIds;
 
-  if (replaceableIds.length) {
+  if (currentJobId && replaceableIds.includes(currentJobId)) {
+    const { error: cancelCurrentError } = await ctx.supabase
+      .from('jobs')
+      .update({ status: 'cancelled' })
+      .eq('id', currentJobId)
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('recurring_series_id', id);
+    if (cancelCurrentError) {
+      return NextResponse.json({ error: mapWorkspaceSaveError(cancelCurrentError.message) }, { status: 400 });
+    }
+  }
+
+  if (deletableIds.length) {
     const { error: deleteError } = await ctx.supabase
       .from('jobs')
       .delete()
-      .in('id', replaceableIds)
+      .in('id', deletableIds)
       .eq('organization_id', ctx.workspace.organizationId);
 
     if (deleteError) {
