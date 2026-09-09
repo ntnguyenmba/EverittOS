@@ -11,7 +11,7 @@ export type PersonAssignmentOption = {
 type MemberRow = {
   user_id: string;
   role: string;
-  profiles?: { email?: string | null; full_name?: string | null } | null;
+  profiles?: { email?: string | null; full_name?: string | null; role?: string | null } | null;
 };
 
 type WorkerRow = {
@@ -23,20 +23,26 @@ type WorkerRow = {
   active?: boolean | null;
 };
 
-const ASSIGNABLE_MEMBER_ROLES = ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead'];
 const CLIENT_ROLES = new Set(['client', 'viewer', 'customer']);
+const EXTRA_STAFF_ROLES = new Set(['owner', 'admin', 'manager', 'contractor', 'crew_lead']);
 
 function memberName(member: MemberRow): string {
   return member.profiles?.full_name?.trim() || member.profiles?.email?.trim() || 'Pending profile';
 }
 
 function isClientLikeRole(role: string | null | undefined) {
+  const raw = String(role || '').toLowerCase();
+  if (CLIENT_ROLES.has(raw)) return true;
   return CLIENT_ROLES.has(normalizeRole(role));
 }
 
 function isClientLikeWorker(worker: WorkerRow) {
   const type = String(worker.worker_type || '').toLowerCase();
   return type === 'client' || type === 'customer' || type === 'viewer';
+}
+
+function normName(value: string | null | undefined) {
+  return String(value || '').trim().toLowerCase();
 }
 
 export async function getPeopleForAssignment(
@@ -54,29 +60,38 @@ export async function getPeopleForAssignment(
       .select('id, name, auth_user_id, worker_type, email, active')
       .eq('organization_id', organizationId)
       .order('name', { ascending: true }),
-    supabase.from('customers').select('email').eq('organization_id', organizationId)
+    supabase
+      .from('customers')
+      .select('email, contact_name, company_name')
+      .eq('organization_id', organizationId)
   ]);
 
   const allMembers = membersRes.data || [];
   const clientUserIds = new Set(
     allMembers.filter((row) => isClientLikeRole(row.role)).map((row) => String(row.user_id))
   );
-  const staffMembers = allMembers.filter((row) => ASSIGNABLE_MEMBER_ROLES.includes(String(row.role || '').toLowerCase()));
-  const customerEmails = new Set(
-    (customersRes.data || [])
-      .map((row) => String(row.email || '').trim().toLowerCase())
-      .filter(Boolean)
-  );
+  const customerEmails = new Set<string>();
+  const customerNames = new Set<string>();
+  for (const row of customersRes.data || []) {
+    const email = String(row.email || '').trim().toLowerCase();
+    if (email) customerEmails.add(email);
+    const contact = normName(row.contact_name);
+    const company = normName(row.company_name);
+    if (contact) customerNames.add(contact);
+    if (company) customerNames.add(company);
+  }
 
-  const staffIds = staffMembers.map((row) => row.user_id);
-  const profileMap = new Map<string, { email: string | null; full_name: string | null }>();
-  if (staffIds.length) {
-    const profilesRes = await supabase.from('profiles').select('id, email, full_name').in('id', staffIds);
+  const memberIds = allMembers.map((row) => row.user_id);
+  const profileMap = new Map<string, { email: string | null; full_name: string | null; role: string | null }>();
+  if (memberIds.length) {
+    const profilesRes = await supabase.from('profiles').select('id, email, full_name, role').in('id', memberIds);
     for (const profile of profilesRes.data || []) {
       profileMap.set(profile.id, {
         email: profile.email ?? null,
-        full_name: profile.full_name ?? null
+        full_name: profile.full_name ?? null,
+        role: profile.role ?? null
       });
+      if (isClientLikeRole(profile.role)) clientUserIds.add(profile.id);
     }
   }
 
@@ -87,35 +102,38 @@ export async function getPeopleForAssignment(
     if (authId && clientUserIds.has(authId)) return false;
     const email = String(worker.email || '').trim().toLowerCase();
     if (email && customerEmails.has(email)) return false;
+    if (customerNames.has(normName(worker.name))) return false;
     return true;
   });
 
   const options: PersonAssignmentOption[] = [];
-  const usedWorkerIds = new Set<string>();
   const usedUserIds = new Set<string>();
 
   for (const worker of workers) {
-    usedWorkerIds.add(worker.id);
     if (worker.auth_user_id) usedUserIds.add(worker.auth_user_id);
     options.push({
-      userId: worker.auth_user_id || worker.id,
+      userId: worker.id,
       workerId: worker.id,
       name: worker.name,
       role: worker.worker_type === 'contractor' ? 'contractor' : 'employee'
     });
   }
 
-  for (const member of staffMembers) {
+  for (const member of allMembers) {
+    if (!EXTRA_STAFF_ROLES.has(String(member.role || '').toLowerCase())) continue;
     if (clientUserIds.has(member.user_id)) continue;
     if (usedUserIds.has(member.user_id)) continue;
     const profile = profileMap.get(member.user_id);
+    if (isClientLikeRole(profile?.role)) continue;
     const email = String(profile?.email || '').trim().toLowerCase();
     if (email && customerEmails.has(email)) continue;
+    const name = memberName({ user_id: member.user_id, role: member.role, profiles: profile || null });
+    if (customerNames.has(normName(name))) continue;
     usedUserIds.add(member.user_id);
     options.push({
       userId: member.user_id,
       workerId: null,
-      name: memberName({ user_id: member.user_id, role: member.role, profiles: profile || null }),
+      name,
       role: normalizeRole(member.role)
     });
   }
