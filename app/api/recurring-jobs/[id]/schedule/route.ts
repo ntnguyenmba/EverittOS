@@ -32,6 +32,18 @@ function validTime(value: unknown): value is string {
   return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function databaseFrequency(unit: ScheduleBody['unit']) {
+  if (unit === 'day') return 'daily';
+  if (unit === 'month') return 'monthly';
+  return 'weekly';
+}
+
+function databaseIntervalUnit(unit: ScheduleBody['unit']) {
+  if (unit === 'day') return 'days';
+  if (unit === 'month') return 'months';
+  return 'weeks';
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
@@ -66,11 +78,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const endDate = body.endMode === 'date' ? body.endDate : null;
   const patch = {
-    recurrence_frequency: unit,
+    recurrence_frequency: databaseFrequency(unit),
     recurrence_interval: interval,
-    recurrence_interval_unit: unit,
+    recurrence_interval_unit: databaseIntervalUnit(unit),
     recurrence_weekday: unit === 'week' ? weekdays[0] : null,
-    recurrence_weekdays: unit === 'week' ? weekdays : [],
+    recurrence_weekdays: unit === 'week' ? weekdays : null,
     start_date: body.startDate,
     end_date: endDate,
     occurrence_limit: occurrenceLimit,
@@ -89,23 +101,31 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (updateError) return NextResponse.json({ error: mapWorkspaceSaveError(updateError.message) }, { status: 400 });
 
   const fromDate = validDate(body.fromDate) ? body.fromDate : body.startDate;
-  const { data: futureRows } = await ctx.supabase
+  const { data: futureRows, error: futureRowsError } = await ctx.supabase
     .from('jobs')
     .select('id, status, occurrence_date')
     .eq('recurring_series_id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .gte('occurrence_date', fromDate);
 
+  if (futureRowsError) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(futureRowsError.message) }, { status: 400 });
+  }
+
   const replaceableIds = (futureRows || [])
     .filter((job) => !isCompletedLikeStatus(job.status))
     .map((job) => String(job.id));
 
   if (replaceableIds.length) {
-    await ctx.supabase
+    const { error: deleteError } = await ctx.supabase
       .from('jobs')
-      .update({ status: 'cancelled' })
+      .delete()
       .in('id', replaceableIds)
       .eq('organization_id', ctx.workspace.organizationId);
+
+    if (deleteError) {
+      return NextResponse.json({ error: mapWorkspaceSaveError(deleteError.message) }, { status: 400 });
+    }
   }
 
   const updatedSeries = { ...(series as Record<string, unknown>), ...patch, id, status: series.status || 'active' };
