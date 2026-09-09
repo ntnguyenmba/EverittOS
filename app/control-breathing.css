@@ -78,6 +78,7 @@ html body .role-portal-shell :is(
   background: transparent !important;
   color: #132433 !important;
   border: 0 !important;
+  border-top: 0 !important;
   border-bottom: 1px solid #d5dee5 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -100,12 +101,11 @@ html body .dashboard-shell :is(
   border-bottom: 0 !important;
 }
 
-html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) > * {
-  width: 100% !important;
-  max-width: 100% !important;
-  border: 0 !important;
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) *,
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .finance-list-card) .record-actions {
   border-top: 0 !important;
   border-bottom: 0 !important;
+  box-shadow: none !important;
 }
 
 html body .dashboard-shell .record-actions,
@@ -119,8 +119,9 @@ html body .dashboard-shell .team-member-actions {
   max-width: 100% !important;
   margin-top: 12px !important;
   padding-top: 0 !important;
-  border: 0 !important;
-  border-top: 0 !important;
+  border: 0 none !important;
+  border-top: 0 none !important;
+  background-image: none !important;
   box-sizing: border-box !important;
 }
 
