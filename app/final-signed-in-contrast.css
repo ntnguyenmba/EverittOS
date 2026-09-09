@@ -215,6 +215,45 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-page-content label:has(
   margin-top: 8px !important;
 }
 
+/* Loose counts, loading text, status notes, and standalone muted rows must never sit unreadably on wallpaper. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .record-count,
+  .loading-state,
+  .empty-state,
+  .status-line,
+  .pagination-status,
+  .result-count,
+  .showing-count,
+  .list-count
+) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.06) !important;
+  padding: 10px 12px !important;
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .record-count,
+  .loading-state,
+  .empty-state,
+  .status-line,
+  .pagination-status,
+  .result-count,
+  .showing-count,
+  .list-count
+) :is(p, span, small, strong, .muted) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
 /* Common standalone summaries/details used throughout signed-in pages. */
 html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
   summary,
