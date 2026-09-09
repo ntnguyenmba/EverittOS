@@ -30,7 +30,6 @@ html body .role-summary-card {
   background: #ffffff !important;
   color: #132433 !important;
   border: 1px solid #d5dee5 !important;
-  border-bottom: 1px solid #d5dee5 !important;
   border-radius: 18px !important;
   box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
   padding: 18px 20px !important;
@@ -123,7 +122,6 @@ html body .page-actions {
   gap: 12px !important;
 }
 
-/* Same list look on Jobs, Team, Customers — all roles, all pages. */
 html body :is(
   .job-visits-list,
   .client-job-card-list,
@@ -142,30 +140,29 @@ html body :is(
   box-shadow: none !important;
 }
 
+/* Thin line between every stacked list row — jobs, team, customers, all roles. */
 html body :is(
   .list-row,
   .portal-job-row,
   .client-job-card,
+  .client-job-row,
   .customer-card-row,
   .team-member-card,
-  .finance-list-card
+  .finance-list-card,
+  .record-card,
+  .quote-row
 ) + :is(
   .list-row,
   .portal-job-row,
   .client-job-card,
+  .client-job-row,
   .customer-card-row,
   .team-member-card,
-  .finance-list-card
+  .finance-list-card,
+  .record-card,
+  .quote-row
 ) {
-  margin-top: 0 !important;
-}
-
-html body :is(.list-row, .portal-job-row, .client-job-card) hr,
-html body :is(.job-visits-list, .jobs-list, .team-list, .customers-list) > hr,
-html body .list-divider,
-html body .portal-job-row::after,
-html body .list-row::after {
-  display: none !important;
-  border: 0 !important;
-  height: 0 !important;
+  box-shadow:
+    0 14px 30px rgba(27, 45, 60, 0.12),
+    0 -8px 0 -7px #c9d4dc !important;
 }
