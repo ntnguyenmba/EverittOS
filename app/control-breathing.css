@@ -118,14 +118,11 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(.job-detail-shell, .app-
 
 /*
   EverittOS signed-in visual system.
-  Keep the final visual pass here so pages inherit one palette, one surface rule,
-  one control treatment, and one spacing language without touching page logic.
+  Keep the final visual pass here so owner, admin, manager, worker, contractor,
+  and client views inherit the same palette without changing page logic.
 */
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) {
-  --bg: #f8fafc;
-  --eo-color-page: #f8fafc;
-  --eo-canvas: #f8fafc;
   --surface: #ffffff;
   --card: #ffffff;
   --paper: #ffffff;
@@ -151,14 +148,59 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   --shadow-card: 0 1px 2px rgba(23, 32, 51, 0.04);
   --shadow-nav-active: none;
   --eo-shadow-card: 0 1px 2px rgba(23, 32, 51, 0.04);
-  background: #f8fafc !important;
   color: #172033 !important;
 }
 
+/* Preserve the existing hero.jpg wallpaper. Large page shells stay transparent. */
+html body .dashboard-shell,
 html body .dashboard-shell > .main,
 html body .dashboard-shell .main,
+html body .dashboard-shell .app-page-content,
 html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-content {
-  background: #f8fafc !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Structural wrappers never become extra white cards. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .app-page-stage,
+  .jobs-list-page,
+  .job-detail-shell,
+  .portal-page,
+  .role-dashboard,
+  .role-dashboard-minimal,
+  .contractor-dashboard,
+  .dashboard-home,
+  .today-page,
+  .contractor-main,
+  .client-main,
+  .contractor-content-card,
+  .portal-dashboard-section,
+  .client-jobs-list,
+  .contractor-jobs-list,
+  .jobs-list,
+  .list,
+  .list-group,
+  .jobs-table-card,
+  .jobs-advanced-filters,
+  .dashboard-revenue-grid,
+  .metric-grid,
+  .stats-grid,
+  .team-command-grid,
+  .role-summary-grid,
+  .record-list,
+  .cards-grid,
+  .section-grid,
+  .client-portal-jobs,
+  .client-portal-job-detail,
+  .client-portal-settings
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 html body .dashboard-shell .sidebar {
@@ -202,10 +244,36 @@ html body .dashboard-shell .sidebar .sidebar-plan-card {
   box-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.card, .panel, .stat, .form, .modal, dialog, .job-card, .customer-card, .worker-card, .metric-card, .dashboard-metric-card, .job-financials-card, .finance-list-card) {
+/* Only real content cards get an opaque white reading surface. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
+  .card,
+  .panel,
+  .stat,
+  .form,
+  .modal,
+  dialog,
+  .job-card,
+  .customer-card,
+  .worker-card,
+  .metric-card,
+  .dashboard-metric-card,
+  .job-financials-card,
+  .finance-list-card,
+  .settings-card,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .record-card,
+  .role-summary-card,
+  .contractor-metric,
+  .simplified-job-card
+) {
   background: #ffffff !important;
+  background-color: #ffffff !important;
   border-color: #dde6f2 !important;
   box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input) {
@@ -287,7 +355,10 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
     border-color: #dde6f2 !important;
   }
 
-  html body .dashboard-shell {
-    background: #f8fafc !important;
+  html body .dashboard-shell,
+  html body .dashboard-shell > .main,
+  html body .dashboard-shell .app-page-content {
+    background: transparent !important;
+    background-color: transparent !important;
   }
 }
