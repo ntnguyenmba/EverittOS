@@ -116,12 +116,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(.job-detail-shell, .app-
   gap: var(--eo-stack-gap) !important;
 }
 
-/*
-  EverittOS signed-in visual system.
-  Keep the final visual pass here so owner, admin, manager, worker, contractor,
-  and client views inherit the same palette without changing page logic.
-*/
-
+/* EverittOS signed-in visual system. */
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) {
   --surface: #ffffff;
   --card: #ffffff;
@@ -129,10 +124,10 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   --paper-solid: #ffffff;
   --text: #172033;
   --ink: #172033;
-  --text-secondary: #5b667a;
-  --ink-2: #5b667a;
-  --muted: #7c8798;
-  --ink-3: #7c8798;
+  --text-secondary: #46566a;
+  --ink-2: #46566a;
+  --muted: #667487;
+  --ink-3: #667487;
   --line: #dde6f2;
   --eo-color-border: #dde6f2;
   --eo-color-border-strong: #c8d5e5;
@@ -151,7 +146,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   color: #172033 !important;
 }
 
-/* Preserve the existing hero.jpg wallpaper. Large page shells stay transparent. */
+/* Keep the wallpaper visible. Do not turn the page into a white wrapper. */
 html body .dashboard-shell,
 html body .dashboard-shell > .main,
 html body .dashboard-shell .main,
@@ -161,7 +156,70 @@ html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-cont
   background-color: transparent !important;
 }
 
-/* Structural wrappers never become extra white cards. */
+/* Give wallpaper-backed text a readable local treatment without adding boxes. */
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .dashboard-header,
+  .quote-page-head,
+  .customer-card-row,
+  .team-member-card,
+  .record-card,
+  .list-row,
+  .job-row,
+  .contractor-job-row,
+  .client-job-row
+) {
+  text-shadow: 0 1px 0 rgba(255,255,255,.88), 0 0 12px rgba(255,255,255,.72);
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header h1,
+  .page-head h1,
+  .dashboard-header h1,
+  .quote-page-head h1,
+  .page-header h2,
+  .page-head h2,
+  .customer-card-row h3,
+  .team-member-card h3,
+  .record-card h3,
+  .list-row strong,
+  .job-row strong,
+  .contractor-job-row strong,
+  .client-job-row strong
+) {
+  color: #102238 !important;
+  -webkit-text-fill-color: #102238 !important;
+  font-weight: 700 !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-subtitle,
+  .page-header p,
+  .page-head p,
+  .dashboard-header p,
+  .customer-card-row p,
+  .customer-card-row .muted,
+  .team-member-card p,
+  .team-member-card .muted,
+  .record-card p,
+  .record-card .muted,
+  .list-row p,
+  .list-row .muted,
+  .job-row p,
+  .job-row .muted,
+  .contractor-job-row p,
+  .contractor-job-row .muted,
+  .client-job-row p,
+  .client-job-row .muted
+) {
+  color: #263b52 !important;
+  -webkit-text-fill-color: #263b52 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+
+/* Structural wrappers remain invisible. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-stage,
   .jobs-list-page,
@@ -244,7 +302,7 @@ html body .dashboard-shell .sidebar .sidebar-plan-card {
   box-shadow: none !important;
 }
 
-/* Only real content cards get an opaque white reading surface. */
+/* Actual cards and controls stay bright white for reading. */
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
   .card,
   .panel,
@@ -261,9 +319,6 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   .finance-list-card,
   .settings-card,
   .client-job-card,
-  .customer-card-row,
-  .team-member-card,
-  .record-card,
   .role-summary-card,
   .contractor-metric,
   .simplified-job-card
@@ -274,6 +329,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input) {
@@ -282,6 +338,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   color: #172033 !important;
   -webkit-text-fill-color: #172033 !important;
   box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input):focus {
@@ -296,6 +353,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn-primary, button.btn-primary, button[type='submit']):hover {
@@ -309,6 +367,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   border-color: #d5dfec !important;
   color: #172033 !important;
   box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)):hover {
@@ -316,25 +375,9 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   border-color: #c8d5e5 !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(h1, h2, h3, h4, strong) {
-  color: #172033;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(p, .muted, .page-subtitle, small) {
-  color: #5b667a;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.page-head, .page-header, .dashboard-header) {
-  margin-bottom: 24px !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.page-head h1, .page-header h1, .dashboard-header h1) {
-  font-weight: 600 !important;
-  letter-spacing: -0.03em !important;
-}
-
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(table, .table) {
   background: #ffffff !important;
+  text-shadow: none !important;
 }
 
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(.table th, table th) {
@@ -360,5 +403,21 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   html body .dashboard-shell .app-page-content {
     background: transparent !important;
     background-color: transparent !important;
+  }
+
+  html body :is(.dashboard-shell, .role-portal-shell) :is(
+    .page-header,
+    .page-head,
+    .dashboard-header,
+    .quote-page-head,
+    .customer-card-row,
+    .team-member-card,
+    .record-card,
+    .list-row,
+    .job-row,
+    .contractor-job-row,
+    .client-job-row
+  ) {
+    text-shadow: 0 1px 0 rgba(255,255,255,.94), 0 0 14px rgba(255,255,255,.82);
   }
 }
