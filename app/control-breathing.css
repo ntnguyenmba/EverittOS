@@ -104,9 +104,15 @@ html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card,
   width: 100% !important;
   max-width: 100% !important;
   border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
 }
 
-html body .dashboard-shell .record-actions {
+html body .dashboard-shell .record-actions,
+html body .dashboard-shell .customer-card-row .record-actions,
+html body .dashboard-shell .card.customer-card-row .record-actions,
+html body .customer-card-row .record-actions,
+html body .dashboard-shell .team-member-actions {
   display: flex !important;
   flex-direction: column !important;
   width: 100% !important;
@@ -114,10 +120,12 @@ html body .dashboard-shell .record-actions {
   margin-top: 12px !important;
   padding-top: 0 !important;
   border: 0 !important;
+  border-top: 0 !important;
   box-sizing: border-box !important;
 }
 
-html body .dashboard-shell .record-actions .btn {
+html body .dashboard-shell .record-actions .btn,
+html body .dashboard-shell .customer-card-row .record-actions .btn {
   width: 100% !important;
   max-width: 100% !important;
 }
