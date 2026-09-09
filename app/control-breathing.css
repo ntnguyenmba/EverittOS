@@ -10,7 +10,7 @@ html body .owner-home-sheet {
   box-shadow: none !important;
 }
 
-html body .card,
+html body .card:not(.customer-card-row),
 html body .panel,
 html body .settings-card,
 html body .contractor-next-job,
@@ -26,17 +26,13 @@ html body .role-summary-card {
   text-shadow: none !important;
 }
 
-/* Lists share one paper and a thin line between rows. */
 html body :is(
   .job-visits-list,
   .client-job-card-list,
   .jobs-list,
   .jobs-list-body,
   .jobs-mobile-table-wrap,
-  .team-list,
-  .team-member-list,
   .customers-list,
-  .customer-list,
   .finance-expense-list
 ) {
   display: block !important;
@@ -45,19 +41,37 @@ html body :is(
   border-radius: 18px !important;
   box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
   padding: 8px 18px !important;
-  gap: 0 !important;
 }
 
-html body :is(
+/* Team directory is already a card. Do not nest another paper. */
+html body .team-directory-card .team-member-list,
+html body .team-directory-card .customer-list {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html body .dashboard-shell :is(
   .list-row,
   .portal-job-row,
   .client-job-card,
   .client-job-row,
   .customer-card-row,
+  .card.customer-card-row,
   .team-member-card,
+  article.team-member-card,
   .finance-list-card,
   .record-card,
   .quote-row
+),
+html body .role-portal-shell :is(
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card
 ) {
   background: transparent !important;
   color: #132433 !important;
@@ -67,15 +81,17 @@ html body :is(
   box-shadow: none !important;
   padding: 16px 0 !important;
   margin: 0 !important;
+  margin-top: 0 !important;
 }
 
-html body :is(
+html body .dashboard-shell :is(
   .list-row,
   .portal-job-row,
   .client-job-card,
-  .client-job-row,
   .customer-card-row,
+  .card.customer-card-row,
   .team-member-card,
+  article.team-member-card,
   .finance-list-card,
   .record-card,
   .quote-row
@@ -95,14 +111,6 @@ html body .client-next-visit-copy {
   border: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
-}
-
-html body .contractor-portal-hero > *,
-html body .page-head > *,
-html body .page-header > *,
-html body .owner-home-primary > * {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
 }
 
 html body .card :is(h1, h2, h3, h4, strong, p),
