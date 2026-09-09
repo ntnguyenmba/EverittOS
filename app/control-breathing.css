@@ -156,19 +156,12 @@ html body :is(.role-portal-shell, .contractor-main, .client-main) .app-page-cont
   background-color: transparent !important;
 }
 
-/* Give wallpaper-backed text a readable local treatment without adding boxes. */
+/* Give wallpaper-backed headings a readable treatment without adding boxes. */
 html body :is(.dashboard-shell, .role-portal-shell) :is(
   .page-header,
   .page-head,
   .dashboard-header,
-  .quote-page-head,
-  .customer-card-row,
-  .team-member-card,
-  .record-card,
-  .list-row,
-  .job-row,
-  .contractor-job-row,
-  .client-job-row
+  .quote-page-head
 ) {
   text-shadow: 0 1px 0 rgba(255,255,255,.88), 0 0 12px rgba(255,255,255,.72);
 }
@@ -179,14 +172,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   .dashboard-header h1,
   .quote-page-head h1,
   .page-header h2,
-  .page-head h2,
-  .customer-card-row h3,
-  .team-member-card h3,
-  .record-card h3,
-  .list-row strong,
-  .job-row strong,
-  .contractor-job-row strong,
-  .client-job-row strong
+  .page-head h2
 ) {
   color: #102238 !important;
   -webkit-text-fill-color: #102238 !important;
@@ -197,21 +183,7 @@ html body :is(.dashboard-shell, .role-portal-shell) :is(
   .page-subtitle,
   .page-header p,
   .page-head p,
-  .dashboard-header p,
-  .customer-card-row p,
-  .customer-card-row .muted,
-  .team-member-card p,
-  .team-member-card .muted,
-  .record-card p,
-  .record-card .muted,
-  .list-row p,
-  .list-row .muted,
-  .job-row p,
-  .job-row .muted,
-  .contractor-job-row p,
-  .contractor-job-row .muted,
-  .client-job-row p,
-  .client-job-row .muted
+  .dashboard-header p
 ) {
   color: #263b52 !important;
   -webkit-text-fill-color: #263b52 !important;
@@ -332,6 +304,38 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
   text-shadow: none !important;
 }
 
+/* Record rows are reading surfaces, not wallpaper text. Page headings stay excluded. */
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
+  .card.customer-card-row,
+  .team-member-card,
+  .record-card:not(.page-head):not(.page-header),
+  .job-row,
+  .contractor-job-row,
+  .client-job-row
+) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dde6f2 !important;
+  border-radius: var(--eo-radius-card, 18px) !important;
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04) !important;
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(
+  .card.customer-card-row,
+  .team-member-card,
+  .record-card:not(.page-head):not(.page-header),
+  .job-row,
+  .contractor-job-row,
+  .client-job-row
+) :is(h2, h3, h4, strong, p, span, small, .muted, .meta, .secondary-text) {
+  text-shadow: none !important;
+}
+
 html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-main) :is(input, select, textarea, .input) {
   background: #ffffff !important;
   border-color: #d5dfec !important;
@@ -409,14 +413,7 @@ html body :is(.dashboard-shell, .role-portal-shell, .contractor-main, .client-ma
     .page-header,
     .page-head,
     .dashboard-header,
-    .quote-page-head,
-    .customer-card-row,
-    .team-member-card,
-    .record-card,
-    .list-row,
-    .job-row,
-    .contractor-job-row,
-    .client-job-row
+    .quote-page-head
   ) {
     text-shadow: 0 1px 0 rgba(255,255,255,.94), 0 0 14px rgba(255,255,255,.82);
   }
