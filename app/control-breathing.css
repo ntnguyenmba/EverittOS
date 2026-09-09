@@ -1,433 +1,178 @@
-/* EverittOS signed-in visual system. This is the single centralized override sheet. */
+/* Single signed-in visual authority.
+   Uses design/tokens.css. Owner, worker, and client share the same floating cards. */
 
-:root {
-  --eo-page: #f8fafc;
-  --eo-paper: #ffffff;
-  --eo-ink: #172033;
-  --eo-ink-2: #5b667a;
-  --eo-muted: #7c8798;
-  --eo-navy: #234a84;
-  --eo-navy-hover: #1e3f72;
-  --eo-blue: #4f7cc4;
-  --eo-blue-soft: #eaf2ff;
-  --eo-line: #dde6f2;
-  --eo-divider: #e7eef7;
-  --eo-ask: #111922;
-  --eo-card-radius: 16px;
-  --eo-control-radius: 12px;
-  --eo-card-pad: 18px;
-  --eo-card-gap: 16px;
-  --eo-control-gap: 10px;
-  --eo-shadow: 0 2px 8px rgba(23, 32, 51, 0.08);
-}
-
-/* Keep the wallpaper visible on every signed-in owner, manager, worker, contractor, and client view. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .main,
-  .app-page-content,
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
   .app-page-stage,
-  .dashboard-home,
-  .today-page,
-  .role-dashboard,
-  .role-dashboard-minimal,
+  .app-page-content,
   .contractor-dashboard,
-  .portal-page,
-  .jobs-list-page,
-  .job-detail-shell
-) {
-  background: transparent !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Universal vertical rhythm. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage,
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, main) {
-  display: grid !important;
-  gap: var(--eo-card-gap) !important;
-}
-
-/* Ask Everitt keeps its near-black treatment with white text. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .everitt-cmd-trigger,
-  .ask-everitt-trigger,
-  [data-ask-everitt-trigger]
-) {
-  background: var(--eo-ask) !important;
-  background-color: var(--eo-ask) !important;
-  border: 1px solid var(--eo-ask) !important;
-  color: var(--eo-paper) !important;
-  -webkit-text-fill-color: var(--eo-paper) !important;
-  border-radius: var(--eo-card-radius) !important;
-  box-shadow: none !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) :is(
-  .everitt-cmd-trigger,
-  .ask-everitt-trigger,
-  [data-ask-everitt-trigger]
-) * {
-  color: var(--eo-paper) !important;
-  -webkit-text-fill-color: var(--eo-paper) !important;
-}
-
-/* Role bar is the same Everitt navy in every role view. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
-  background: var(--eo-navy) !important;
-  background-color: var(--eo-navy) !important;
-  border: 1px solid rgba(255,255,255,.18) !important;
-  border-radius: var(--eo-card-radius) !important;
-  color: var(--eo-paper) !important;
-  box-shadow: var(--eo-shadow) !important;
-  padding: 16px 20px !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner :is(.app-role-banner-context, .app-role-banner-name) {
-  color: var(--eo-paper) !important;
-  -webkit-text-fill-color: var(--eo-paper) !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner .app-role-banner-context {
-  color: rgba(255,255,255,.76) !important;
-  -webkit-text-fill-color: rgba(255,255,255,.76) !important;
-}
-
-/* Every logical top-level content block floats on the wallpaper as one readable white box. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(
-  header,
-  section,
-  article,
-  form,
-  details,
-  .card,
-  .panel,
-  .form,
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-):not(.app-role-banner),
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, main) > :is(
-  header,
-  section,
-  article,
-  form,
-  details,
-  .card,
-  .panel,
-  .form,
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head
-):not(.app-role-banner) {
-  background: var(--eo-paper) !important;
-  background-color: var(--eo-paper) !important;
-  border: 1px solid var(--eo-line) !important;
-  border-radius: var(--eo-card-radius) !important;
-  color: var(--eo-ink) !important;
-  box-shadow: var(--eo-shadow) !important;
-  padding: var(--eo-card-pad) !important;
-  text-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* Existing named content cards use the same surface when they appear outside the top-level pattern. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
-  .contractor-portal-hero,
+  .client-portal-jobs,
+  .client-portal-job-detail,
+  .client-portal-settings,
   .contractor-content-card,
-  .client-content-card,
-  .portal-card,
-  .role-dashboard-card,
-  .role-summary-card,
-  .settings-card,
-  .finance-list-card,
-  .job-financials-card,
-  .team-directory-card
-):not(.app-role-banner) {
-  background: var(--eo-paper) !important;
-  background-color: var(--eo-paper) !important;
-  border: 1px solid var(--eo-line) !important;
-  border-radius: var(--eo-card-radius) !important;
-  color: var(--eo-ink) !important;
-  box-shadow: var(--eo-shadow) !important;
-  padding: var(--eo-card-pad) !important;
-  text-shadow: none !important;
-}
-
-/* No boxes on top of boxes: lists and record rows inside a white section are flat with dividers. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
-  .card,
-  .panel,
-  .contractor-content-card,
-  .client-content-card,
-  .portal-card,
-  .role-dashboard-card,
-  .role-summary-card,
-  .team-directory-card,
-  section
-) :is(
-  .list-row,
-  .job-row,
-  .contractor-job-row,
-  .client-job-row,
-  .portal-job-row,
-  .customer-card-row,
-  .team-member-card,
-  .worker-job-card,
-  .client-job-card,
-  .record-card
+  .job-visits-list,
+  .client-job-card-list
 ) {
   background: transparent !important;
   background-color: transparent !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--eo-divider) !important;
-  border-radius: 0 !important;
   box-shadow: none !important;
-  padding: 14px 0 !important;
-  color: var(--eo-ink) !important;
-  text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
-  .list-row,
-  .job-row,
-  .contractor-job-row,
-  .client-job-row,
-  .portal-job-row,
-  .customer-card-row,
-  .team-member-card,
-  .worker-job-card,
-  .client-job-card,
-  .record-card
-):last-child {
-  border-bottom: 0 !important;
+html body :is(.dashboard-shell, .role-portal-shell) .contractor-content-card {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-/* Text on white surfaces always uses dark Everitt colors. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+  .job-visits-list,
+  .client-job-card-list,
+  .owner-home-sheet,
+  .app-page-stage
+) {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
   .card,
   .panel,
-  .form,
-  .page-header,
-  .page-head,
-  .dashboard-header,
-  .quote-page-head,
-  .contractor-portal-hero,
-  .contractor-content-card,
-  .client-content-card,
-  .portal-card,
-  .role-dashboard-card,
-  .role-summary-card,
   .settings-card,
   .finance-list-card,
   .job-financials-card,
-  .team-directory-card
-) :is(h1,h2,h3,h4,h5,h6,strong,label) {
-  color: var(--eo-ink) !important;
-  -webkit-text-fill-color: var(--eo-ink) !important;
-  text-shadow: none !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
-  .muted,
-  .page-subtitle,
-  .contractor-worker-name,
-  .contractor-next-meta,
-  .portal-job-date,
-  small
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .record-card,
+  .dashboard-metric-card,
+  .role-summary-card
 ) {
-  color: var(--eo-ink-2) !important;
-  -webkit-text-fill-color: var(--eo-ink-2) !important;
+  background: var(--eo-color-surface) !important;
+  background-color: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  -webkit-text-fill-color: var(--eo-color-text) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+  padding: 18px 20px !important;
   text-shadow: none !important;
 }
 
-/* Loose helper/count text gets a compact white floating box only when it is not already inside a card. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(
-  .record-count,
-  .loading-state,
-  .empty-state,
-  .status-line,
-  .pagination-status,
-  .result-count,
-  .showing-count,
-  .list-count,
-  .standalone-copy,
-  .section-copy,
-  .empty-copy,
-  .helper-copy,
-  .form-help,
-  .field-help
-),
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > :is(div, main) > :is(
-  .record-count,
-  .loading-state,
-  .empty-state,
-  .status-line,
-  .pagination-status,
-  .result-count,
-  .showing-count,
-  .list-count,
-  .standalone-copy,
-  .section-copy,
-  .empty-copy,
-  .helper-copy,
-  .form-help,
-  .field-help
-) {
-  width: fit-content !important;
-  max-width: 100% !important;
-  background: var(--eo-paper) !important;
-  border: 1px solid var(--eo-line) !important;
-  border-radius: var(--eo-control-radius) !important;
-  box-shadow: var(--eo-shadow) !important;
-  padding: 10px 12px !important;
-  color: var(--eo-ink-2) !important;
-  -webkit-text-fill-color: var(--eo-ink-2) !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
+  .card,
+  .panel,
+  .list-row,
+  .portal-job-row,
+  .client-job-card,
+  .settings-card
+) :is(h1, h2, h3, h4, h5, strong, label, p) {
+  color: var(--eo-color-text) !important;
+  -webkit-text-fill-color: var(--eo-color-text) !important;
   text-shadow: none !important;
 }
 
-/* Forms use one readable control treatment. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(input,select,textarea,.input) {
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--eo-paper) !important;
-  border: 1px solid var(--eo-line) !important;
-  color: var(--eo-ink) !important;
-  -webkit-text-fill-color: var(--eo-ink) !important;
-  border-radius: var(--eo-control-radius) !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.muted, .page-subtitle, .portal-job-date, .portal-finance-empty) {
+  color: var(--eo-color-text-secondary) !important;
+  -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(input,select,textarea,.input):focus {
-  border-color: var(--eo-blue) !important;
-  box-shadow: 0 0 0 3px rgba(79,124,196,.13) !important;
-  outline: none !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) .portal-finance-amount {
+  color: var(--eo-color-brand) !important;
+  -webkit-text-fill-color: var(--eo-color-brand) !important;
 }
 
-/* Buttons never place dark text on dark backgrounds or white text on white backgrounds. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.btn,button.btn,a.btn,button[type='button'],button[type='submit']) {
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn, a.btn, button.btn) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   min-height: 44px !important;
-  box-sizing: border-box !important;
   padding: 10px 14px !important;
-  border-radius: var(--eo-control-radius) !important;
+  border-radius: var(--eo-radius-control) !important;
   line-height: 1.25 !important;
-  text-align: center !important;
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.btn-primary,a.btn-primary,button.btn-primary,button[type='submit']) {
-  background: var(--eo-navy) !important;
-  background-color: var(--eo-navy) !important;
-  border-color: var(--eo-navy) !important;
-  color: var(--eo-paper) !important;
-  -webkit-text-fill-color: var(--eo-paper) !important;
-  box-shadow: none !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn-primary, button[type='submit']) {
+  background: var(--eo-color-brand) !important;
+  border-color: var(--eo-color-brand) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.btn-primary,a.btn-primary,button.btn-primary,button[type='submit']) * {
-  color: var(--eo-paper) !important;
-  -webkit-text-fill-color: var(--eo-paper) !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.btn:not(.btn-primary), a.btn:not(.btn-primary)) {
+  background: var(--eo-color-surface) !important;
+  border-color: var(--eo-color-border-strong) !important;
+  color: var(--eo-color-text) !important;
+  -webkit-text-fill-color: var(--eo-color-text) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.btn-primary,a.btn-primary,button.btn-primary,button[type='submit']):hover {
-  background: var(--eo-navy-hover) !important;
-  background-color: var(--eo-navy-hover) !important;
-  border-color: var(--eo-navy-hover) !important;
-  color: var(--eo-paper) !important;
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.status-badge, .badge, .status-pill) {
+  background: var(--eo-color-surface-subtle) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  color: var(--eo-color-text-secondary) !important;
+  -webkit-text-fill-color: var(--eo-color-text-secondary) !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.btn:not(.btn-primary),a.btn:not(.btn-primary),button.btn:not(.btn-primary)) {
-  background: var(--eo-paper) !important;
-  background-color: var(--eo-paper) !important;
-  border-color: var(--eo-line) !important;
-  color: var(--eo-ink) !important;
-  -webkit-text-fill-color: var(--eo-ink) !important;
-  box-shadow: none !important;
-}
-
-/* Links and status chips stay inside the Everitt blue family. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content a:not(.btn) {
-  color: var(--eo-navy) !important;
-  -webkit-text-fill-color: var(--eo-navy) !important;
-}
-
-html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(.status-badge,.badge,.chip,.pill) {
-  background: var(--eo-blue-soft) !important;
-  border-color: var(--eo-line) !important;
-  color: var(--eo-navy) !important;
-  -webkit-text-fill-color: var(--eo-navy) !important;
-}
-
-/* Consistent action spacing without oversized gaps. */
-html body :is(.dashboard-shell, .role-portal-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
   .button-row,
   .inline-actions,
   .record-actions,
-  .job-financials-actions,
-  .eo-action-grid,
   .job-detail-actions,
   .page-actions,
-  .settings-actions,
   .owner-home-actions
 ) {
   display: flex !important;
   flex-wrap: wrap !important;
-  align-items: stretch !important;
-  gap: var(--eo-control-gap) !important;
+  gap: 12px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
   .button-row,
   .inline-actions,
   .record-actions,
-  .job-financials-actions,
-  .eo-action-grid,
   .job-detail-actions,
-  .page-actions,
-  .settings-actions,
-  .owner-home-actions
+  .page-actions
 ) > * {
   margin: 0 !important;
 }
 
-@media (max-width: 700px) {
-  :root {
-    --eo-card-pad: 16px;
-    --eo-card-gap: 14px;
-  }
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(.form, .job-create-section, .client-summary-card) {
+  display: grid !important;
+  gap: 12px !important;
+}
 
-  html body :is(.dashboard-shell, .role-portal-shell) :is(
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--eo-color-text) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(input, select, textarea, .input) {
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  -webkit-text-fill-color: var(--eo-color-text) !important;
+  border: 1px solid var(--eo-color-border-strong) !important;
+}
+
+@media (max-width: 700px) {
+  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
     .button-row,
     .inline-actions,
     .record-actions,
-    .job-financials-actions,
-    .eo-action-grid,
     .job-detail-actions,
-    .page-actions,
-    .settings-actions,
-    .owner-home-actions
+    .page-actions
   ) {
     flex-direction: column !important;
   }
 
-  html body :is(.dashboard-shell, .role-portal-shell) :is(
+  html body :is(.dashboard-shell, .role-portal-shell, .contractor-dashboard-shell) :is(
     .button-row,
     .inline-actions,
     .record-actions,
-    .job-financials-actions,
-    .eo-action-grid,
     .job-detail-actions,
-    .page-actions,
-    .settings-actions,
-    .owner-home-actions
-  ) > :is(.btn,button,a.btn) {
+    .page-actions
+  ) > :is(.btn, button, a.btn) {
     width: 100% !important;
-    max-width: 100% !important;
   }
 }
