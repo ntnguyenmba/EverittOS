@@ -19,12 +19,19 @@ type WorkerRow = {
   name: string;
   auth_user_id?: string | null;
   worker_type?: string | null;
+  email?: string | null;
+  active?: boolean | null;
 };
 
 const ASSIGNABLE_MEMBER_ROLES = ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead'];
+const CLIENT_ROLES = new Set(['client', 'viewer', 'customer']);
 
 function memberName(member: MemberRow): string {
   return member.profiles?.full_name?.trim() || member.profiles?.email?.trim() || 'Pending profile';
+}
+
+function isClientLikeRole(role: string | null | undefined) {
+  return CLIENT_ROLES.has(normalizeRole(role));
 }
 
 function isClientLikeWorker(worker: WorkerRow) {
@@ -36,26 +43,35 @@ export async function getPeopleForAssignment(
   supabase: SupabaseClient,
   organizationId: string
 ): Promise<PersonAssignmentOption[]> {
-  const [membersRes, workersRes] = await Promise.all([
+  const [membersRes, workersRes, customersRes] = await Promise.all([
     supabase
       .from('organization_members')
       .select('user_id, role')
       .eq('organization_id', organizationId)
-      .eq('active', true)
-      .in('role', ASSIGNABLE_MEMBER_ROLES)
-      .order('created_at', { ascending: true }),
+      .eq('active', true),
     supabase
       .from('workers')
-      .select('id, name, auth_user_id, worker_type')
+      .select('id, name, auth_user_id, worker_type, email, active')
       .eq('organization_id', organizationId)
-      .order('name', { ascending: true })
+      .order('name', { ascending: true }),
+    supabase.from('customers').select('email').eq('organization_id', organizationId)
   ]);
 
-  const rawMembers = membersRes.data || [];
-  const memberIds = rawMembers.map((row) => row.user_id);
+  const allMembers = membersRes.data || [];
+  const clientUserIds = new Set(
+    allMembers.filter((row) => isClientLikeRole(row.role)).map((row) => String(row.user_id))
+  );
+  const staffMembers = allMembers.filter((row) => ASSIGNABLE_MEMBER_ROLES.includes(String(row.role || '').toLowerCase()));
+  const customerEmails = new Set(
+    (customersRes.data || [])
+      .map((row) => String(row.email || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const staffIds = staffMembers.map((row) => row.user_id);
   const profileMap = new Map<string, { email: string | null; full_name: string | null }>();
-  if (memberIds.length) {
-    const profilesRes = await supabase.from('profiles').select('id, email, full_name').in('id', memberIds);
+  if (staffIds.length) {
+    const profilesRes = await supabase.from('profiles').select('id, email, full_name').in('id', staffIds);
     for (const profile of profilesRes.data || []) {
       profileMap.set(profile.id, {
         email: profile.email ?? null,
@@ -64,37 +80,47 @@ export async function getPeopleForAssignment(
     }
   }
 
-  const members: MemberRow[] = rawMembers.map((row) => ({
-    user_id: row.user_id,
-    role: row.role,
-    profiles: profileMap.get(row.user_id) || null
-  }));
-  const workers = ((workersRes.data || []) as WorkerRow[]).filter((worker) => !isClientLikeWorker(worker));
-  const workerByAuthUser = new Map(
-    workers
-      .filter((worker) => worker.auth_user_id)
-      .map((worker) => [worker.auth_user_id as string, worker])
-  );
+  const workers = ((workersRes.data || []) as WorkerRow[]).filter((worker) => {
+    if (worker.active === false) return false;
+    if (isClientLikeWorker(worker)) return false;
+    const authId = String(worker.auth_user_id || '');
+    if (authId && clientUserIds.has(authId)) return false;
+    const email = String(worker.email || '').trim().toLowerCase();
+    if (email && customerEmails.has(email)) return false;
+    return true;
+  });
 
-  const options: PersonAssignmentOption[] = members.map((member) => ({
-    userId: member.user_id,
-    workerId: workerByAuthUser.get(member.user_id)?.id ?? null,
-    name: memberName(member),
-    role: normalizeRole(member.role)
-  }));
+  const options: PersonAssignmentOption[] = [];
+  const usedWorkerIds = new Set<string>();
+  const usedUserIds = new Set<string>();
 
-  const representedWorkerIds = new Set(options.map((option) => option.workerId).filter(Boolean) as string[]);
   for (const worker of workers) {
-    if (worker.auth_user_id) continue;
-    if (representedWorkerIds.has(worker.id)) continue;
+    usedWorkerIds.add(worker.id);
+    if (worker.auth_user_id) usedUserIds.add(worker.auth_user_id);
     options.push({
-      userId: worker.id,
+      userId: worker.auth_user_id || worker.id,
       workerId: worker.id,
       name: worker.name,
-      role: 'contractor'
+      role: worker.worker_type === 'contractor' ? 'contractor' : 'employee'
     });
   }
 
+  for (const member of staffMembers) {
+    if (clientUserIds.has(member.user_id)) continue;
+    if (usedUserIds.has(member.user_id)) continue;
+    const profile = profileMap.get(member.user_id);
+    const email = String(profile?.email || '').trim().toLowerCase();
+    if (email && customerEmails.has(email)) continue;
+    usedUserIds.add(member.user_id);
+    options.push({
+      userId: member.user_id,
+      workerId: null,
+      name: memberName({ user_id: member.user_id, role: member.role, profiles: profile || null }),
+      role: normalizeRole(member.role)
+    });
+  }
+
+  options.sort((a, b) => a.name.localeCompare(b.name));
   return options;
 }
 
