@@ -1,10 +1,10 @@
-/* Central spacing. One gap only — do not stack gap + margin. */
+/* Central spacing. Medium air: not flush, not sparse. */
 
 :root {
-  --eo-control-pad-y: 12px;
-  --eo-control-pad-x: 16px;
+  --eo-control-pad-y: 10px;
+  --eo-control-pad-x: 14px;
   --eo-box-gap: 12px;
-  --eo-stack-gap: 20px;
+  --eo-stack-gap: 16px;
 }
 
 html body :is(.btn, button.btn, a.btn, button[type='submit'], button[type='button']) {
@@ -43,7 +43,7 @@ html body :is(.input, select, textarea) + :is(.button-row, .btn, button) {
   html body :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-financials-actions, .eo-action-grid, .job-detail-actions, .page-actions) > :is(.btn, button, a.btn) {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 48px !important;
+    min-height: 46px !important;
     margin: 0 !important;
   }
 }
@@ -54,8 +54,30 @@ html body :is(.input, select, textarea) + :is(.button-row, .btn, button) {
   }
 }
 
+html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel, .job-financials-card, .job-create-section) > * + * {
+  margin-top: var(--eo-stack-gap) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel) > :is(h3, h4) + :is(p, .muted) {
+  margin-top: 8px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(.form, .card, .panel) > :is(p, .muted) + :is(.list-row, .button-row, .btn) {
+  margin-top: 12px !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .form .list-row {
+  padding: 12px 0 !important;
+  margin-top: 12px !important;
+}
+
 html body label + :is(.input, input, select, textarea, .btn, button) {
   margin-top: 8px !important;
+}
+
+html body :is(.finance-note, .job-financials-card .muted) {
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
 }
 
 html body .job-financials-section + .job-financials-section {
@@ -63,7 +85,7 @@ html body .job-financials-section + .job-financials-section {
 }
 
 html body .job-financials-section > h4 {
-  margin: 0 0 12px !important;
+  margin: 0 0 10px !important;
 }
 
 html body .finance-list-card {
@@ -74,6 +96,10 @@ html body .finance-list-card {
 
 html body .job-financials-head {
   display: grid !important;
-  gap: 14px !important;
+  gap: 12px !important;
   margin-bottom: var(--eo-stack-gap) !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) :is(.job-detail-shell, .app-page-stage, .jobs-list-page) {
+  gap: var(--eo-stack-gap) !important;
 }
