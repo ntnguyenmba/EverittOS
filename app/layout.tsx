@@ -56,6 +56,7 @@ import './global-content-rhythm.css';
 /* Final universal card inset. Keep last so page-specific CSS cannot crowd card edges. */
 import './universal-card-spacing.css';
 import './viewport-lock.css';
+import './control-breathing.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
