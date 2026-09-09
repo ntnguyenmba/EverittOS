@@ -40,7 +40,10 @@ export function RecordActions({
   const actionCount = [Boolean(viewHref), Boolean(editHref || onEdit), Boolean(onRemove)].filter(Boolean).length;
 
   return (
-    <div className={`record-actions record-actions-${layout} record-actions-count-${actionCount}`}>
+    <div
+      className={`record-actions record-actions-${layout} record-actions-count-${actionCount}`}
+      style={{ borderTop: 'none', paddingTop: 0, marginTop: 12 }}
+    >
       {viewHref ? (
         <Link className={btnClass} href={viewHref} target="_blank" rel="noopener noreferrer">
           {viewLabel}
