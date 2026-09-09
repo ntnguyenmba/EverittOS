@@ -6,9 +6,11 @@
   --eo-float-ink: #172033;
   --eo-float-muted: #46566a;
   --eo-float-line: #d5dfec;
+  --eo-float-radius: 14px;
+  --eo-float-shadow: 0 2px 8px rgba(17, 25, 34, 0.08);
 }
 
-/* Ask Everitt returns to the original near-black treatment. */
+/* Ask Everitt keeps the original near-black treatment everywhere. */
 html body .dashboard-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]),
 html body .role-portal-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [data-ask-everitt-trigger]) {
   background: var(--eo-ask-dark) !important;
@@ -24,8 +26,9 @@ html body .role-portal-shell :is(.everitt-cmd-trigger, .ask-everitt-trigger, [da
   -webkit-text-fill-color: #ffffff !important;
 }
 
-/* Restore the signed-in role card that the broad transparent rule was erasing. */
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
+/* Signed-in role remains a dark floating card. */
+html body .dashboard-shell .app-page-content .app-role-banner,
+html body .role-portal-shell .app-page-content .app-role-banner {
   background: #234a84 !important;
   background-color: #234a84 !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
@@ -35,92 +38,168 @@ html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
   padding: 16px 20px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner :is(.app-role-banner-context, .app-role-banner-name) {
+html body .dashboard-shell .app-page-content .app-role-banner :is(.app-role-banner-context, .app-role-banner-name),
+html body .role-portal-shell .app-page-content .app-role-banner :is(.app-role-banner-context, .app-role-banner-name) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner .app-role-banner-context {
+html body .dashboard-shell .app-page-content .app-role-banner .app-role-banner-context,
+html body .role-portal-shell .app-page-content .app-role-banner .app-role-banner-context {
   color: rgba(255, 255, 255, 0.76) !important;
   -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
 }
 
-/* Page title + intro + existing action become one floating white reading card. */
-html body .dashboard-shell .app-page-stage > div:has(> div > h1),
-html body .role-portal-shell .app-page-stage > div:has(> div > h1),
-html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+/* Universal signed-in page heading card. This catches PageHeader and custom page-header variants. */
+html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
   background: var(--eo-float-paper) !important;
   background-color: var(--eo-float-paper) !important;
   border: 1px solid var(--eo-float-line) !important;
   border-radius: 16px !important;
-  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.08) !important;
+  box-shadow: var(--eo-float-shadow) !important;
   padding: 18px 20px !important;
   color: var(--eo-float-ink) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-html body .dashboard-shell .app-page-stage > div:has(> div > h1) :is(h1, h2, h3, p, .muted),
-html body .role-portal-shell .app-page-stage > div:has(> div > h1) :is(h1, h2, h3, p, .muted),
-html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, p, .muted, .page-subtitle) {
+html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, h4, p, .muted, .page-subtitle, .eyebrow),
+html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(h1, h2, h3, h4, p, .muted, .page-subtitle, .eyebrow) {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+  text-shadow: none !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+}
+
+html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle),
+html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle) {
+  color: var(--eo-float-muted) !important;
+  -webkit-text-fill-color: var(--eo-float-muted) !important;
+}
+
+/* Dashboard next-job wording is one reading surface. Existing action buttons are not restyled. */
+html body .dashboard-shell .app-page-content .owner-home-primary {
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--eo-float-shadow) !important;
+  padding: 18px 20px !important;
+}
+
+html body .dashboard-shell .app-page-content .owner-home-primary :is(.owner-home-kicker, h2, p) {
   color: var(--eo-float-ink) !important;
   -webkit-text-fill-color: var(--eo-float-ink) !important;
   text-shadow: none !important;
 }
 
-html body .dashboard-shell .app-page-stage > div:has(> div > h1) :is(p, .muted),
-html body .role-portal-shell .app-page-stage > div:has(> div > h1) :is(p, .muted),
-html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) :is(p, .muted, .page-subtitle) {
+html body .dashboard-shell .app-page-content .owner-home-primary p {
   color: var(--eo-float-muted) !important;
   -webkit-text-fill-color: var(--eo-float-muted) !important;
 }
 
-/* Team members wording gets its own floating white box without touching its buttons. */
-html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child {
+/* Section heading copy gets a compact free-floating box, not a page-width wrapper. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .team-directory-header > div:first-child,
+  .section-header,
+  .section-heading,
+  .list-header,
+  .card-heading,
+  .panel-heading,
+  .filter-heading
+) {
   width: fit-content !important;
   max-width: 100% !important;
   background: var(--eo-float-paper) !important;
   background-color: var(--eo-float-paper) !important;
   border: 1px solid var(--eo-float-line) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.08) !important;
+  border-radius: var(--eo-float-radius) !important;
+  box-shadow: var(--eo-float-shadow) !important;
   padding: 14px 16px !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child :is(h2, p, .muted) {
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .team-directory-header > div:first-child,
+  .section-header,
+  .section-heading,
+  .list-header,
+  .card-heading,
+  .panel-heading,
+  .filter-heading
+) :is(h1, h2, h3, h4, p, .muted, small, strong) {
   background: transparent !important;
   color: var(--eo-float-ink) !important;
   -webkit-text-fill-color: var(--eo-float-ink) !important;
   text-shadow: none !important;
 }
 
-html body :is(.dashboard-shell, .role-portal-shell) .team-directory-header > div:first-child :is(p, .muted) {
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  .team-directory-header > div:first-child,
+  .section-header,
+  .section-heading,
+  .list-header,
+  .card-heading,
+  .panel-heading,
+  .filter-heading
+) :is(p, .muted, small) {
   color: var(--eo-float-muted) !important;
   -webkit-text-fill-color: var(--eo-float-muted) !important;
 }
 
-/* Search and Role labels stay readable while their existing input boxes remain unchanged. */
-html body :is(.dashboard-shell, .role-portal-shell) .team-directory-filters > label {
+/* Every field label that sits over wallpaper gets its own white reading surface.
+   Inputs, selects, textareas, buttons, records, and existing cards keep their current styling. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content label:has(> :is(input, select, textarea, .input)) {
   background: var(--eo-float-paper) !important;
   background-color: var(--eo-float-paper) !important;
   border: 1px solid var(--eo-float-line) !important;
-  border-radius: 14px !important;
+  border-radius: var(--eo-float-radius) !important;
   box-shadow: 0 2px 8px rgba(17, 25, 34, 0.06) !important;
   padding: 12px !important;
   color: var(--eo-float-ink) !important;
   -webkit-text-fill-color: var(--eo-float-ink) !important;
+  text-shadow: none !important;
+}
+
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content label:has(> :is(input, select, textarea, .input)) > :is(input, select, textarea, .input) {
+  margin-top: 8px !important;
+}
+
+/* Common standalone summaries/details used throughout signed-in pages. */
+html body :is(.dashboard-shell, .role-portal-shell) .app-page-content :is(
+  summary,
+  .standalone-copy,
+  .section-copy,
+  .empty-copy,
+  .helper-copy,
+  .form-help,
+  .field-help
+) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  background: var(--eo-float-paper) !important;
+  background-color: var(--eo-float-paper) !important;
+  border: 1px solid var(--eo-float-line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(17, 25, 34, 0.06) !important;
+  padding: 10px 12px !important;
+  color: var(--eo-float-ink) !important;
+  -webkit-text-fill-color: var(--eo-float-ink) !important;
+  text-shadow: none !important;
 }
 
 @media (max-width: 760px) {
-  html body :is(.dashboard-shell, .role-portal-shell) .app-role-banner {
+  html body .dashboard-shell .app-page-content .app-role-banner,
+  html body .role-portal-shell .app-page-content .app-role-banner {
     padding: 14px 16px !important;
     border-radius: 14px !important;
   }
 
-  html body .dashboard-shell .app-page-stage > div:has(> div > h1),
-  html body .role-portal-shell .app-page-stage > div:has(> div > h1),
-  html body :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .dashboard-header, .quote-page-head) {
+  html body .dashboard-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+  html body .role-portal-shell .app-page-content :is(.page-header, .page-head, .dashboard-header, .quote-page-head),
+  html body .dashboard-shell .app-page-content .owner-home-primary {
     padding: 16px !important;
     border-radius: 14px !important;
   }
