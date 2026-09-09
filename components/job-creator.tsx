@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { useTranslation } from '@/components/locale-provider';
@@ -53,6 +53,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const recurrenceCopy = getRecurrenceCopy(locale);
   const [title, setTitle] = useState('');
   const [customerMode, setCustomerMode] = useState<CustomerEntryMode>('existing');
+  const customerSelectRef = useRef<HTMLSelectElement | null>(null);
   const [customerId, setCustomerId] = useState(searchParams.get('customerId') || '');
   const [propertyId, setPropertyId] = useState(searchParams.get('propertyId') || '');
   const [customerName, setCustomerName] = useState(searchParams.get('customerName') || '');
@@ -200,7 +201,18 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
   }
 
-  function chooseExistingCustomer() { setCustomerMode('existing'); }
+  function chooseExistingCustomer() {
+    setCustomerMode('existing');
+    requestAnimationFrame(() => {
+      const select = customerSelectRef.current;
+      if (!select || select.disabled) return;
+      select.focus();
+      const picker = (select as HTMLSelectElement & { showPicker?: () => void }).showPicker;
+      if (typeof picker === 'function') {
+        try { picker.call(select); } catch { /* Safari may block showPicker outside a direct gesture */ }
+      }
+    });
+  }
   function chooseNewCustomer() { setCustomerMode('new'); setCustomerId(''); setPropertyId(''); }
 
   const hasContractorPay = contractorPayMode === 'hourly'
@@ -358,15 +370,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       <section className="job-create-section">
         <h4>{createCopy.customerHeading}</h4>
-        <div className="job-customer-mode" role="group" aria-label={createCopy.customerChoice}>
-          <button type="button" aria-pressed={customerMode === 'existing'} onClick={chooseExistingCustomer}>{createCopy.existingCustomer}</button>
-          <button type="button" aria-pressed={customerMode === 'new'} onClick={chooseNewCustomer}>{createCopy.newCustomer}</button>
-        </div>
         {customerMode === 'existing' ? (
-          <div className="client-summary-card" style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          <div className="client-summary-card" style={{ display: 'grid', gap: 10, marginTop: 4 }}>
             <label>
               <span>Saved customer</span>
-              <select value={customerId} disabled={loadingCustomers} onChange={(e) => { setCustomerId(e.target.value); setPropertyId(''); }}>
+              <select ref={customerSelectRef} value={customerId} disabled={loadingCustomers} onChange={(e) => { setCustomerId(e.target.value); setPropertyId(''); }}>
                 <option value="">{loadingCustomers ? 'Loading customers…' : customers.length ? 'Select a customer' : 'No saved customers yet'}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
@@ -391,7 +399,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name
-                      ? `${property.name}${property.formatted_address || property.address ? ` · ${property.formatted_address || property.address}` : ''}`
+                      ? `${property.name}${property.formatted_address || property.address ? ` \u00b7 ${property.formatted_address || property.address}` : ''}`
                       : property.formatted_address || property.address || 'Property'}
                   </option>
                 ))}
@@ -413,10 +421,12 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               }}
               onSelect={(suggestion) => void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude)}
             />
+            <button type="button" className="btn" onClick={chooseNewCustomer}>{createCopy.newCustomer}</button>
           </div>
         ) : null}
         {customerMode === 'new' ? (
-          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
+            <button type="button" className="btn" onClick={chooseExistingCustomer}>Use a saved customer</button>
             <label><span>{createCopy.customerName}</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} autoComplete="name" /></label>
             <label><span>{createCopy.email}</span><input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} autoComplete="email" /></label>
             <label><span>{createCopy.phone}</span><input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
