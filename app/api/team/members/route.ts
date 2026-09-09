@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canAssignAdminRole, canManageTeam, canModifyTeamMember, isAssignableJobWorkerRole, normalizeRole } from '@/lib/roles';
+import { canAssignAdminRole, canManageTeam, canModifyTeamMember, normalizeRole } from '@/lib/roles';
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
+import { getPeopleForAssignment } from '@/lib/people-assignment';
 
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -21,32 +22,13 @@ export async function GET() {
     return NextResponse.json({ error: 'Workspace not found.' }, { status: 404 });
   }
 
-  const { data: memberRows, error } = await admin
-    .from('organization_members')
-    .select('user_id, role, active, created_at')
-    .eq('organization_id', org.organizationId)
-    .eq('active', true)
-    .order('created_at');
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  const rows = (memberRows || []).filter((member) => isAssignableJobWorkerRole(member.role));
-  const ids = rows.map((member) => member.user_id).filter(Boolean);
-  const { data: profileRows } = ids.length
-    ? await admin.from('profiles').select('id, email, full_name, updated_at').in('id', ids)
-    : { data: [] };
-
-  const profiles = new Map<string, { id: string; email: string | null; full_name: string | null; updated_at?: string | null }>();
-  for (const profile of profileRows || []) {
-    profiles.set(profile.id, profile);
-  }
-
+  const people = await getPeopleForAssignment(admin, org.organizationId);
   return NextResponse.json({
-    members: rows.map((member) => ({
-      ...member,
-      profile: profiles.get(member.user_id) || null
+    members: people.map((person) => ({
+      user_id: person.workerId || person.userId,
+      role: person.role,
+      active: true,
+      profile: { full_name: person.name, email: null }
     }))
   });
 }
