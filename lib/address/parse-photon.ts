@@ -28,12 +28,45 @@ export type PhotonFeature = {
   properties?: PhotonProperties;
 };
 
+export type CensusAddressMatch = {
+  matchedAddress?: string;
+  coordinates?: { x?: number; y?: number };
+  addressComponents?: {
+    fromAddress?: string;
+    toAddress?: string;
+    streetName?: string;
+    preType?: string;
+    preDirection?: string;
+    suffixType?: string;
+    suffixDirection?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+  };
+};
+
 function firstNonEmpty(...values: Array<string | null | undefined>): string | null {
   for (const value of values) {
     const trimmed = value?.trim();
     if (trimmed) return trimmed;
   }
   return null;
+}
+
+function titleCase(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return trimmed
+    .toLowerCase()
+    .split(/\s+/)
+    .map((part) => (part.length <= 2 && /^[a-z]+$/i.test(part) ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join(' ');
+}
+
+function formatUsAddress(line1: string | null, city: string | null, stateCode: string | null, postalCode: string | null, country?: string | null, countryCode?: string | null) {
+  const locality = [city, [stateCode, postalCode].filter(Boolean).join(' ').trim() || null].filter(Boolean).join(', ');
+  const parts = [line1, locality || null, country && countryCode && countryCode !== 'US' ? country : null].filter(Boolean);
+  return parts.join(', ');
 }
 
 export function parsePhotonFeature(feature: PhotonFeature, index = 0): AddressSuggestion | null {
@@ -57,21 +90,13 @@ export function parsePhotonFeature(feature: PhotonFeature, index = 0): AddressSu
   const country = firstNonEmpty(p.country);
   const countryCode = firstNonEmpty(p.countrycode)?.toUpperCase() || null;
 
-  const addressLine2 = null;
-  const formattedParts = [
-    streetLine,
-    city,
-    [stateCode || state, postalCode].filter(Boolean).join(' ').trim() || null,
-    country && countryCode !== 'US' ? country : null
-  ].filter(Boolean);
-
-  const formattedAddress = formattedParts.join(', ');
+  const formattedAddress = formatUsAddress(streetLine, city, stateCode || state, postalCode, country, countryCode);
   const detailParts = [city, stateCode || state, postalCode, country].filter(Boolean);
 
   const structured: StructuredAddress = {
     formattedAddress,
     addressLine1: streetLine || formattedAddress,
-    addressLine2,
+    addressLine2: null,
     city,
     county,
     state,
@@ -106,6 +131,40 @@ export function parsePhotonFeatures(features: PhotonFeature[] | undefined | null
     suggestions.push(parsed);
   });
   return suggestions;
+}
+
+export function parseCensusMatch(match: CensusAddressMatch, typedHouseNumber?: string | null): AddressSuggestion | null {
+  const components = match.addressComponents || {};
+  const houseNumber = firstNonEmpty(typedHouseNumber, components.fromAddress);
+  const streetName = titleCase(
+    [components.preDirection, components.preType, components.streetName, components.suffixType, components.suffixDirection]
+      .filter(Boolean)
+      .join(' ')
+  );
+  const line1 = firstNonEmpty([houseNumber, streetName].filter(Boolean).join(' ').trim(), match.matchedAddress);
+  const city = titleCase(components.city);
+  const stateCode = stateToCode(components.state);
+  const postalCode = firstNonEmpty(components.zip);
+  if (!line1) return null;
+
+  const formattedAddress = formatUsAddress(line1, city, stateCode, postalCode, 'United States', 'US');
+  return {
+    formattedAddress,
+    addressLine1: line1,
+    addressLine2: null,
+    city,
+    county: null,
+    state: stateCode,
+    stateCode,
+    postalCode,
+    country: 'United States',
+    countryCode: 'US',
+    latitude: typeof match.coordinates?.y === 'number' ? match.coordinates.y : null,
+    longitude: typeof match.coordinates?.x === 'number' ? match.coordinates.x : null,
+    id: `census-${formattedAddress.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    label: line1,
+    detail: [city, stateCode, postalCode].filter(Boolean).join(', ')
+  };
 }
 
 function normalizeAddressSearchPart(value: string): string {
@@ -160,7 +219,9 @@ export function filterAddressSuggestionsForQuery(
     }
   }
 
-  return [...exactHouseNumber, ...sameStreet, ...remaining];
+  const ranked = [...exactHouseNumber, ...sameStreet, ...remaining];
+  ranked.sort((a, b) => Number(Boolean(b.postalCode)) - Number(Boolean(a.postalCode)));
+  return ranked;
 }
 
 export function structuredAddressFromManual(value: string): StructuredAddress {
