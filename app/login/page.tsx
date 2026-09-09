@@ -21,6 +21,8 @@ import { PasskeySignInButton } from '@/components/passkey-sign-in-button';
 import './login-page.css';
 
 const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client';
+const DEVICE_LAST_ACTIVE_KEY = 'everittos_device_last_active_v1';
+const IGNORE_IDLE_UNTIL_KEY = 'everittos_ignore_idle_until_v1';
 
 const loginCopy = {
   en: {
@@ -96,7 +98,10 @@ const loginCopy = {
 
 function resetActivityClock() {
   try {
-    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+    const now = Date.now();
+    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(now));
+    window.localStorage.setItem(DEVICE_LAST_ACTIVE_KEY, String(now));
+    window.localStorage.setItem(IGNORE_IDLE_UNTIL_KEY, String(now + 90_000));
   } catch {
     /* Storage can be unavailable in strict browser modes; login should still continue. */
   }
