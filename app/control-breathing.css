@@ -35,7 +35,9 @@ html body :is(
   .jobs-mobile-table-wrap,
   .customers-list,
   .finance-expense-list
-) {
+),
+html body .dashboard-shell table.jobs-operations-table,
+html body .dashboard-shell .jobs-table-card {
   display: block !important;
   background: #ffffff !important;
   border: 1px solid #d5dee5 !important;
@@ -54,6 +56,7 @@ html body .team-directory-card .customer-list {
 
 html body .dashboard-shell :is(
   .list-row,
+  .jobs-operations-row,
   .portal-job-row,
   .client-job-card,
   .client-job-row,
@@ -67,6 +70,7 @@ html body .dashboard-shell :is(
 ),
 html body .role-portal-shell :is(
   .list-row,
+  .jobs-operations-row,
   .portal-job-row,
   .client-job-card,
   .customer-card-row,
@@ -86,10 +90,10 @@ html body .role-portal-shell :is(
 
 html body .dashboard-shell :is(
   .list-row,
+  .jobs-operations-row,
   .portal-job-row,
   .client-job-card,
   .customer-card-row,
-  .card.customer-card-row,
   .team-member-card,
   article.team-member-card,
   .finance-list-card,
@@ -99,8 +103,18 @@ html body .dashboard-shell :is(
   border-bottom: 0 !important;
 }
 
-html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card) .record-actions,
-html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card) * {
+html body .dashboard-shell .jobs-operations-row td,
+html body .dashboard-shell .jobs-operations-row th,
+html body .dashboard-shell .jobs-operations-table td,
+html body .dashboard-shell .jobs-operations-table th {
+  border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .jobs-operations-row) .record-actions,
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .jobs-operations-row) * {
   border-top: 0 !important;
 }
 
