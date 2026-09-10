@@ -59,8 +59,12 @@ export async function setNativePin(pin: string): Promise<void> {
   const record: NativePinRecord = { version: 1, salt: bytesToBase64(salt), hash: await derivePinHash(pin, salt) };
   const serialized = JSON.stringify(record);
   if (nativeSecureStoreAvailable()) {
-    await EverittSecureStore.set({ key: SECURE_PIN_KEY, value: serialized });
-    safeLocalRemove(NATIVE_PIN_RECORD_KEY);
+    try {
+      await EverittSecureStore.set({ key: SECURE_PIN_KEY, value: serialized });
+      safeLocalRemove(NATIVE_PIN_RECORD_KEY);
+    } catch {
+      safeLocalSet(NATIVE_PIN_RECORD_KEY, serialized);
+    }
     safeLocalSet(NATIVE_PIN_ENABLED_KEY, '1');
   } else {
     safeLocalSet(NATIVE_PIN_RECORD_KEY, serialized);
