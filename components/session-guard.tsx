@@ -16,15 +16,29 @@ const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client';
 
 function readLastActivity(): number {
   if (typeof window === 'undefined') return Date.now();
-  const stored = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY);
-  const parsed = stored ? Number(stored) : NaN;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
+  try {
+    const stored = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
+  } catch {
+    return Date.now();
+  }
 }
 function storeLastActivity(timestamp: number) {
-  if (typeof window !== 'undefined') window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp));
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp));
+  } catch {
+    /* iOS and strict browser modes may block storage; keep the in-memory clock active. */
+  }
 }
 function clearLastActivity() {
-  if (typeof window !== 'undefined') window.localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY);
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY);
+  } catch {
+    /* A blocked storage API must not interrupt sign-out or navigation. */
+  }
 }
 
 async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
@@ -154,8 +168,13 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
         return;
       }
       if (cancelled) return;
-      const persisted = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY);
-      if (persisted && !checkIdleBeforeResume()) return;
+      let hasPersistedActivity = false;
+      try {
+        hasPersistedActivity = Boolean(window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY));
+      } catch {
+        /* Continue with the current in-memory activity time when storage is blocked. */
+      }
+      if (hasPersistedActivity && !checkIdleBeforeResume()) return;
       recordActivity();
     }
     void initializeIdleSession();
