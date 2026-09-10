@@ -21,6 +21,12 @@ const ROLE_BANNER_COPY = {
   vi: { context: 'Đang đăng nhập với vai trò', owner: 'Chủ doanh nghiệp', client: 'Khách hàng', worker: 'Nhân viên' }
 } as const;
 
+const PORTAL_NAV_COPY = {
+  en: { home: 'Home', jobs: 'Jobs', settings: 'Settings' },
+  es: { home: 'Inicio', jobs: 'Trabajos', settings: 'Configuración' },
+  vi: { home: 'Trang chủ', jobs: 'Công việc', settings: 'Cài đặt' }
+} as const;
+
 function roleBannerKind(role: UserRole): RoleBannerKind {
   if (role === 'client') return 'client';
   if (role === 'contractor' || role === 'employee' || role === 'viewer') return 'worker';
@@ -37,6 +43,18 @@ function RoleContextBanner({ role }: { role: UserRole }) {
       <span className="app-role-banner-context">{copy.context}</span>
       <strong className="app-role-banner-name">{copy[kind]}</strong>
     </section>
+  );
+}
+
+function ContractorBottomNav() {
+  const { locale } = useTranslation();
+  const copy = PORTAL_NAV_COPY[locale];
+  return (
+    <nav className="contractor-fixed-bottom-nav" aria-label="Worker navigation">
+      <a href="/portal/contractor">{copy.home}</a>
+      <a href="/portal/contractor#jobs">{copy.jobs}</a>
+      <a href="/portal/contractor/settings">{copy.settings}</a>
+    </nav>
   );
 }
 
@@ -83,6 +101,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         </AppPageContent>
         <AppFooter />
       </main>
+      {isContractorPortal ? <ContractorBottomNav /> : null}
 
       <style jsx global>{`
         .dashboard-shell {
@@ -150,25 +169,9 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           color: #fff;
           box-shadow: var(--eo-shadow-card);
         }
-        .app-role-banner-context {
-          min-width: 0;
-          color: rgba(255,255,255,.76) !important;
-          font-size: 12px;
-          font-weight: 700;
-          line-height: 1.3;
-          letter-spacing: .055em;
-          text-transform: uppercase;
-        }
-        .app-role-banner-name {
-          color: #fff !important;
-          font-size: 18px;
-          font-weight: 800;
-          line-height: 1.2;
-          text-align: right;
-        }
-        .dashboard-shell .contractor-role-label {
-          display: none !important;
-        }
+        .app-role-banner-context { min-width: 0; color: rgba(255,255,255,.76) !important; font-size: 12px; font-weight: 700; line-height: 1.3; letter-spacing: .055em; text-transform: uppercase; }
+        .app-role-banner-name { color: #fff !important; font-size: 18px; font-weight: 800; line-height: 1.2; text-align: right; }
+        .dashboard-shell .contractor-role-label { display: none !important; }
         .dashboard-shell .language-switcher { display:grid; gap:5px; min-width:0; }
         .dashboard-shell .language-switcher-label { display:block; line-height:1.25; }
         .dashboard-shell .language-switcher-select { line-height:1.25; padding-left:12px; padding-right:32px; white-space:nowrap; }
@@ -184,21 +187,62 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .role-portal-shell .role-summary-grid,.role-portal-shell .metric-grid { display:grid!important; gap:var(--eo-section-gap)!important; }
         .role-portal-shell .role-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
         .role-portal-shell .metric-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
+        .contractor-fixed-bottom-nav { display:none; }
         @media(max-width:640px){
-          .app-role-banner {
-            min-height: 60px;
-            padding: var(--eo-space-3) var(--eo-space-4);
-            border-radius: var(--eo-radius-control);
-          }
-          .app-role-banner-context {
-            font-size: 11px;
-          }
-          .app-role-banner-name {
-            font-size: 17px;
-          }
+          .app-role-banner { min-height: 60px; padding: var(--eo-space-3) var(--eo-space-4); border-radius: var(--eo-radius-control); }
+          .app-role-banner-context { font-size: 11px; }
+          .app-role-banner-name { font-size: 17px; }
           .dashboard-shell-overlay{background:linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48))!important}
         }
-        @media(max-width:760px){.role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}.role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:760px){
+          .role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}
+          .role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+          .role-portal-contractor .dashboard-shell-header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 100 !important;
+            padding-top: max(8px, env(safe-area-inset-top)) !important;
+          }
+          .role-portal-contractor > .main {
+            padding-top: calc(74px + env(safe-area-inset-top)) !important;
+            padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+          }
+          .contractor-fixed-bottom-nav {
+            position: fixed;
+            left: 14px;
+            right: 14px;
+            bottom: max(10px, env(safe-area-inset-bottom));
+            z-index: 101;
+            display: grid;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 6px;
+            padding: 7px;
+            border: 1px solid rgba(36,63,83,.14);
+            border-radius: 16px;
+            background: rgba(255,255,255,.97);
+            box-shadow: 0 10px 28px rgba(18,40,56,.18);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+          }
+          .contractor-fixed-bottom-nav a {
+            display: flex;
+            min-height: 46px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 6px;
+            border-radius: 11px;
+            color: #173044 !important;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+          }
+          .contractor-fixed-bottom-nav a:hover,.contractor-fixed-bottom-nav a:focus-visible {
+            background: #edf3f6;
+            color: #173044 !important;
+          }
+        }
         @media(max-width:480px){.role-portal-shell .portal-client-nav{grid-template-columns:minmax(0,1fr)}}
       `}</style>
     </div>
