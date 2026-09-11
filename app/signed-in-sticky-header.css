@@ -87,8 +87,32 @@
     align-self: center !important;
   }
 
+  html body .mobile-nav-drawer-link.active,
+  html body .mobile-nav-drawer-link[aria-current='page'],
+  html body .mobile-nav-drawer .nav-item.active,
+  html body .mobile-nav-drawer .nav-item[aria-current='page'] {
+    background: #eaf2ff !important;
+    color: #172033 !important;
+    box-shadow: inset 3px 0 0 #4f7cc4 !important;
+  }
+
+  html body .mobile-nav-drawer-link.active *,
+  html body .mobile-nav-drawer-link[aria-current='page'] *,
+  html body .mobile-nav-drawer .nav-item.active *,
+  html body .mobile-nav-drawer .nav-item[aria-current='page'] * {
+    color: #172033 !important;
+  }
+
   html body .dashboard-shell > .main {
     padding-top: 92px !important;
+  }
+
+  html body .dashboard-shell .app-page-content {
+    margin-bottom: 24px !important;
+  }
+
+  html body .dashboard-shell > .main > footer {
+    margin-top: 0 !important;
   }
 
   html[data-native-app='true'] body .dashboard-shell,
@@ -127,5 +151,15 @@
     transform: none !important;
     margin-top: 0 !important;
     z-index: 2 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  html body .dashboard-shell .app-page-content {
+    margin-bottom: 28px !important;
+  }
+
+  html body .dashboard-shell > .main > footer {
+    margin-top: 0 !important;
   }
 }
