@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ExportMenu } from '@/components/export-menu';
+import { MetricCard } from '@/components/metric-card';
 import { PageHeader } from '@/components/page-header';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
@@ -21,10 +22,20 @@ import '../bookkeeping.css';
 const BOOKKEEPING_RANGE_STORAGE_KEY = 'everittos-bookkeeping-range';
 const BOOKKEEPING_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'ytd', 'all_time'];
 
+type PerformerData = {
+  completedJobs: number;
+  topCustomer: { name: string; revenue: number; profit: number; jobs: number } | null;
+  topCleaner: { name: string; revenue: number; pay: number; profit: number; jobs: number } | null;
+  mostProfitableCustomer: { name: string; revenue: number; profit: number; jobs: number } | null;
+  mostProfitableService: { name: string; revenue: number; profit: number; jobs: number } | null;
+  averageJobValue: number;
+  averageProfitPerJob: number;
+};
+
 const copy = {
-  en: { title: 'Bookkeeping', subtitle: 'Track income, business expenses, worker payments, and net cash.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.' },
-  es: { title: 'Registros financieros', subtitle: 'Registra ingresos, gastos del negocio, pagos a trabajadores y efectivo neto.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.' },
-  vi: { title: 'Sổ thu chi', subtitle: 'Theo dõi thu nhập, chi phí kinh doanh, tiền trả nhân sự và tiền ròng.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.' }
+  en: { title: 'Bookkeeping', subtitle: 'Track income, business expenses, worker payments, and net cash.', today: 'Today', thisWeek: 'This Week', thisMonth: 'This Month', ytd: 'Year to Date', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', topPerformers: 'Top performers', topPerformersHelp: 'Completed jobs in this period.', topCustomer: 'Top customer', topCleaner: 'Top cleaner', mostProfitableCustomer: 'Most profitable customer', mostProfitableService: 'Most profitable service', averageJobValue: 'Average job value', averageProfitPerJob: 'Average profit per job', noneYet: 'None yet', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.' },
+  es: { title: 'Registros financieros', subtitle: 'Registra ingresos, gastos del negocio, pagos a trabajadores y efectivo neto.', today: 'Hoy', thisWeek: 'Esta semana', thisMonth: 'Este mes', ytd: 'Año hasta hoy', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', topPerformers: 'Mejores resultados', topPerformersHelp: 'Trabajos completados en este período.', topCustomer: 'Mejor cliente', topCleaner: 'Mejor trabajador', mostProfitableCustomer: 'Cliente más rentable', mostProfitableService: 'Servicio más rentable', averageJobValue: 'Valor promedio por trabajo', averageProfitPerJob: 'Ganancia promedio por trabajo', noneYet: 'Aún no hay datos', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.' },
+  vi: { title: 'Sổ thu chi', subtitle: 'Theo dõi thu nhập, chi phí kinh doanh, tiền trả nhân sự và tiền ròng.', today: 'Hôm nay', thisWeek: 'Tuần này', thisMonth: 'Tháng này', ytd: 'Từ đầu năm đến nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', topPerformers: 'Kết quả nổi bật', topPerformersHelp: 'Công việc đã hoàn thành trong khoảng thời gian này.', topCustomer: 'Khách hàng hàng đầu', topCleaner: 'Nhân sự hàng đầu', mostProfitableCustomer: 'Khách hàng lợi nhuận cao nhất', mostProfitableService: 'Dịch vụ lợi nhuận cao nhất', averageJobValue: 'Giá trị công việc trung bình', averageProfitPerJob: 'Lợi nhuận trung bình mỗi công việc', noneYet: 'Chưa có dữ liệu', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.' }
 } as const;
 
 function TransactionSection({ title, rows, empty, total }: { title: string; rows: DashboardDetailRow[]; empty: string; total: number }) {
@@ -65,6 +76,7 @@ export default function BookkeepingPage() {
   const [rangeReady, setRangeReady] = useState(false);
   const [collected, setCollected] = useState<DashboardDetailResult | null>(null);
   const [netCash, setNetCash] = useState<DashboardDetailResult | null>(null);
+  const [performers, setPerformers] = useState<PerformerData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -98,11 +110,18 @@ export default function BookkeepingPage() {
         return;
       }
       if (!cancelled) { setPlan(nextPlan); setRole(nextRole); }
-      const [incomeResult, netCashResult] = await Promise.all([
+      const [incomeResult, netCashResult, performersResponse] = await Promise.all([
         fetchDashboardMetricDetails(supabase, org.organizationId, 'collected', range, locale),
-        fetchDashboardMetricDetails(supabase, org.organizationId, 'net-cash', range, locale)
+        fetchDashboardMetricDetails(supabase, org.organizationId, 'net-cash', range, locale),
+        fetch(`/api/analytics/top-performers?range=${range}`, { cache: 'no-store' })
       ]);
-      if (!cancelled) { setCollected(incomeResult); setNetCash(netCashResult); setLoading(false); }
+      const performersJson = await performersResponse.json().catch(() => null) as PerformerData | null;
+      if (!cancelled) {
+        setCollected(incomeResult);
+        setNetCash(netCashResult);
+        setPerformers(performersResponse.ok ? performersJson : null);
+        setLoading(false);
+      }
     }
     void load();
     return () => { cancelled = true; };
@@ -139,6 +158,22 @@ export default function BookkeepingPage() {
             <section className="bookkeeping-metrics" aria-label="Bookkeeping totals">
               {metrics.map(([label, value]) => <div key={label} className="bookkeeping-metric-card"><span className="bookkeeping-metric-label">{label}</span><strong className="bookkeeping-metric-value">{formatCurrency(value)}</strong></div>)}
             </section>
+
+            <section className="card" style={{ marginTop: 18, padding: 18 }} aria-label={c.topPerformers}>
+              <div style={{ marginBottom: 14 }}>
+                <h2 style={{ margin: 0 }}>{c.topPerformers}</h2>
+                <p className="muted" style={{ margin: '4px 0 0' }}>{c.topPerformersHelp}</p>
+              </div>
+              <div className="finance-summary-grid">
+                <MetricCard label={c.topCustomer} value={performers?.topCustomer?.name || c.noneYet} hint={performers?.topCustomer ? `${formatCurrency(performers.topCustomer.revenue)} · ${performers.topCustomer.jobs} jobs` : undefined} />
+                <MetricCard label={c.topCleaner} value={performers?.topCleaner?.name || c.noneYet} hint={performers?.topCleaner ? `${performers.topCleaner.jobs} jobs · ${formatCurrency(performers.topCleaner.pay)} pay · ${formatCurrency(performers.topCleaner.profit)} profit` : undefined} />
+                <MetricCard label={c.mostProfitableCustomer} value={performers?.mostProfitableCustomer?.name || c.noneYet} hint={performers?.mostProfitableCustomer ? formatCurrency(performers.mostProfitableCustomer.profit) : undefined} />
+                <MetricCard label={c.mostProfitableService} value={performers?.mostProfitableService?.name || c.noneYet} hint={performers?.mostProfitableService ? `${formatCurrency(performers.mostProfitableService.profit)} · ${performers.mostProfitableService.jobs} jobs` : undefined} />
+                <MetricCard label={c.averageJobValue} value={formatCurrency(performers?.averageJobValue || 0)} />
+                <MetricCard label={c.averageProfitPerJob} value={formatCurrency(performers?.averageProfitPerJob || 0)} />
+              </div>
+            </section>
+
             <div className="bookkeeping-ledgers">
               <TransactionSection title={c.incomeReceived} rows={incomeRows} empty={c.empty} total={incomeTotal} />
               <TransactionSection title={c.contractorsPaid} rows={contractorSection?.rows || []} empty={c.empty} total={contractorTotal} />
