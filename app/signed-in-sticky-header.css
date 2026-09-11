@@ -1,0 +1,47 @@
+/* Final signed-in header authority for every dashboard role and page. */
+
+@media (max-width: 1024px) {
+  html body .dashboard-shell > .dashboard-shell-header,
+  html[data-native-app='true'] body .dashboard-shell > .dashboard-shell-header,
+  html[data-standalone='true'] body .dashboard-shell > .dashboard-shell-header,
+  body.native-app .dashboard-shell > .dashboard-shell-header,
+  body.capacitor-app .dashboard-shell > .dashboard-shell-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: #243f53 !important;
+    border-bottom: 1px solid rgba(255,255,255,.10) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+
+  html body .dashboard-shell > .main {
+    padding-top: 92px !important;
+  }
+
+  html[data-native-app='true'] body .dashboard-shell > .main,
+  html[data-standalone='true'] body .dashboard-shell > .main,
+  body.native-app .dashboard-shell > .main,
+  body.capacitor-app .dashboard-shell > .main {
+    padding-top: calc(84px + env(safe-area-inset-top)) !important;
+  }
+
+  html body .dashboard-shell .app-page-content > .everitt-cmd-trigger {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 0 !important;
+    z-index: 2 !important;
+  }
+}
