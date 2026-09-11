@@ -121,24 +121,30 @@ html body .customer-card-row .record-actions {
   margin-top: 14px !important;
 }
 
-/* Jobs may need more columns than the shared page width. Keep the table inside the page card and scroll only the table when needed. */
+/* Jobs use the same left and right edge as the filters above them. */
 html body .dashboard-shell .jobs-table-card,
 html body .dashboard-shell .jobs-mobile-table-wrap {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
-  overflow-x: auto !important;
+}
+
+html body .dashboard-shell .jobs-table-card {
+  overflow: hidden !important;
+}
+
+html body .dashboard-shell .jobs-mobile-table-wrap {
+  overflow-x: hidden !important;
   overflow-y: visible !important;
-  -webkit-overflow-scrolling: touch;
 }
 
 html body .dashboard-shell table.jobs-operations-table {
   width: 100% !important;
-  max-width: none !important;
-  min-width: 860px !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   margin: 0 !important;
   table-layout: fixed !important;
   box-sizing: border-box !important;
@@ -147,14 +153,30 @@ html body .dashboard-shell table.jobs-operations-table {
 html body .dashboard-shell table.jobs-operations-table th,
 html body .dashboard-shell table.jobs-operations-table td {
   min-width: 0 !important;
+  padding: 12px 8px !important;
   overflow-wrap: anywhere !important;
   word-break: normal !important;
   vertical-align: top !important;
+  box-sizing: border-box !important;
 }
 
-html body .dashboard-shell table.jobs-operations-table th:last-child,
-html body .dashboard-shell table.jobs-operations-table td:last-child {
-  width: 72px !important;
+html body .dashboard-shell table.jobs-operations-table th:nth-child(1),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(1) { width: 11% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(2),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(2) { width: 16% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(3),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(3) { width: 18% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(4),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(4) { width: 13% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(5),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(5) { width: 13% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(6),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(6) { width: 12% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(7),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(7) { width: 9% !important; }
+html body .dashboard-shell table.jobs-operations-table th:nth-child(8),
+html body .dashboard-shell table.jobs-operations-table td:nth-child(8) {
+  width: 8% !important;
   text-align: center !important;
 }
 
@@ -214,6 +236,12 @@ html body .role-portal-shell > .main > footer {
 
   html body .customer-card-row .record-actions {
     margin-top: 10px !important;
+  }
+
+  /* Small screens can scroll the Jobs table internally instead of squeezing it unreadably. */
+  html body .dashboard-shell .jobs-mobile-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   html body .dashboard-shell table.jobs-operations-table {
