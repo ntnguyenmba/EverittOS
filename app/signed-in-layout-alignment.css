@@ -45,6 +45,17 @@ html body :is(
   box-sizing: border-box !important;
 }
 
+/* Keep the customer list close to the filter tabs without a large empty band. */
+html body .dashboard-shell .job-detail-actions + .customers-list {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row:first-of-type,
+html body .dashboard-shell .customer-list > .customer-card-row:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
 /* Customer rows must always start at the same left edge as the page heading and tabs. */
 html body .customer-card-row,
 html body .dashboard-shell .customer-card-row,
