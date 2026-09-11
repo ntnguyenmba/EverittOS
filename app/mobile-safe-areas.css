@@ -58,6 +58,35 @@
   }
 }
 
+/* Native app chrome must remain visible on long pages. Safari/WebView sticky
+   positioning can drop out when an ancestor clips or creates a new containing
+   block, so use a real fixed header inside the installed app only. */
+@media (max-width: 1024px) {
+  html[data-native-app='true'] .dashboard-shell-header,
+  body.native-app .dashboard-shell-header,
+  body.capacitor-app .dashboard-shell-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+    background: linear-gradient(180deg, rgba(20, 39, 53, .96), rgba(20, 39, 53, .82) 72%, rgba(20, 39, 53, 0)) !important;
+    pointer-events: auto !important;
+  }
+
+  html[data-native-app='true'] .dashboard-shell > .main,
+  body.native-app .dashboard-shell > .main,
+  body.capacitor-app .dashboard-shell > .main {
+    padding-top: calc(76px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(34px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
 .network-offline-banner,
 .pwa-update-banner {
   display: flex;
