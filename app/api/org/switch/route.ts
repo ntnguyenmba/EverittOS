@@ -40,6 +40,21 @@ async function resolveSwitchTarget(userId: string, organizationId: string) {
   return { role, destination: dashboardPathForRole(role) } as const;
 }
 
+async function persistActiveWorkspace(userId: string, organizationId: string) {
+  const admin = createAdminSupabase();
+  if (!admin) return;
+
+  // Keep the database fallback in sync with the httpOnly cookie. This matters
+  // on login/app startup when a request can resolve before the browser cookie
+  // is available. Without this, a person who belongs to both an owner and a
+  // worker workspace can briefly enter the worker workspace and then be sent
+  // back to their owner workspace.
+  await admin
+    .from('profiles')
+    .update({ organization_id: organizationId })
+    .eq('id', userId);
+}
+
 function setActiveWorkspace(response: NextResponse, organizationId: string) {
   response.cookies.set(ACTIVE_ORG_COOKIE, organizationId, {
     httpOnly: true,
@@ -63,6 +78,7 @@ export async function GET(request: Request) {
   if ('error' in target) return NextResponse.redirect(new URL('/dashboard', request.url));
 
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
+  await persistActiveWorkspace(user.id, organizationId);
   await logActivityServer({
     organizationId,
     userId: user.id,
@@ -91,6 +107,7 @@ export async function POST(request: Request) {
   if ('error' in target) return NextResponse.json({ error: target.error }, { status: target.status });
 
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
+  await persistActiveWorkspace(user.id, organizationId);
   await logActivityServer({
     organizationId,
     userId: user.id,
