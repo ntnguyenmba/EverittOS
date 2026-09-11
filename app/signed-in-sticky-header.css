@@ -91,11 +91,31 @@
     padding-top: 92px !important;
   }
 
+  html[data-native-app='true'] body .dashboard-shell,
+  html[data-standalone='true'] body .dashboard-shell,
+  body.native-app .dashboard-shell,
+  body.capacitor-app .dashboard-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+  }
+
   html[data-native-app='true'] body .dashboard-shell > .main,
   html[data-standalone='true'] body .dashboard-shell > .main,
   body.native-app .dashboard-shell > .main,
   body.capacitor-app .dashboard-shell > .main {
+    min-height: 100dvh !important;
     padding-top: calc(84px + env(safe-area-inset-top)) !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  html[data-native-app='true'] body .dashboard-shell > .main > footer,
+  html[data-standalone='true'] body .dashboard-shell > .main > footer,
+  body.native-app .dashboard-shell > .main > footer,
+  body.capacitor-app .dashboard-shell > .main > footer {
+    margin-top: auto !important;
   }
 
   html body .dashboard-shell .app-page-content > .everitt-cmd-trigger {
