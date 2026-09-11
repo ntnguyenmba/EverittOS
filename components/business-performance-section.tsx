@@ -8,18 +8,39 @@ import { useTranslation } from '@/components/locale-provider';
 import { formatCurrency } from '@/lib/finance-format';
 import type { BusinessPerformanceSummary } from '@/lib/finance-types';
 
+type RangeKey = 'month' | '90d' | 'year' | 'all_time';
+type PerformerData = {
+  completedJobs: number;
+  topCustomer: { name: string; revenue: number; profit: number; jobs: number } | null;
+  topCleaner: { name: string; revenue: number; pay: number; profit: number; jobs: number } | null;
+  mostProfitableCustomer: { name: string; revenue: number; profit: number; jobs: number } | null;
+  mostProfitableService: { name: string; revenue: number; profit: number; jobs: number } | null;
+  averageJobValue: number;
+  averageProfitPerJob: number;
+};
+
 const copy = {
   en: { cashAfterPaidCosts: 'Cash after paid costs' },
   es: { cashAfterPaidCosts: 'Efectivo después de costos pagados' },
   vi: { cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả' }
 } as const;
 
+const ranges: { key: RangeKey; label: string }[] = [
+  { key: 'month', label: 'This month' },
+  { key: '90d', label: 'Last 90 days' },
+  { key: 'year', label: 'This year' },
+  { key: 'all_time', label: 'All time' }
+];
+
 export function BusinessPerformanceSection() {
   const { locale } = useTranslation();
-  const c = copy[locale];
+  const c = copy[locale] || copy.en;
   const [data, setData] = useState<BusinessPerformanceSummary | null>(null);
+  const [performers, setPerformers] = useState<PerformerData | null>(null);
+  const [range, setRange] = useState<RangeKey>('month');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [performersLoading, setPerformersLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -35,21 +56,29 @@ export function BusinessPerformanceSection() {
     void load();
   }, []);
 
-  if (loading) {
-    return <p className="loading-state">Loading business performance...</p>;
-  }
+  useEffect(() => {
+    async function loadPerformers() {
+      setPerformersLoading(true);
+      const res = await fetch(`/api/analytics/top-performers?range=${range}`, { cache: 'no-store' });
+      const json = await res.json();
+      setPerformersLoading(false);
+      if (!res.ok) {
+        setError(json.error || 'Unable to load performance metrics.');
+        return;
+      }
+      setPerformers(json);
+    }
+    void loadPerformers();
+  }, [range]);
 
-  if (error) {
-    return <p className="auth-message auth-message-error">{error}</p>;
-  }
-
+  if (loading) return <p className="loading-state">Loading business performance...</p>;
+  if (error && !data) return <p className="auth-message auth-message-error">{error}</p>;
   if (!data) return null;
 
   const hasCharts =
     data.revenueByMonth.some((p) => p.value > 0) ||
     data.revenueByCustomer.length > 0 ||
     data.expensesByCategory.length > 0;
-  // Prefer shared dashboard cash definition: payments − contractor cash paid − expenses.
   const cashAfterExpenses =
     typeof data.cashAfterPaidCosts === 'number'
       ? data.cashAfterPaidCosts
@@ -60,11 +89,9 @@ export function BusinessPerformanceSection() {
       <div className="page-head" style={{ marginBottom: 16 }}>
         <div>
           <h2>Business performance</h2>
-          <p className="muted">Revenue, expenses, and cash tracking. Simple tracking, not full bookkeeping.</p>
+          <p className="muted">Revenue, expenses, cash, customers, and cleaner performance.</p>
         </div>
-        <Link className="btn" href="/expenses">
-          View expenses
-        </Link>
+        <Link className="btn" href="/expenses">View expenses</Link>
       </div>
 
       <div className="finance-summary-grid">
@@ -79,18 +106,6 @@ export function BusinessPerformanceSection() {
           loading={loading}
         />
         <MetricCard
-          label="Top customer"
-          value={data.topCustomer ? data.topCustomer.name : 'None yet'}
-          hint={data.topCustomer ? formatCurrency(data.topCustomer.revenue) : undefined}
-          loading={loading}
-        />
-        <MetricCard
-          label="Top team member"
-          value={data.topWorker ? data.topWorker.name : 'None yet'}
-          hint={data.topWorker ? formatCurrency(data.topWorker.revenue) : undefined}
-          loading={loading}
-        />
-        <MetricCard
           label="Most profitable job"
           value={data.mostProfitableJob ? data.mostProfitableJob.title : 'None yet'}
           hint={data.mostProfitableJob ? formatCurrency(data.mostProfitableJob.profit) : undefined}
@@ -99,12 +114,55 @@ export function BusinessPerformanceSection() {
         />
       </div>
 
+      <div className="card" style={{ marginTop: 18 }}>
+        <div className="page-head" style={{ marginBottom: 14 }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Top performers</h3>
+            <p className="muted" style={{ margin: '4px 0 0' }}>Completed jobs in the selected period.</p>
+          </div>
+          <label>
+            <span className="sr-only">Performance period</span>
+            <select value={range} onChange={(event) => setRange(event.target.value as RangeKey)}>
+              {ranges.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+            </select>
+          </label>
+        </div>
+
+        {error ? <p className="auth-message auth-message-error">{error}</p> : null}
+        <div className="finance-summary-grid">
+          <MetricCard
+            label="Top customer"
+            value={performers?.topCustomer?.name || 'None yet'}
+            hint={performers?.topCustomer ? `${formatCurrency(performers.topCustomer.revenue)} · ${performers.topCustomer.jobs} jobs` : undefined}
+            loading={performersLoading}
+          />
+          <MetricCard
+            label="Top cleaner"
+            value={performers?.topCleaner?.name || 'None yet'}
+            hint={performers?.topCleaner ? `${performers.topCleaner.jobs} jobs · ${formatCurrency(performers.topCleaner.pay)} pay · ${formatCurrency(performers.topCleaner.profit)} profit` : undefined}
+            loading={performersLoading}
+          />
+          <MetricCard
+            label="Most profitable customer"
+            value={performers?.mostProfitableCustomer?.name || 'None yet'}
+            hint={performers?.mostProfitableCustomer ? formatCurrency(performers.mostProfitableCustomer.profit) : undefined}
+            loading={performersLoading}
+          />
+          <MetricCard
+            label="Most profitable service"
+            value={performers?.mostProfitableService?.name || 'None yet'}
+            hint={performers?.mostProfitableService ? `${formatCurrency(performers.mostProfitableService.profit)} · ${performers.mostProfitableService.jobs} jobs` : undefined}
+            loading={performersLoading}
+          />
+          <MetricCard label="Average job value" value={formatCurrency(performers?.averageJobValue || 0)} loading={performersLoading} />
+          <MetricCard label="Average profit per job" value={formatCurrency(performers?.averageProfitPerJob || 0)} loading={performersLoading} />
+        </div>
+      </div>
+
       {!hasCharts ? (
         <div className="card finance-empty-block">
           <p>No financial data yet.</p>
-          <Link className="btn btn-primary" href="/expenses">
-            Add your first expense
-          </Link>
+          <Link className="btn btn-primary" href="/expenses">Add your first expense</Link>
         </div>
       ) : (
         <div className="charts-grid">
