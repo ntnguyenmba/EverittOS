@@ -1,0 +1,141 @@
+/* Central signed-in alignment authority for owner, client, and worker views. */
+
+html body .dashboard-shell .app-page-content,
+html body .role-portal-shell .app-page-content,
+html body .contractor-main .app-page-content,
+html body .client-main .app-page-content,
+html body .dashboard-shell .app-page-stage,
+html body .role-portal-shell .app-page-stage {
+  width: min(720px, calc(100% - 32px)) !important;
+  max-width: 720px !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell .app-page-stage > *,
+html body .role-portal-shell .app-page-stage > *,
+html body .contractor-main .app-page-stage > *,
+html body .client-main .app-page-stage > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body :is(
+  .customers-list,
+  .customer-list,
+  .jobs-list,
+  .jobs-list-body,
+  .team-member-list,
+  .record-list,
+  .client-job-card-list,
+  .client-jobs-list,
+  .contractor-jobs-list,
+  .job-visits-list,
+  .finance-expense-list
+) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row,
+html body .dashboard-shell .customer-list > .customer-card-row {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: start !important;
+  justify-content: stretch !important;
+  gap: 14px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(2),
+html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(2) {
+  align-self: start !important;
+  justify-self: start !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(3),
+html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(3) {
+  grid-column: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  justify-self: stretch !important;
+}
+
+html body .dashboard-shell :is(
+  .list-row,
+  .jobs-operations-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+),
+html body .role-portal-shell :is(
+  .list-row,
+  .jobs-operations-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell :is(.record-actions,.page-actions,.inline-actions,.button-row),
+html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.button-row) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html body .dashboard-shell > .main > footer,
+html body .role-portal-shell > .main > footer {
+  width: min(720px, calc(100% - 32px)) !important;
+  max-width: 720px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 760px) {
+  html body .dashboard-shell .app-page-content,
+  html body .role-portal-shell .app-page-content,
+  html body .contractor-main .app-page-content,
+  html body .client-main .app-page-content,
+  html body .dashboard-shell .app-page-stage,
+  html body .role-portal-shell .app-page-stage,
+  html body .dashboard-shell > .main > footer,
+  html body .role-portal-shell > .main > footer {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+  }
+
+  html body .dashboard-shell .customers-list > .customer-card-row,
+  html body .dashboard-shell .customer-list > .customer-card-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(3),
+  html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(3) {
+    grid-column: 1 !important;
+  }
+}
