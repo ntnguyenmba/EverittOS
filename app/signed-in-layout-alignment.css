@@ -45,33 +45,34 @@ html body :is(
   box-sizing: border-box !important;
 }
 
+/* Customer records share the page's left edge instead of using a desktop offset/grid. */
 html body .dashboard-shell .customers-list > .customer-card-row,
 html body .dashboard-shell .customer-list > .customer-card-row {
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) !important;
-  align-items: start !important;
-  justify-content: stretch !important;
-  gap: 14px !important;
+  display: block !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
 }
 
-html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(2),
-html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(2) {
-  align-self: start !important;
-  justify-self: start !important;
-}
-
-html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(3),
-html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(3) {
-  grid-column: 2 !important;
-  width: 100% !important;
+html body .dashboard-shell .customers-list > .customer-card-row > *,
+html body .dashboard-shell .customer-list > .customer-card-row > * {
+  width: auto !important;
+  max-width: 100% !important;
   min-width: 0 !important;
-  margin: 0 !important;
-  justify-self: stretch !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  justify-self: start !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row > :last-child,
+html body .dashboard-shell .customer-list > .customer-card-row > :last-child {
+  margin-top: 14px !important;
 }
 
 html body .dashboard-shell :is(
@@ -128,14 +129,8 @@ html body .role-portal-shell > .main > footer {
     max-width: none !important;
   }
 
-  html body .dashboard-shell .customers-list > .customer-card-row,
-  html body .dashboard-shell .customer-list > .customer-card-row {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-  }
-
-  html body .dashboard-shell .customers-list > .customer-card-row > :nth-child(3),
-  html body .dashboard-shell .customer-list > .customer-card-row > :nth-child(3) {
-    grid-column: 1 !important;
+  html body .dashboard-shell .customers-list > .customer-card-row > :last-child,
+  html body .dashboard-shell .customer-list > .customer-card-row > :last-child {
+    margin-top: 10px !important;
   }
 }
