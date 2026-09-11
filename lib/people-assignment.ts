@@ -186,6 +186,21 @@ async function workerIdForEmail(
   return match?.id ?? null;
 }
 
+async function existingWorkerId(
+  supabase: SupabaseClient,
+  organizationId: string,
+  candidateId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('workers')
+    .select('id, active')
+    .eq('organization_id', organizationId)
+    .eq('id', candidateId)
+    .maybeSingle();
+
+  return data && data.active !== false ? String(data.id) : null;
+}
+
 export async function ensureWorkerForPerson(
   supabase: SupabaseClient,
   organizationId: string,
@@ -194,6 +209,9 @@ export async function ensureWorkerForPerson(
   ownerUserId?: string | null,
   email?: string | null
 ): Promise<string> {
+  const directWorker = await existingWorkerId(supabase, organizationId, userId);
+  if (directWorker) return directWorker;
+
   const existing = await workerIdForPerson(supabase, organizationId, userId);
   if (existing) return existing;
 
