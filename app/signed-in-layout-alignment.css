@@ -45,10 +45,14 @@ html body :is(
   box-sizing: border-box !important;
 }
 
-/* Customer records share the page's left edge instead of using a desktop offset/grid. */
+/* Customer rows must always start at the same left edge as the page heading and tabs. */
+html body .customer-card-row,
+html body .dashboard-shell .customer-card-row,
 html body .dashboard-shell .customers-list > .customer-card-row,
 html body .dashboard-shell .customer-list > .customer-card-row {
+  position: relative !important;
   display: block !important;
+  grid-template-columns: none !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -57,21 +61,52 @@ html body .dashboard-shell .customer-list > .customer-card-row {
   padding-left: 0 !important;
   padding-right: 0 !important;
   box-sizing: border-box !important;
+  text-align: left !important;
 }
 
-html body .dashboard-shell .customers-list > .customer-card-row > *,
-html body .dashboard-shell .customer-list > .customer-card-row > * {
-  width: auto !important;
+html body .customer-card-row > .record-card-overlay-link {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 0 !important;
+}
+
+html body .customer-card-row > .customer-logo-image {
+  float: left !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 14px 8px 0 !important;
+}
+
+html body .customer-card-row > div,
+html body .dashboard-shell .customer-card-row > div {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  justify-self: start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  justify-self: stretch !important;
+  align-self: start !important;
   box-sizing: border-box !important;
+  text-align: left !important;
 }
 
-html body .dashboard-shell .customers-list > .customer-card-row > :last-child,
-html body .dashboard-shell .customer-list > .customer-card-row > :last-child {
+html body .customer-card-row > div > :first-child {
+  margin-left: 0 !important;
+}
+
+html body .customer-card-row .record-actions {
+  position: relative !important;
+  z-index: 2 !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
   margin-top: 14px !important;
 }
 
@@ -129,8 +164,7 @@ html body .role-portal-shell > .main > footer {
     max-width: none !important;
   }
 
-  html body .dashboard-shell .customers-list > .customer-card-row > :last-child,
-  html body .dashboard-shell .customer-list > .customer-card-row > :last-child {
+  html body .customer-card-row .record-actions {
     margin-top: 10px !important;
   }
 }
