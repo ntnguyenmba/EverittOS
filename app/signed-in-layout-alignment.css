@@ -180,6 +180,99 @@ html body .dashboard-shell table.jobs-operations-table td:nth-child(8) {
   text-align: center !important;
 }
 
+/* Team management is one continuous page, not a stack of floating cards. */
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card,
+html body .role-portal-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 24px 0 !important;
+  border: 0 !important;
+  border-top: 1px solid #dbe3ea !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html body .dashboard-shell #invite-by-email.settings-card {
+  margin-top: 20px !important;
+}
+
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card > button,
+html body .role-portal-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card > button {
+  padding: 0 !important;
+  min-height: 44px !important;
+}
+
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card h3,
+html body .role-portal-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card h3 {
+  font-size: 18px !important;
+  line-height: 1.35 !important;
+}
+
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card :is(input, select, textarea, .input) {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell #active-users .list-row,
+html body .dashboard-shell #pending-invitations .list-row,
+html body .dashboard-shell #revoked-invitations .list-row {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
 html body .dashboard-shell :is(
   .list-row,
   .jobs-operations-row,
@@ -236,6 +329,25 @@ html body .role-portal-shell > .main > footer {
 
   html body .customer-card-row .record-actions {
     margin-top: 10px !important;
+  }
+
+  html body .dashboard-shell :is(
+    #invite-by-email,
+    #transfer-ownership,
+    #active-users,
+    #pending-invitations,
+    #revoked-invitations,
+    #team-audit-history
+  ).settings-card,
+  html body .role-portal-shell :is(
+    #invite-by-email,
+    #transfer-ownership,
+    #active-users,
+    #pending-invitations,
+    #revoked-invitations,
+    #team-audit-history
+  ).settings-card {
+    padding: 18px 0 !important;
   }
 
   /* Small screens can scroll the Jobs table internally instead of squeezing it unreadably. */
