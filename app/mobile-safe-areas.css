@@ -1,6 +1,4 @@
-/* Safe-area support for installed PWA and Capacitor shells only.
-   Keep the native safe area on the visible header instead of body. Applying it
-   to both body and the header creates a large blank block above the app chrome. */
+/* Safe-area support for installed PWA and native shells. */
 
 @supports (padding: env(safe-area-inset-top)) {
   html[data-native-app='true'] body,
@@ -13,25 +11,16 @@
   }
 
   html[data-native-app='true'] .dashboard-shell-header,
-  html[data-standalone='true'] .dashboard-shell-header {
+  html[data-standalone='true'] .dashboard-shell-header,
+  body.native-app .dashboard-shell-header,
+  body.capacitor-app .dashboard-shell-header {
     padding-top: max(8px, env(safe-area-inset-top)) !important;
   }
 
   html[data-native-app='true'] .app-shell-header,
-  html[data-native-app='true'] .mobile-nav-top {
-    padding-top: 0 !important;
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-  }
-
-  /* Installed PWA: browser chrome does not reserve the safe area for us. */
-  html[data-standalone='true'] .dashboard-shell-header {
-    padding-top: max(8px, env(safe-area-inset-top)) !important;
-  }
-
+  html[data-native-app='true'] .mobile-nav-top,
   html[data-standalone='true'] .app-shell-header,
   html[data-standalone='true'] .mobile-nav-top {
-    padding-top: env(safe-area-inset-top);
     padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
   }
@@ -58,32 +47,49 @@
   }
 }
 
-/* Native app chrome must remain visible on long pages. Safari/WebView sticky
-   positioning can drop out when an ancestor clips or creates a new containing
-   block, so use a real fixed header inside the installed app only. */
+/* Central signed-in header behavior for owner, client, and worker views.
+   Sticky keeps the header frozen while preserving its document-space height,
+   so page content and Ask Everitt always begin below it instead of underneath it. */
 @media (max-width: 1024px) {
+  .dashboard-shell-header,
   html[data-native-app='true'] .dashboard-shell-header,
+  html[data-standalone='true'] .dashboard-shell-header,
   body.native-app .dashboard-shell-header,
   body.capacitor-app .dashboard-shell-header {
-    position: fixed !important;
+    position: sticky !important;
     top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    left: auto !important;
+    right: auto !important;
     z-index: 1000 !important;
     width: 100% !important;
     max-width: 100% !important;
-    padding-top: max(8px, env(safe-area-inset-top)) !important;
-    padding-left: max(16px, env(safe-area-inset-left)) !important;
-    padding-right: max(16px, env(safe-area-inset-right)) !important;
-    background: linear-gradient(180deg, rgba(20, 39, 53, .96), rgba(20, 39, 53, .82) 72%, rgba(20, 39, 53, 0)) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: #243f53 !important;
+    border-bottom: 1px solid rgba(255,255,255,.10) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     pointer-events: auto !important;
   }
 
+  .dashboard-shell > .main,
   html[data-native-app='true'] .dashboard-shell > .main,
+  html[data-standalone='true'] .dashboard-shell > .main,
   body.native-app .dashboard-shell > .main,
   body.capacitor-app .dashboard-shell > .main {
-    padding-top: calc(76px + env(safe-area-inset-top)) !important;
-    padding-bottom: calc(34px + env(safe-area-inset-bottom)) !important;
+    padding-top: 20px !important;
+  }
+
+  .dashboard-shell .app-page-content > .everitt-cmd-trigger {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 0 !important;
+    z-index: 2 !important;
   }
 }
 
@@ -96,7 +102,6 @@
   flex-wrap: wrap;
 }
 
-/* Prevent iOS input zoom without changing desktop typography */
 @media (max-width: 767px) {
   input,
   select,
@@ -105,7 +110,6 @@
   }
 }
 
-/* Responsive table safety without redesigning desktop tables */
 @media (max-width: 1024px) {
   .table-responsive,
   .data-table-wrap,
