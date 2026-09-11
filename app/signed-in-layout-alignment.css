@@ -121,6 +121,43 @@ html body .customer-card-row .record-actions {
   margin-top: 14px !important;
 }
 
+/* Jobs may need more columns than the shared page width. Keep the table inside the page card and scroll only the table when needed. */
+html body .dashboard-shell .jobs-table-card,
+html body .dashboard-shell .jobs-mobile-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .dashboard-shell table.jobs-operations-table {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 860px !important;
+  margin: 0 !important;
+  table-layout: fixed !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell table.jobs-operations-table th,
+html body .dashboard-shell table.jobs-operations-table td {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  vertical-align: top !important;
+}
+
+html body .dashboard-shell table.jobs-operations-table th:last-child,
+html body .dashboard-shell table.jobs-operations-table td:last-child {
+  width: 72px !important;
+  text-align: center !important;
+}
+
 html body .dashboard-shell :is(
   .list-row,
   .jobs-operations-row,
@@ -177,5 +214,9 @@ html body .role-portal-shell > .main > footer {
 
   html body .customer-card-row .record-actions {
     margin-top: 10px !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table {
+    min-width: 760px !important;
   }
 }
