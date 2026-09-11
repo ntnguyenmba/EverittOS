@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
-  const body = (await request.json()) as {
+  const body = (await request.json().catch(() => null)) as {
     jobId?: string;
     scheduled_start?: string | null;
     scheduled_end?: string | null;
@@ -36,8 +36,9 @@ export async function POST(request: Request) {
     department_id?: string | null;
     timezone?: string | null;
     visits?: VisitInput[];
-  };
+  } | null;
 
+  if (!body) return NextResponse.json({ error: 'Invalid schedule request.' }, { status: 400 });
   if (!body.jobId) return NextResponse.json({ error: 'jobId is required' }, { status: 400 });
 
   const admin = createAdminSupabase();
@@ -156,26 +157,29 @@ export async function POST(request: Request) {
     .update(update)
     .eq('id', body.jobId)
     .eq('organization_id', ctx.workspace.organizationId);
+
   if (error) return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
 
-  await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId);
-
-  await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    'job',
-    body.jobId,
-    'schedule_changed',
-    Array.isArray(body.visits) && visitCount === 0
-      ? `Schedule cleared: ${job.title || 'Job'}`
-      : `Schedule updated: ${job.title || 'Job'}`,
-    { timezone: body.timezone ?? null, visitCount }
-  );
-
-  await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
-    organizationId: ctx.workspace.organizationId,
-    userId: ctx.userId,
-    metadata: { jobId: body.jobId, visitCount, timezone: body.timezone ?? null }
+  after(async () => {
+    await Promise.allSettled([
+      syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId!),
+      logWorkspaceActivity(
+        ctx.workspace.organizationId,
+        ctx.userId,
+        'job',
+        body.jobId!,
+        'schedule_changed',
+        Array.isArray(body.visits) && visitCount === 0
+          ? `Schedule cleared: ${job.title || 'Job'}`
+          : `Schedule updated: ${job.title || 'Job'}`,
+        { timezone: body.timezone ?? null, visitCount }
+      ),
+      trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
+        organizationId: ctx.workspace.organizationId,
+        userId: ctx.userId,
+        metadata: { jobId: body.jobId, visitCount, timezone: body.timezone ?? null }
+      })
+    ]);
   });
 
   return NextResponse.json({
