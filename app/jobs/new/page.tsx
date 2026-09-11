@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { JobCreateI18nBind } from '@/components/job-create-i18n-bind';
+import { JobCreateRecurringDurationBridge } from '@/components/job-create-recurring-duration-bridge';
 import { useTranslation } from '@/components/locale-provider';
 import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import styles from './job-form-simplify.module.css';
@@ -23,6 +24,7 @@ export default function NewJobPage() {
   return (
     <AppShell plan="free" role="owner">
       <JobCreateI18nBind />
+      <JobCreateRecurringDurationBridge />
       <header className="page-header job-create-page-header">
         <div>
           <h1>{copy.pageTitle}</h1>
