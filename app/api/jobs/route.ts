@@ -55,7 +55,6 @@ export async function GET(request: Request) {
       ? new Date(Date.now() - 7 * 86400000).toISOString()
       : undefined;
 
-  // Managers: top up recurring windows on normal app traffic (no paid cron required).
   if (isManagerRole(normalizeRole(ctx.workspace.role))) {
     void generateActiveSeriesForOrganization(ctx.supabase, ctx.workspace, ctx.userId).catch(() => undefined);
   }
@@ -85,10 +84,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unable to load jobs. Try refreshing the page.' }, { status: 500 });
   }
 
-  // Apply canonical period/status post-filters (today, finished, etc.) shared with exports.
-  const filteredJobs = missingCompletionDateOnly
-    ? jobs
-    : applyJobsExportPostFilters(jobs, filters);
+  const filteredJobs = missingCompletionDateOnly ? jobs : applyJobsExportPostFilters(jobs, filters);
 
   let enrichedJobs = filteredJobs;
   const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
@@ -156,43 +152,58 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: emailCheck.error }, { status: 400 });
   }
 
-  const assignedUserId = body.assigned_to?.trim() || null;
+  const assignedInputId = body.assigned_to?.trim() || null;
   let assignedWorkerId: string | null = null;
+  let assignedAuthUserId: string | null = null;
   let assignedDisplayName = 'Team member';
 
-  if (assignedUserId) {
-    const { data: member } = await ctx.supabase
-      .from('organization_members')
-      .select('user_id')
+  if (assignedInputId) {
+    const { data: existingWorker } = await ctx.supabase
+      .from('workers')
+      .select('id, name, email, auth_user_id, active')
       .eq('organization_id', ctx.workspace.organizationId)
-      .eq('user_id', assignedUserId)
-      .eq('active', true)
+      .eq('id', assignedInputId)
       .maybeSingle();
 
-    if (!member) {
-      return NextResponse.json({ error: 'Assigned teammate must be an active member of this company.' }, { status: 400 });
-    }
+    if (existingWorker && existingWorker.active !== false) {
+      assignedWorkerId = String(existingWorker.id);
+      assignedAuthUserId = existingWorker.auth_user_id ? String(existingWorker.auth_user_id) : null;
+      assignedDisplayName = existingWorker.name?.trim() || existingWorker.email?.trim() || 'Worker';
+    } else {
+      const { data: member } = await ctx.supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', ctx.workspace.organizationId)
+        .eq('user_id', assignedInputId)
+        .eq('active', true)
+        .maybeSingle();
 
-    const { data: profile } = await ctx.supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', assignedUserId)
-      .maybeSingle();
+      if (!member) {
+        return NextResponse.json({ error: 'Selected worker was not found in this company.' }, { status: 400 });
+      }
 
-    assignedDisplayName = profile?.full_name?.trim() || profile?.email?.trim() || 'Team member';
+      assignedAuthUserId = assignedInputId;
+      const { data: profile } = await ctx.supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', assignedInputId)
+        .maybeSingle();
 
-    try {
-      assignedWorkerId = await ensureWorkerForPerson(
-        ctx.supabase,
-        ctx.workspace.organizationId,
-        assignedUserId,
-        assignedDisplayName,
-        ctx.workspace.ownerUserId || ctx.userId,
-        profile?.email
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to link this teammate to a worker record.';
-      return NextResponse.json({ error: message }, { status: 400 });
+      assignedDisplayName = profile?.full_name?.trim() || profile?.email?.trim() || 'Team member';
+
+      try {
+        assignedWorkerId = await ensureWorkerForPerson(
+          ctx.supabase,
+          ctx.workspace.organizationId,
+          assignedInputId,
+          assignedDisplayName,
+          ctx.workspace.ownerUserId || ctx.userId,
+          profile?.email
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to link this teammate to a worker record.';
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
     }
   }
 
@@ -352,8 +363,6 @@ export async function POST(request: Request) {
 
   const createdJob = data;
 
-  // Keep jobs.assigned_to and job_assignments in sync so detail UI does not
-  // prompt managers to assign the same contractor again after create.
   if (assignedWorkerId) {
     const { error: assignmentError } = await ctx.supabase.from('job_assignments').upsert(
       {
@@ -365,7 +374,6 @@ export async function POST(request: Request) {
       { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
     );
     if (assignmentError) {
-      // Fallback insert without upsert options for older PostgREST schemas.
       await ctx.supabase.from('job_assignments').insert({
         job_id: createdJob.id,
         worker_id: assignedWorkerId,
@@ -416,13 +424,13 @@ export async function POST(request: Request) {
     createdJob.id,
     'job_created',
     `Job created: ${body.title.trim()}`,
-    { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email, timezone: requestedTimeZone }
+    { assignedTo: assignedWorkerId, assignedAuthUserId, assignedEmail: emailCheck.email, timezone: requestedTimeZone }
   );
 
-  if (assignedUserId) {
+  if (assignedAuthUserId) {
     await ctx.supabase.from('notifications').insert({
       organization_id: ctx.workspace.organizationId,
-      user_id: assignedUserId,
+      user_id: assignedAuthUserId,
       type: 'assignment',
       title: 'New job assigned',
       body: body.title.trim(),
@@ -436,18 +444,16 @@ export async function POST(request: Request) {
       createdJob.id,
       'job_assigned',
       'Job assigned to a teammate',
-      { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
+      { assignedTo: assignedWorkerId, assignedAuthUserId, assignedEmail: emailCheck.email }
     );
   }
 
   await trackProductEventServer(ctx.supabase, 'job_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: createdJob.id, assignedTo: assignedWorkerId, assignedUserId, timezone: requestedTimeZone }
+    metadata: { jobId: createdJob.id, assignedTo: assignedWorkerId, assignedAuthUserId, timezone: requestedTimeZone }
   });
 
-  // Auto-grant client portal access when a customer email is present.
-  // Missing or invalid email must never block job creation.
   let clientAccess: { attempted: boolean; reused?: boolean; accessGranted?: boolean } = { attempted: false };
   const customerEmail = body.customer_email?.trim() || '';
   if (customerEmail && admin) {
