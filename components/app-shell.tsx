@@ -149,7 +149,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: var(--eo-space-4) max(var(--eo-space-5),env(safe-area-inset-right)) 24px max(var(--eo-space-5),env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
-        .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
+        .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; display:flex!important; flex-direction:column!important; gap:18px!important; }
         .app-role-banner {
           width: 100% !important;
           min-width: 0 !important;
@@ -192,9 +192,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           .app-role-banner-name { font-size: 17px; }
         }
         @media(max-width:760px){
-          .dashboard-shell {
-            min-height: 100dvh;
-          }
+          .dashboard-shell { min-height: 100dvh; }
           .dashboard-shell-header {
             position: sticky !important;
             top: 0 !important;
@@ -206,34 +204,31 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           }
           .dashboard-shell > .main {
             min-height: calc(100dvh - 80px - env(safe-area-inset-top)) !important;
-            padding-top: 12px !important;
-            padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+            padding-top: 18px !important;
+            padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
             display: flex !important;
             flex-direction: column !important;
           }
           .dashboard-shell .app-page-content {
             flex: 0 0 auto;
+            gap: 18px !important;
           }
           .dashboard-shell > .main > footer {
-            margin-top: auto !important;
+            margin-top: 18px !important;
           }
           .dashboard-shell .app-page-content > .everitt-cmd-trigger {
             position: relative !important;
             z-index: 2 !important;
-            margin-top: 0 !important;
+            margin: 0 !important;
             background: #FFFFFF !important;
             color: #172033 !important;
             border-color: #DDE6F2 !important;
             box-shadow: 0 6px 18px rgba(23,32,51,.10) !important;
           }
-          .dashboard-shell .app-page-content > .everitt-cmd-trigger * {
-            color: #172033 !important;
-          }
+          .dashboard-shell .app-page-content > .everitt-cmd-trigger * { color: #172033 !important; }
           .role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}
           .role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
-          .role-portal-contractor > .main {
-            padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
-          }
+          .role-portal-contractor > .main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
           .contractor-fixed-bottom-nav {
             position: fixed;
             left: 14px;
@@ -248,8 +243,6 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
             border-radius: 16px;
             background: #FFFFFF;
             box-shadow: 0 10px 28px rgba(18,40,56,.18);
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
           }
           .contractor-fixed-bottom-nav a {
             display: flex;
@@ -263,10 +256,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
             font-weight: 700;
             text-decoration: none;
           }
-          .contractor-fixed-bottom-nav a:hover,.contractor-fixed-bottom-nav a:focus-visible {
-            background: #edf3f6;
-            color: #173044 !important;
-          }
+          .contractor-fixed-bottom-nav a:hover,.contractor-fixed-bottom-nav a:focus-visible { background: #edf3f6; color: #173044 !important; }
         }
         @media(max-width:480px){.role-portal-shell .portal-client-nav{grid-template-columns:minmax(0,1fr)}}
       `}</style>
