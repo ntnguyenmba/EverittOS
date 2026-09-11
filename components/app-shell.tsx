@@ -107,7 +107,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell {
           position: relative;
           isolation: isolate;
-          min-height: 100svh;
+          min-height: 100dvh;
           width: 100%;
           max-width: 100%;
           display: block;
@@ -132,9 +132,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background:
-            linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
-            linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3));
+          background: rgba(18, 37, 50, 0.42);
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { display: none; }
@@ -148,7 +146,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           padding: var(--eo-space-2) max(var(--eo-space-5), env(safe-area-inset-right)) 0 max(var(--eo-space-5), env(safe-area-inset-left));
           box-sizing: border-box;
         }
-        .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: var(--eo-space-4) max(var(--eo-space-5),env(safe-area-inset-right)) 40px max(var(--eo-space-5),env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
+        .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: var(--eo-space-4) max(var(--eo-space-5),env(safe-area-inset-right)) 24px max(var(--eo-space-5),env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
@@ -192,29 +190,48 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           .app-role-banner { min-height: 60px; padding: var(--eo-space-3) var(--eo-space-4); border-radius: var(--eo-radius-control); }
           .app-role-banner-context { font-size: 11px; }
           .app-role-banner-name { font-size: 17px; }
-          .dashboard-shell-overlay{background:linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48))!important}
         }
         @media(max-width:760px){
+          .dashboard-shell {
+            min-height: 100dvh;
+          }
           .dashboard-shell-header {
             position: sticky !important;
             top: 0 !important;
             z-index: 100 !important;
-            padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 4px max(14px, env(safe-area-inset-left)) !important;
-            background: linear-gradient(180deg, rgba(24,45,59,.86), rgba(24,45,59,.54) 72%, rgba(24,45,59,0)) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left)) !important;
+            background: #234A84 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
           }
           .dashboard-shell > .main {
-            padding-top: 8px !important;
-            padding-bottom: max(48px, calc(28px + env(safe-area-inset-bottom))) !important;
+            min-height: calc(100dvh - 80px - env(safe-area-inset-top)) !important;
+            padding-top: 12px !important;
+            padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .dashboard-shell .app-page-content {
+            flex: 0 0 auto;
+          }
+          .dashboard-shell > .main > footer {
+            margin-top: auto !important;
           }
           .dashboard-shell .app-page-content > .everitt-cmd-trigger {
-            position: static !important;
+            position: relative !important;
+            z-index: 2 !important;
+            margin-top: 0 !important;
+            background: #FFFFFF !important;
+            color: #172033 !important;
+            border-color: #DDE6F2 !important;
+            box-shadow: 0 6px 18px rgba(23,32,51,.10) !important;
+          }
+          .dashboard-shell .app-page-content > .everitt-cmd-trigger * {
+            color: #172033 !important;
           }
           .role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}
           .role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
           .role-portal-contractor > .main {
-            padding-top: 8px !important;
             padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
           }
           .contractor-fixed-bottom-nav {
@@ -229,10 +246,10 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
             padding: 7px;
             border: 1px solid rgba(36,63,83,.14);
             border-radius: 16px;
-            background: rgba(255,255,255,.97);
+            background: #FFFFFF;
             box-shadow: 0 10px 28px rgba(18,40,56,.18);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
           }
           .contractor-fixed-bottom-nav a {
             display: flex;
