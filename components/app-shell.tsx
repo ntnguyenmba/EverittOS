@@ -195,18 +195,26 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
           .dashboard-shell-overlay{background:linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48))!important}
         }
         @media(max-width:760px){
+          .dashboard-shell-header {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
+            padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 4px max(14px, env(safe-area-inset-left)) !important;
+            background: linear-gradient(180deg, rgba(24,45,59,.86), rgba(24,45,59,.54) 72%, rgba(24,45,59,0)) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          }
+          .dashboard-shell > .main {
+            padding-top: 8px !important;
+            padding-bottom: max(48px, calc(28px + env(safe-area-inset-bottom))) !important;
+          }
+          .dashboard-shell .app-page-content > .everitt-cmd-trigger {
+            position: static !important;
+          }
           .role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}
           .role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
-          .role-portal-contractor .dashboard-shell-header {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            z-index: 100 !important;
-            padding-top: max(8px, env(safe-area-inset-top)) !important;
-          }
           .role-portal-contractor > .main {
-            padding-top: calc(74px + env(safe-area-inset-top)) !important;
+            padding-top: 8px !important;
             padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
           }
           .contractor-fixed-bottom-nav {
