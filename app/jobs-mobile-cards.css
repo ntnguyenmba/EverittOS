@@ -162,7 +162,9 @@
     display: flex !important;
     justify-content: flex-start !important;
     align-items: center !important;
-    padding-top: 10px !important;
+    padding-top: 12px !important;
+    padding-bottom: 18px !important;
+    margin-bottom: 12px !important;
   }
 
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-menu {
