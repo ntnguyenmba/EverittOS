@@ -149,7 +149,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
         .dashboard-shell > .main { width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: var(--eo-space-4) max(var(--eo-space-5),env(safe-area-inset-right)) 24px max(var(--eo-space-5),env(safe-area-inset-left))!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
-        .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; display:flex!important; flex-direction:column!important; gap:18px!important; }
+        .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; display:flex!important; flex-direction:column!important; gap:20px!important; }
         .app-role-banner {
           width: 100% !important;
           min-width: 0 !important;
@@ -198,23 +198,23 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
             top: 0 !important;
             z-index: 100 !important;
             padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left)) !important;
-            background: #234A84 !important;
+            background: transparent !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
           .dashboard-shell > .main {
             min-height: calc(100dvh - 80px - env(safe-area-inset-top)) !important;
-            padding-top: 18px !important;
-            padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
+            padding-top: 20px !important;
+            padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
             display: flex !important;
             flex-direction: column !important;
           }
           .dashboard-shell .app-page-content {
             flex: 0 0 auto;
-            gap: 18px !important;
+            gap: 20px !important;
           }
           .dashboard-shell > .main > footer {
-            margin-top: 18px !important;
+            margin-top: 20px !important;
           }
           .dashboard-shell .app-page-content > .everitt-cmd-trigger {
             position: relative !important;
