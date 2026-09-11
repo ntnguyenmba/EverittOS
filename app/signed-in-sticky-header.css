@@ -1,5 +1,26 @@
 /* Final signed-in header authority for every dashboard role and page. */
 
+/* Menu selection and hover must always keep readable contrast on every viewport. */
+html body .mobile-nav-drawer-link.active,
+html body .mobile-nav-drawer-link[aria-current='page'],
+html body .mobile-nav-drawer .nav-item.active,
+html body .mobile-nav-drawer .nav-item[aria-current='page'],
+html body .mobile-nav-drawer-link:hover,
+html body .mobile-nav-drawer .nav-item:hover {
+  background: #eaf2ff !important;
+  color: #172033 !important;
+  box-shadow: inset 3px 0 0 #4f7cc4 !important;
+}
+
+html body .mobile-nav-drawer-link.active *,
+html body .mobile-nav-drawer-link[aria-current='page'] *,
+html body .mobile-nav-drawer .nav-item.active *,
+html body .mobile-nav-drawer .nav-item[aria-current='page'] *,
+html body .mobile-nav-drawer-link:hover *,
+html body .mobile-nav-drawer .nav-item:hover * {
+  color: #172033 !important;
+}
+
 @media (max-width: 1024px) {
   html body .dashboard-shell > .dashboard-shell-header,
   html[data-native-app='true'] body .dashboard-shell > .dashboard-shell-header,
@@ -85,22 +106,6 @@
     justify-content: center !important;
     box-sizing: border-box !important;
     align-self: center !important;
-  }
-
-  html body .mobile-nav-drawer-link.active,
-  html body .mobile-nav-drawer-link[aria-current='page'],
-  html body .mobile-nav-drawer .nav-item.active,
-  html body .mobile-nav-drawer .nav-item[aria-current='page'] {
-    background: #eaf2ff !important;
-    color: #172033 !important;
-    box-shadow: inset 3px 0 0 #4f7cc4 !important;
-  }
-
-  html body .mobile-nav-drawer-link.active *,
-  html body .mobile-nav-drawer-link[aria-current='page'] *,
-  html body .mobile-nav-drawer .nav-item.active *,
-  html body .mobile-nav-drawer .nav-item[aria-current='page'] * {
-    color: #172033 !important;
   }
 
   html body .dashboard-shell > .main {
