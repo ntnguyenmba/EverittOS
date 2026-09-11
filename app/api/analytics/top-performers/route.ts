@@ -4,7 +4,7 @@ import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type RangeKey = 'month' | '90d' | 'year' | 'all_time';
+type RangeKey = 'today' | 'week' | 'month' | '90d' | 'ytd' | 'year' | 'all_time';
 
 type JobRow = {
   id: string;
@@ -30,8 +30,19 @@ function num(value: unknown) {
 function startDateFor(range: RangeKey): string | null {
   const now = new Date();
   if (range === 'all_time') return null;
+  if (range === 'today') {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }
+  if (range === 'week') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }
   if (range === 'month') return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  if (range === 'year') return new Date(now.getFullYear(), 0, 1).toISOString();
+  if (range === 'ytd' || range === 'year') return new Date(now.getFullYear(), 0, 1).toISOString();
   const d = new Date(now);
   d.setDate(d.getDate() - 89);
   d.setHours(0, 0, 0, 0);
@@ -47,7 +58,8 @@ export async function GET(request: Request) {
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const rawRange = new URL(request.url).searchParams.get('range');
-  const range: RangeKey = rawRange === '90d' || rawRange === 'year' || rawRange === 'all_time' ? rawRange : 'month';
+  const allowed: RangeKey[] = ['today', 'week', 'month', '90d', 'ytd', 'year', 'all_time'];
+  const range: RangeKey = allowed.includes(rawRange as RangeKey) ? (rawRange as RangeKey) : 'month';
   const startDate = startDateFor(range);
 
   let jobsQuery = ctx.supabase
