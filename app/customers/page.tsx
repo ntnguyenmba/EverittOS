@@ -5,7 +5,6 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ContactLink } from '@/components/contact-link';
-import { CustomerLogo } from '@/components/customer-logo';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -91,17 +90,7 @@ function CustomersPageContent() {
         <div className="customers-header-actions" style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
           {isManagerRole(role) ? <Link className="btn" href="/customers/import">{copy.importCsv}</Link> : null}
           {isManagerRole(role) ? <ExportMenu endpoint="/api/exports/customers" query={{ period:periodFilter, stage:stageFilter }} locale={locale} disabled={loading} onError={(message)=>appFeedback.error(message||exportCopy.exportFailed)} onSuccess={(format)=>{if(format==='share')appFeedback.success(exportCopy.shareSent);}} /> : null}
-          {canManage ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => {
-                window.location.assign('/customers/new');
-              }}
-            >
-              {copy.addCustomer}
-            </button>
-          ) : null}
+          {canManage ? <button type="button" className="btn btn-primary" onClick={()=>window.location.assign('/customers/new')}>{copy.addCustomer}</button> : null}
         </div>
       } />
       <div className="job-detail-actions" style={{ marginBottom:16, flexWrap:'wrap', gap:8 }}>
@@ -112,9 +101,15 @@ function CustomersPageContent() {
         {!loading && customers.length===0 && <LocalizedEmptyState emptyKey="customers" icon="none" showAction={false} />}
         {!loading && visibleCustomers.map((customer)=>(
           <div key={customer.id} className="list-row customer-card-row">
-            <Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${customerDisplayName(customer)} in a new tab`}><span className="record-card-overlay-label">Open {customerDisplayName(customer)} in a new tab</span></Link>
-            <CustomerLogo logoPath={customer.logo_path} alt={customerDisplayName(customer)} size={48} />
-            <div style={{minWidth:0,flex:1}}><h3><Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(customer)}</Link></h3><p className="muted">{customerStageLabel(customer.pipeline_stage||customer.record_type||'active',locale)}{customer.lead_source?` · ${customer.lead_source}`:''}</p><p style={{fontWeight:700}}>{copy.openJobs}: {openJobCounts[customer.id]||0}</p><p><ContactLink type="phone" value={customer.phone}/></p><p><ContactLink type="email" value={customer.email}/></p><p>{customerDisplayAddress(customer,'No address')}</p><RecordActions viewHref={`/customers/${customer.id}`} viewLabel="Open" editHref={canManage?`/customers/${customer.id}`:undefined} editLabel={copy.edit} onRemove={canManage?async()=>{if(removingId)return;if(!window.confirm(`Remove ${customerDisplayName(customer)}?`))return;setRemovingId(customer.id);const res=await fetch(`/api/customers/${customer.id}`,{method:'DELETE'});const json=(await res.json().catch(()=>({}))) as {error?:string};setRemovingId(null);if(!res.ok){appFeedback.error(json.error||'Unable to remove customer.');return;}appFeedback.label('removed');void load();}:undefined}/></div>
+            <div style={{minWidth:0,width:'100%'}}>
+              <h3><Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(customer)}</Link></h3>
+              <p className="muted">{customerStageLabel(customer.pipeline_stage||customer.record_type||'active',locale)}{customer.lead_source?` · ${customer.lead_source}`:''}</p>
+              <p style={{fontWeight:700}}>{copy.openJobs}: {openJobCounts[customer.id]||0}</p>
+              <p><ContactLink type="phone" value={customer.phone}/></p>
+              <p><ContactLink type="email" value={customer.email}/></p>
+              <p>{customerDisplayAddress(customer,'No address')}</p>
+              <RecordActions viewHref={`/customers/${customer.id}`} viewLabel="Open" editHref={canManage?`/customers/${customer.id}`:undefined} editLabel={copy.edit} onRemove={canManage?async()=>{if(removingId)return;if(!window.confirm(`Remove ${customerDisplayName(customer)}?`))return;setRemovingId(customer.id);const res=await fetch(`/api/customers/${customer.id}`,{method:'DELETE'});const json=(await res.json().catch(()=>({}))) as {error?:string};setRemovingId(null);if(!res.ok){appFeedback.error(json.error||'Unable to remove customer.');return;}appFeedback.label('removed');void load();}:undefined}/>
+            </div>
           </div>
         ))}
         {!loading&&customers.length>0?<div className="record-count" style={{display:'grid',gap:8,marginTop:16}}><p className="muted" style={{margin:0}}>{copy.showing} {Math.min(visibleCount,customers.length)} / {customers.length}</p>{hasMore?<button type="button" className="btn" onClick={()=>setVisibleCount((count)=>count+CUSTOMER_PAGE_SIZE)}>{copy.showMore}</button>:null}</div>:null}
