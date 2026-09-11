@@ -226,3 +226,24 @@ html body .page-actions {
   flex-wrap: wrap !important;
   gap: 12px !important;
 }
+
+/* Signed-in chrome: Everitt navy, cool white pages, no bright blue. */
+:root {
+  --navy-primary: #243f53;
+  --navy-secondary: #1d3343;
+  --accent: #285d78;
+  --accent-strong: #243f53;
+  --secondary-blue: #285d78;
+  --selected: #eef3f5;
+  --warm-white: #ffffff;
+  --soft-white: #ffffff;
+  --bg: #e9eef2;
+}
+
+html body .dashboard-shell .card,
+html body .dashboard-shell .panel,
+html body .dashboard-shell .settings-card,
+html body .app-page-content > .everitt-cmd-trigger {
+  background: #ffffff !important;
+  color: #132433 !important;
+}
