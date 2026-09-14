@@ -72,6 +72,29 @@ function seriesIntervalUnit(series: SeriesRow): RecurrenceIntervalUnit {
   return 'weeks';
 }
 
+function occurrenceWeekday(date: string): number | null {
+  const match = String(date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay();
+}
+
+function occurrenceMatchesSeriesWeekday(series: SeriesRow, date: string): boolean {
+  const intervalUnit = seriesIntervalUnit(series);
+  if (intervalUnit !== 'weeks') return true;
+
+  const configured = (series.recurrence_weekdays || [])
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
+  if (!configured.length && series.recurrence_weekday != null) {
+    const legacy = Number(series.recurrence_weekday);
+    if (Number.isInteger(legacy) && legacy >= 0 && legacy <= 6) configured.push(legacy);
+  }
+  if (!configured.length) return true;
+
+  const actual = occurrenceWeekday(date);
+  return actual != null && configured.includes(actual);
+}
+
 async function syncJobAssignment(
   supabase: SupabaseClient,
   organizationId: string,
@@ -102,11 +125,6 @@ async function syncJobAssignment(
   }
 }
 
-/**
- * Count successfully generated jobs for a series.
- * Includes skipped/cancelled rows so occurrence_limit cannot be bypassed by skipping.
- * Failed inserts are never counted.
- */
 export async function countGeneratedOccurrencesForSeries(
   supabase: SupabaseClient,
   organizationId: string,
@@ -121,11 +139,6 @@ export async function countGeneratedOccurrencesForSeries(
   return count || 0;
 }
 
-/**
- * Generate missing occurrences for an active series inside the app-wide window.
- * Safe to call repeatedly — unique (series, occurrence_date, local time) prevents duplicates.
- * Paused/ended series create nothing.
- */
 export async function generateSeriesWindow(
   supabase: SupabaseClient,
   workspace: CurrentWorkspace,
@@ -150,7 +163,7 @@ export async function generateSeriesWindow(
     startDate: series.start_date
   });
 
-  const occurrences = generateOccurrences(
+  const generatedOccurrences = generateOccurrences(
     {
       frequency: series.recurrence_frequency as RecurrenceFrequency,
       interval: series.recurrence_interval ?? resolved.interval,
@@ -170,6 +183,13 @@ export async function generateSeriesWindow(
       existingCount,
       skipOverdueToday: true
     }
+  );
+
+  // Never materialize a weekly occurrence on a weekday that is not configured on the series.
+  // This is a final safety boundary around recurrence generation and prevents malformed or
+  // stale recurrence calculations from creating jobs on the wrong day.
+  const occurrences = generatedOccurrences.filter((occurrence) =>
+    occurrenceMatchesSeriesWeekday(series, occurrence.occurrenceDate)
   );
 
   const financeDefaults = financeDefaultsFromSeries(series);
@@ -259,7 +279,6 @@ async function afterOccurrenceCreated(
   });
 }
 
-/** Top up all active series for an organization (request-time scheduler). */
 export async function generateActiveSeriesForOrganization(
   supabase: SupabaseClient,
   workspace: CurrentWorkspace,
