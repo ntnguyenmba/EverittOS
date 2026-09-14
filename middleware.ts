@@ -41,6 +41,7 @@ import {
   ROLE_BLOCKED_PREFIXES,
   isLoggedOutOnlyPath,
   isProtectedPath,
+  isPublicApiPath,
   isSessionApiPath,
   matchedMainNavPath,
   pathMatchesPrefix
@@ -62,6 +63,11 @@ export async function middleware(request: NextRequest) {
   if (isLegacyMarketingAppPath(pathname)) return NextResponse.redirect(MARKETING_SITE_URL);
   if (pathname === '/demo') return NextResponse.redirect(new URL(isDemoFeatureEnabled() ? '/signup?next=/onboarding' : '/login', request.url));
   if (pathname === '/api/demo/enter' && !isDemoFeatureEnabled()) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Public API handlers own their auth lifecycle. In particular, do not refresh or
+  // clear an old Supabase session in middleware while /api/auth/login is creating
+  // a new one, because competing Set-Cookie headers can invalidate the first login.
+  if (isPublicApiPath(pathname)) return NextResponse.next({ request });
 
   let supabaseResponse = NextResponse.next({ request });
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), { cookies: createSupabaseCookieAdapter({
