@@ -37,7 +37,11 @@
     border-radius: 16px !important;
     background: #fff !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tr.jobs-operations-row:focus-within {
+    z-index: 40 !important;
   }
 
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td {
@@ -169,7 +173,11 @@
 
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-menu {
     position: relative !important;
-    z-index: 3 !important;
+    z-index: 50 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel {
+    z-index: 100 !important;
   }
 
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .record-card-overlay-link {
