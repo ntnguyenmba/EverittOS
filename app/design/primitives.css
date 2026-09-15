@@ -45,7 +45,7 @@
 .eo-btn-primary {
   border-color: var(--eo-color-accent);
   background: var(--eo-color-accent);
-  color: #ffffff;
+  color: var(--eo-color-surface);
 }
 
 .eo-field {
@@ -176,4 +176,1123 @@
     grid-column: 1;
     grid-row: auto;
   }
+}
+
+
+/* Consolidated signed-in layout and responsive contracts.
+   These rules previously lived in six late-loading override sheets. */
+
+
+/* Formerly universal-card-spacing.css. */
+/* Universal EverittOS card spacing.
+   Loaded last so owner, worker, client, web, iOS, and Android views share
+   the same readable inset on every standard card and list-row surface. */
+
+:root {
+  --eo-card-inline-padding: 28px;
+  --eo-card-block-padding: 22px;
+}
+
+/* Use body-level specificity because several legacy page files still contain
+   !important padding rules. This central rule is the final authority. */
+body :is(
+  .card:not(.jobs-table-card):not(.contractor-portal-hero),
+  .panel,
+  .settings-card,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card,
+  .record-card,
+  .role-summary-card,
+  .contractor-metric,
+  .dashboard-metric-card,
+  .list-row,
+  [data-record-card='true']
+) {
+  box-sizing: border-box !important;
+  padding-left: var(--eo-card-inline-padding) !important;
+  padding-right: var(--eo-card-inline-padding) !important;
+  padding-top: var(--eo-card-block-padding) !important;
+  padding-bottom: var(--eo-card-block-padding) !important;
+}
+
+/* Team and directory rows need the same inset even when older alignment files
+   target them with more specific selectors. */
+body .dashboard-shell .team-member-card,
+body .role-portal-shell .team-member-card,
+body .dashboard-shell .team-member-list > .list-row,
+body .role-portal-shell .team-member-list > .list-row,
+body .dashboard-shell .customer-card-row,
+body .role-portal-shell .customer-card-row {
+  padding-left: var(--eo-card-inline-padding) !important;
+  padding-right: var(--eo-card-inline-padding) !important;
+  padding-top: var(--eo-card-block-padding) !important;
+  padding-bottom: var(--eo-card-block-padding) !important;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --eo-card-inline-padding: 20px;
+    --eo-card-block-padding: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --eo-card-inline-padding: 18px;
+    --eo-card-block-padding: 16px;
+  }
+}
+
+
+/* Formerly viewport-lock.css. */
+/* Keep every signed-in view inside the phone width.
+   Do not use 100vw here: on iOS it is wider than the visible screen and
+   makes the logo/menu jump to the edges when the page is touched. */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+html {
+  overflow-x: clip;
+}
+
+body {
+  position: relative;
+  touch-action: pan-y;
+}
+
+.dashboard-shell,
+.role-portal-shell,
+.shared-hamburger-shell,
+.app-shell,
+.portal-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: clip !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell-background,
+.dashboard-shell-overlay {
+  width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+}
+
+.dashboard-shell-header,
+.mobile-nav,
+.mobile-nav-bar,
+.dashboard-shell > .main,
+.app-page-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.mobile-nav-bar {
+  padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+}
+
+.mobile-nav-top-logo,
+.mobile-nav-menu-btn {
+  flex: 0 0 auto;
+  transform: none !important;
+}
+
+.dashboard-shell > .main,
+.app-page-content,
+.app-page-content > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.app-page-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ask-everitt,
+.ask-everitt-command,
+.app-role-banner,
+.card,
+.unified-job-form {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell,
+  .role-portal-shell {
+    overflow-x: clip !important;
+  }
+}
+
+
+/* Formerly control-breathing.css. */
+/* One look: one sheet, thin line between entries only. */
+
+html body .contractor-dashboard,
+html body .client-portal-jobs,
+html body .client-portal-job-detail,
+html body .client-portal-settings,
+html body .owner-home-sheet {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html body .card:not(.customer-card-row),
+html body .panel,
+html body .settings-card,
+html body .contractor-next-job,
+html body .client-next-visit-paper,
+html body .job-financials-card,
+html body .role-summary-card,
+html body .team-directory-card {
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+  padding: 18px 20px !important;
+  text-shadow: none !important;
+}
+
+html body :is(
+  .job-visits-list,
+  .client-job-card-list,
+  .jobs-list,
+  .jobs-list-body,
+  .jobs-mobile-table-wrap,
+  .customers-list,
+  .finance-expense-list
+),
+html body .dashboard-shell table.jobs-operations-table,
+html body .dashboard-shell .jobs-table-card {
+  display: block !important;
+  background: var(--eo-color-surface) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+  padding: 8px 18px !important;
+}
+
+html body .team-directory-card .team-member-list,
+html body .team-directory-card .customer-list {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html body .dashboard-shell :is(
+  .list-row,
+  .jobs-operations-row,
+  .portal-job-row,
+  .client-job-card,
+  .client-job-row,
+  .customer-card-row,
+  .card.customer-card-row,
+  .team-member-card,
+  article.team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+),
+html body .role-portal-shell :is(
+  .list-row,
+  .jobs-operations-row,
+  .portal-job-row,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  .finance-list-card
+) {
+  width: 100% !important;
+  background: transparent !important;
+  color: var(--eo-color-text) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--eo-color-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 16px 0 !important;
+  margin: 0 !important;
+}
+
+html body .dashboard-shell :is(
+  .list-row,
+  .jobs-operations-row,
+  .portal-job-row,
+  .client-job-card,
+  .customer-card-row,
+  .team-member-card,
+  article.team-member-card,
+  .finance-list-card,
+  .record-card,
+  .quote-row
+):last-child {
+  border-bottom: 0 !important;
+}
+
+html body .dashboard-shell .jobs-operations-row td,
+html body .dashboard-shell .jobs-operations-row th,
+html body .dashboard-shell .jobs-operations-table td,
+html body .dashboard-shell .jobs-operations-table th {
+  border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .jobs-operations-row) .record-actions,
+html body .dashboard-shell :is(.customer-card-row, .list-row, .team-member-card, .jobs-operations-row) * {
+  border-top: 0 !important;
+}
+
+html body .dashboard-shell .record-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: auto !important;
+  margin-top: 12px !important;
+  padding-top: 0 !important;
+  border: 0 !important;
+}
+
+html body .dashboard-shell .record-actions .btn {
+  width: auto !important;
+  min-height: 44px !important;
+}
+
+html body .contractor-portal-hero,
+html body .contractor-content-card,
+html body .page-head,
+html body .page-header,
+html body .owner-home-primary,
+html body .client-next-visit-copy {
+  display: grid !important;
+  gap: 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Title block sits close to the first form or list on every page. */
+html body .dashboard-shell .app-page-stage > * + *,
+html body .role-portal-shell .app-page-stage > * + * {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell :is(.page-header, .page-head, .quote-page-head) + *,
+html body .dashboard-shell .page-subtitle + *,
+html body .dashboard-shell .quote-workspace > .page-header + *,
+html body .dashboard-shell .quote-compose-grid {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell .quote-compose {
+  padding-top: 8px !important;
+}
+
+html body .card :is(h1, h2, h3, h4, strong, p),
+html body .list-row :is(h1, h2, h3, h4, strong, p),
+html body .portal-job-row :is(strong, p),
+html body .contractor-next-job :is(strong, p, span),
+html body .contractor-portal-hero :is(h1, h2, p) {
+  color: var(--eo-color-text) !important;
+  text-shadow: none !important;
+}
+
+html body .muted {
+  color: var(--eo-color-muted) !important;
+}
+
+html body .btn,
+html body a.btn,
+html body button.btn {
+  min-height: 44px !important;
+  padding: 10px 16px !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+}
+
+html body .btn-primary,
+html body button[type='submit'] {
+  background: var(--eo-color-brand) !important;
+  border-color: var(--eo-color-brand) !important;
+  color: var(--eo-color-surface) !important;
+}
+
+html body .btn:not(.btn-primary),
+html body a.btn:not(.btn-primary) {
+  background: var(--eo-color-surface) !important;
+  border-color: var(--eo-color-border-strong) !important;
+  color: var(--eo-color-text) !important;
+}
+
+html body .status-badge,
+html body .badge,
+html body .chip,
+html body .pill,
+html body .eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: max-content !important;
+  min-height: 32px !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  background: var(--eo-color-surface-subtle) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  color: var(--eo-color-text-secondary) !important;
+  white-space: nowrap !important;
+}
+
+html body .button-row,
+html body .inline-actions,
+html body .page-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+}
+
+/* Signed-in chrome: Everitt navy, cool white pages, no bright blue. */
+:root {
+  --navy-primary: var(--eo-color-brand);
+  --navy-secondary: var(--eo-color-primary-hover);
+  --accent: var(--eo-color-accent);
+  --accent-strong: var(--eo-color-brand);
+  --secondary-blue: var(--eo-color-accent);
+  --selected: var(--eo-color-surface-subtle);
+  --warm-white: var(--eo-color-surface);
+  --soft-white: var(--eo-color-surface);
+  --bg: var(--eo-color-page);
+}
+
+html body .dashboard-shell .card,
+html body .dashboard-shell .panel,
+html body .dashboard-shell .settings-card,
+html body .app-page-content > .everitt-cmd-trigger {
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+}
+
+
+/* Formerly signed-in-sticky-header.css. */
+/* Final signed-in header authority for every dashboard role and page. */
+
+/* Menu selection and hover must always keep readable contrast on every viewport. */
+html body .mobile-nav-drawer-link.active,
+html body .mobile-nav-drawer-link[aria-current='page'],
+html body .mobile-nav-drawer .nav-item.active,
+html body .mobile-nav-drawer .nav-item[aria-current='page'],
+html body .mobile-nav-drawer-link:hover,
+html body .mobile-nav-drawer .nav-item:hover {
+  background: var(--eo-color-surface-subtle) !important;
+  color: var(--eo-color-text) !important;
+  box-shadow: inset 3px 0 0 var(--eo-color-accent) !important;
+}
+
+html body .mobile-nav-drawer-link.active *,
+html body .mobile-nav-drawer-link[aria-current='page'] *,
+html body .mobile-nav-drawer .nav-item.active *,
+html body .mobile-nav-drawer .nav-item[aria-current='page'] *,
+html body .mobile-nav-drawer-link:hover *,
+html body .mobile-nav-drawer .nav-item:hover * {
+  color: var(--eo-color-text) !important;
+}
+
+@media (max-width: 1024px) {
+  html body .dashboard-shell > .dashboard-shell-header,
+  html[data-native-app='true'] body .dashboard-shell > .dashboard-shell-header,
+  html[data-standalone='true'] body .dashboard-shell > .dashboard-shell-header,
+  body.native-app .dashboard-shell > .dashboard-shell-header,
+  body.capacitor-app .dashboard-shell > .dashboard-shell-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left)) !important;
+    box-sizing: border-box !important;
+    background: var(--eo-color-brand) !important;
+    border-bottom: 1px solid rgba(255,255,255,.10) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav,
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-bar {
+    width: 100% !important;
+    min-height: 52px !important;
+    height: 52px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-top-logo,
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-actions {
+    height: 44px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-top-logo {
+    gap: 10px !important;
+    line-height: 1 !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-top-logo .brand-logo-image {
+    width: 36px !important;
+    height: 36px !important;
+    display: block !important;
+    flex: 0 0 36px !important;
+    object-fit: cover !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-top-logo .brand-logo-name {
+    margin: 0 !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-actions {
+    gap: 8px !important;
+  }
+
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-search-btn,
+  html body .dashboard-shell > .dashboard-shell-header .mobile-nav-menu-btn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    align-self: center !important;
+  }
+
+  html body .dashboard-shell > .main {
+    padding-top: 92px !important;
+  }
+
+  html body .dashboard-shell .app-page-content {
+    margin-bottom: 24px !important;
+  }
+
+  html body .dashboard-shell > .main > footer {
+    margin-top: 0 !important;
+  }
+
+  html[data-native-app='true'] body .dashboard-shell,
+  html[data-standalone='true'] body .dashboard-shell,
+  body.native-app .dashboard-shell,
+  body.capacitor-app .dashboard-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+  }
+
+  html[data-native-app='true'] body .dashboard-shell > .main,
+  html[data-standalone='true'] body .dashboard-shell > .main,
+  body.native-app .dashboard-shell > .main,
+  body.capacitor-app .dashboard-shell > .main {
+    min-height: 100dvh !important;
+    padding-top: calc(84px + env(safe-area-inset-top)) !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  html[data-native-app='true'] body .dashboard-shell > .main > footer,
+  html[data-standalone='true'] body .dashboard-shell > .main > footer,
+  body.native-app .dashboard-shell > .main > footer,
+  body.capacitor-app .dashboard-shell > .main > footer {
+    margin-top: auto !important;
+  }
+
+  html body .dashboard-shell .app-page-content > .everitt-cmd-trigger {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 0 !important;
+    z-index: 2 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  html body .dashboard-shell .app-page-content {
+    margin-bottom: 28px !important;
+  }
+
+  html body .dashboard-shell > .main > footer {
+    margin-top: 0 !important;
+  }
+}
+
+
+/* Formerly signed-in-layout-alignment.css. */
+/* Central signed-in alignment authority for owner, client, and worker views. */
+
+:root {
+  --signed-in-max-width: 1120px;
+  --signed-in-desktop-gutter: 48px;
+  --signed-in-mobile-gutter: 24px;
+}
+
+html body .dashboard-shell .app-page-content,
+html body .role-portal-shell .app-page-content,
+html body .contractor-main .app-page-content,
+html body .client-main .app-page-content,
+html body .dashboard-shell .app-page-stage,
+html body .role-portal-shell .app-page-stage {
+  width: min(var(--signed-in-max-width), calc(100% - var(--signed-in-desktop-gutter))) !important;
+  max-width: var(--signed-in-max-width) !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell .app-page-stage > *,
+html body .role-portal-shell .app-page-stage > *,
+html body .contractor-main .app-page-stage > *,
+html body .client-main .app-page-stage > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body :is(
+  .customers-list,
+  .customer-list,
+  .jobs-list,
+  .jobs-list-body,
+  .team-member-list,
+  .record-list,
+  .client-job-card-list,
+  .client-jobs-list,
+  .contractor-jobs-list,
+  .job-visits-list,
+  .finance-expense-list,
+  .settings-grid,
+  .form,
+  .card,
+  .settings-card
+) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep list content aligned with the page heading and controls. */
+html body .dashboard-shell :is(
+  .customers-list,
+  .customer-list,
+  .jobs-list,
+  .jobs-list-body,
+  .team-member-list,
+  .record-list,
+  .client-job-card-list,
+  .client-jobs-list,
+  .contractor-jobs-list,
+  .job-visits-list,
+  .finance-expense-list
+) > *,
+html body .role-portal-shell :is(
+  .customers-list,
+  .customer-list,
+  .jobs-list,
+  .jobs-list-body,
+  .team-member-list,
+  .record-list,
+  .client-job-card-list,
+  .client-jobs-list,
+  .contractor-jobs-list,
+  .job-visits-list,
+  .finance-expense-list
+) > * {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep the customer list close to the filter tabs without a large empty band. */
+html body .dashboard-shell .job-detail-actions + .customers-list {
+  margin-top: 10px !important;
+}
+
+html body .dashboard-shell .customers-list > .customer-card-row:first-of-type,
+html body .dashboard-shell .customer-list > .customer-card-row:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Customer rows always share the page left edge. */
+html body .customer-card-row,
+html body .dashboard-shell .customer-card-row,
+html body .dashboard-shell .customers-list > .customer-card-row,
+html body .dashboard-shell .customer-list > .customer-card-row {
+  position: relative !important;
+  display: block !important;
+  grid-template-columns: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+}
+
+html body .customer-card-row > .record-card-overlay-link {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 0 !important;
+}
+
+html body .customer-card-row > div,
+html body .dashboard-shell .customer-card-row > div {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  justify-self: stretch !important;
+  align-self: start !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+}
+
+html body .customer-card-row .record-actions {
+  position: relative !important;
+  z-index: 2 !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+  margin-top: 14px !important;
+}
+
+/* Jobs use the same width as the filters above and stay inside the content area. */
+html body .dashboard-shell .jobs-table-card,
+html body .dashboard-shell .jobs-mobile-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell .jobs-table-card {
+  overflow: hidden !important;
+}
+
+html body .dashboard-shell .jobs-mobile-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .dashboard-shell table.jobs-operations-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 920px !important;
+  margin: 0 !important;
+  table-layout: fixed !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell table.jobs-operations-table th,
+html body .dashboard-shell table.jobs-operations-table td {
+  min-width: 0 !important;
+  padding: 12px 10px !important;
+  overflow-wrap: anywhere !important;
+  vertical-align: top !important;
+  box-sizing: border-box !important;
+}
+
+/* Team management reads as one page, with section dividers instead of nested floating cards. */
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card,
+html body .role-portal-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 22px 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--eo-color-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html body .dashboard-shell #invite-by-email.settings-card {
+  margin-top: 20px !important;
+}
+
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card > button,
+html body .role-portal-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card > button {
+  padding: 0 !important;
+  min-height: 44px !important;
+}
+
+html body .dashboard-shell :is(
+  #invite-by-email,
+  #transfer-ownership,
+  #active-users,
+  #pending-invitations,
+  #revoked-invitations,
+  #team-audit-history
+).settings-card :is(input, select, textarea, .input) {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell #active-users .list-row,
+html body .dashboard-shell #pending-invitations .list-row,
+html body .dashboard-shell #revoked-invitations .list-row,
+html body .dashboard-shell .team-member-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell :is(.record-actions,.page-actions,.inline-actions,.button-row),
+html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.button-row) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .dashboard-shell > .main > footer,
+html body .role-portal-shell > .main > footer {
+  width: min(var(--signed-in-max-width), calc(100% - var(--signed-in-desktop-gutter))) !important;
+  max-width: var(--signed-in-max-width) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 760px) {
+  html body .dashboard-shell .app-page-content,
+  html body .role-portal-shell .app-page-content,
+  html body .contractor-main .app-page-content,
+  html body .client-main .app-page-content,
+  html body .dashboard-shell .app-page-stage,
+  html body .role-portal-shell .app-page-stage,
+  html body .dashboard-shell > .main > footer,
+  html body .role-portal-shell > .main > footer {
+    width: calc(100% - var(--signed-in-mobile-gutter)) !important;
+    max-width: none !important;
+  }
+
+  html body .customer-card-row .record-actions {
+    margin-top: 10px !important;
+  }
+
+  html body .dashboard-shell :is(
+    #invite-by-email,
+    #transfer-ownership,
+    #active-users,
+    #pending-invitations,
+    #revoked-invitations,
+    #team-audit-history
+  ).settings-card,
+  html body .role-portal-shell :is(
+    #invite-by-email,
+    #transfer-ownership,
+    #active-users,
+    #pending-invitations,
+    #revoked-invitations,
+    #team-audit-history
+  ).settings-card {
+    padding: 18px 0 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table {
+    min-width: 760px !important;
+  }
+}
+
+
+/* Formerly jobs-mobile-cards.css. */
+@media (max-width: 760px) {
+  html body .dashboard-shell .jobs-table-card,
+  html body .dashboard-shell .jobs-mobile-table-wrap {
+    overflow: visible !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: separate !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table thead { display: none !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tbody {
+    display: grid !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tr.jobs-operations-row {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    border: 1px solid var(--eo-color-border) !important;
+    border-radius: var(--eo-radius-card) !important;
+    background: var(--eo-color-surface) !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tr.jobs-operations-row:focus-within { z-index: 40 !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 8px 0 !important;
+    border: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td::before {
+    content: attr(data-label);
+    display: block !important;
+    margin-bottom: 3px !important;
+    color: var(--eo-color-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-date { order: 1 !important; padding: 0 0 12px !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-property { order: 2 !important; padding: 0 0 12px !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-assigned { order: 3 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-customer-pay { order: 4 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-contractor-pay { order: 5 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-owner-profit { order: 6 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-status { order: 7 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-actions { order: 8 !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-date::before,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-property::before,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-actions::before { display: none !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-date strong,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-property-link,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-assigned > *,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-money > *,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-status > * {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    box-sizing: border-box !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-date strong { font-size: 18px !important; line-height: 1.3 !important; color: var(--eo-color-text) !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-row-time,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-secondary {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-top: 4px !important;
+    color: var(--eo-color-text-secondary) !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-property-link { font-size: 18px !important; font-weight: 700 !important; line-height: 1.3 !important; color: var(--eo-color-text) !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-money .jobs-money-label { display: none !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-money-value,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-assigned > span { color: var(--eo-color-text) !important; font-size: 15px !important; font-weight: 600 !important; line-height: 1.4 !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-actions {
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    padding-top: 12px !important;
+    padding-bottom: 18px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Mobile Jobs actions: explicitly define the menu instead of relying on
+     legacy/global menu CSS. The previous fix only changed overflow/z-index,
+     which is why the white panel could appear with no usable menu content. */
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-menu {
+    position: relative !important;
+    display: inline-flex !important;
+    z-index: 60 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-menu-trigger {
+    position: relative !important;
+    z-index: 61 !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel {
+    position: absolute !important;
+    left: 0 !important;
+    top: calc(100% + 8px) !important;
+    z-index: 1000 !important;
+    display: grid !important;
+    width: min(230px, calc(100vw - 64px)) !important;
+    min-width: 190px !important;
+    padding: 6px !important;
+    gap: 2px !important;
+    border: 1px solid var(--eo-color-border) !important;
+    border-radius: 12px !important;
+    background: var(--eo-color-surface) !important;
+    color: var(--eo-color-text) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    box-shadow: 0 16px 36px rgba(23, 32, 51, 0.18) !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel .jobs-menu-item {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: var(--eo-color-text) !important;
+    font: inherit !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    white-space: normal !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    cursor: pointer !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel .jobs-menu-item:hover,
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel .jobs-menu-item:focus-visible {
+    background: var(--eo-color-surface-subtle) !important;
+    color: var(--eo-color-text) !important;
+  }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .jobs-more-panel .jobs-menu-danger { color: var(--eo-color-danger) !important; }
+
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .record-card-overlay-link { position: absolute !important; inset: 0 !important; z-index: 0 !important; }
+  html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td > :not(.record-card-overlay-link) { position: relative !important; z-index: 1 !important; }
 }

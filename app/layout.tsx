@@ -49,17 +49,9 @@ import './quote-workspace.css';
 import './role-home-structure.css';
 import './legacy-signed-in.css';
 import './global-content-rhythm.css';
-import './universal-card-spacing.css';
-import './viewport-lock.css';
-
-/* One centralized signed-in visual authority. Keep last. */
-import './control-breathing.css';
-import './signed-in-sticky-header.css';
-import './signed-in-layout-alignment.css';
-import './jobs-mobile-cards.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', themeColor: '#234A84' };
 export const metadata: Metadata = { title: 'EverittOS | Run Your Service Business', description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.', manifest: '/manifest.webmanifest', appleWebApp: { capable: true, title: 'EverittOS', statusBarStyle: 'default' }, other: { 'mobile-web-app-capable': 'yes' }, icons: { icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }], shortcut: '/favicon.ico' } };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
