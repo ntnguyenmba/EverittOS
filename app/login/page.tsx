@@ -27,6 +27,9 @@ const IGNORE_IDLE_UNTIL_KEY = 'everittos_ignore_idle_until_v1';
 const loginCopy = {
   en: {
     title: 'Sign in',
+    eyebrow: 'EVERITTOS',
+    welcome: 'Welcome back.',
+    welcomeBody: 'Sign in to manage jobs, customers, schedules, crews, and payments.',
     email: 'Email',
     emailPlaceholder: 'you@company.com',
     password: 'Password',
@@ -36,10 +39,7 @@ const loginCopy = {
     forgotPassword: 'Forgot password',
     createAccount: 'Create account',
     startFree: 'Start free',
-    storyTitle: 'Built from real work.',
-    storyBody: 'We use it every day.',
-    storyClose: 'Now you can too.',
-    aboutLabel: 'About EverittOS',
+    or: 'or',
     selectedPlan: 'Selected plan:',
     continueSetup: 'Sign in to continue setup.',
     accountDeleted: 'Your account has been permanently deleted.',
@@ -50,6 +50,9 @@ const loginCopy = {
   },
   es: {
     title: 'Iniciar sesión',
+    eyebrow: 'EVERITTOS',
+    welcome: 'Bienvenido de nuevo.',
+    welcomeBody: 'Inicie sesión para gestionar trabajos, clientes, horarios, equipos y pagos.',
     email: 'Correo electrónico',
     emailPlaceholder: 'usted@empresa.com',
     password: 'Contraseña',
@@ -59,20 +62,20 @@ const loginCopy = {
     forgotPassword: 'Olvidé mi contraseña',
     createAccount: 'Crear cuenta',
     startFree: 'Comenzar gratis',
-    storyTitle: 'Creado a partir del trabajo real.',
-    storyBody: 'Lo usamos todos los días.',
-    storyClose: 'Ahora usted también puede usarlo.',
-    aboutLabel: 'Acerca de EverittOS',
+    or: 'o',
     selectedPlan: 'Plan seleccionado:',
     continueSetup: 'Inicie sesión para continuar la configuración.',
     accountDeleted: 'Su cuenta se eliminó permanentemente.',
     passwordUpdated: 'Contraseña actualizada. Inicie sesión con su nueva contraseña.',
     emailVerified: 'Correo verificado. Ya puede iniciar sesión.',
     configTitle: 'Configuración requerida',
-    configMessage: 'La autenticación no está configurada para este despliegue. Configure las variables de Supabase y vuelva a desplegar.'
+    configMessage: 'La autenticación no está configurada para esta implementación. Configure las variables de entorno de Supabase y vuelva a implementar.'
   },
   vi: {
     title: 'Đăng nhập',
+    eyebrow: 'EVERITTOS',
+    welcome: 'Chào mừng trở lại.',
+    welcomeBody: 'Đăng nhập để quản lý công việc, khách hàng, lịch, đội ngũ và thanh toán.',
     email: 'Email',
     emailPlaceholder: 'ban@congty.com',
     password: 'Mật khẩu',
@@ -82,10 +85,7 @@ const loginCopy = {
     forgotPassword: 'Quên mật khẩu',
     createAccount: 'Tạo tài khoản',
     startFree: 'Bắt đầu miễn phí',
-    storyTitle: 'Được xây dựng từ công việc thực tế.',
-    storyBody: 'Chúng tôi dùng nó mỗi ngày.',
-    storyClose: 'Giờ bạn cũng có thể dùng.',
-    aboutLabel: 'Giới thiệu EverittOS',
+    or: 'hoặc',
     selectedPlan: 'Gói đã chọn:',
     continueSetup: 'Đăng nhập để tiếp tục thiết lập.',
     accountDeleted: 'Tài khoản của bạn đã bị xóa vĩnh viễn.',
@@ -231,15 +231,10 @@ function LoginForm() {
 
   return (
     <AuthShell title={copy.title}>
-      <section className="login-origin-story" aria-label={copy.aboutLabel}>
-        <h2>{copy.storyTitle}</h2>
-        <p>{copy.storyBody}</p>
-        <p>{copy.storyClose}</p>
-        <div className="login-origin-actions">
-          <Link className="btn btn-primary" href="/signup?plan=free">
-            {copy.startFree}
-          </Link>
-        </div>
+      <section className="login-intro" aria-label={copy.title}>
+        <p className="login-eyebrow">{copy.eyebrow}</p>
+        <h2>{copy.welcome}</h2>
+        <p className="login-intro-copy">{copy.welcomeBody}</p>
       </section>
 
       {configError ? <AuthMessages errorTitle={copy.configTitle} error={copy.configMessage} /> : null}
@@ -290,6 +285,7 @@ function LoginForm() {
         </button>
       </form>
 
+      <div className="login-divider"><span>{copy.or}</span></div>
       <PasskeySignInButton next={next} disabled={loading || Boolean(configError)} />
 
       <div className="auth-links">
