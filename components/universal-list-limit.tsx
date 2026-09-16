@@ -13,6 +13,7 @@ const labels: Record<Locale, { more: string; less: string }> = {
 
 const ITEM_SELECTOR = ':scope > .list-row, :scope > tr';
 let listId = 0;
+const managedParents = new Set<HTMLElement>();
 
 function currentLocale(): Locale {
   const value = document.body.dataset.locale || document.documentElement.lang || 'en';
@@ -28,7 +29,24 @@ function getDirectItems(parent: HTMLElement) {
   return Array.from(parent.querySelectorAll<HTMLElement>(ITEM_SELECTOR));
 }
 
+function setItemVisible(item: HTMLElement, visible: boolean) {
+  if (visible) {
+    item.removeAttribute('hidden');
+    item.style.removeProperty('display');
+    item.removeAttribute('data-universal-list-hidden');
+    return;
+  }
+  item.setAttribute('hidden', '');
+  item.style.setProperty('display', 'none', 'important');
+  item.dataset.universalListHidden = 'true';
+}
+
 function applyLimit(parent: HTMLElement) {
+  if (!parent.isConnected) {
+    managedParents.delete(parent);
+    return;
+  }
+
   const items = getDirectItems(parent);
   const anchor = controlAnchor(parent);
   const existingId = parent.dataset.universalListId;
@@ -37,21 +55,18 @@ function applyLimit(parent: HTMLElement) {
     : null;
 
   if (items.length <= SUMMARY_LIST_LIMIT) {
-    items.forEach((item) => { item.hidden = false; item.removeAttribute('data-universal-list-hidden'); });
+    items.forEach((item) => setItemVisible(item, true));
     control?.remove();
+    delete parent.dataset.universalListExpanded;
     return;
   }
 
+  managedParents.add(parent);
   const id = existingId || `universal-list-${++listId}`;
   parent.dataset.universalListId = id;
   const expanded = parent.dataset.universalListExpanded === 'true';
 
-  items.forEach((item, index) => {
-    const shouldHide = !expanded && index >= SUMMARY_LIST_LIMIT;
-    item.hidden = shouldHide;
-    if (shouldHide) item.dataset.universalListHidden = 'true';
-    else item.removeAttribute('data-universal-list-hidden');
-  });
+  items.forEach((item, index) => setItemVisible(item, expanded || index < SUMMARY_LIST_LIMIT));
 
   if (!control) {
     control = document.createElement('div');
@@ -77,6 +92,10 @@ function applyLimit(parent: HTMLElement) {
 }
 
 function scan() {
+  managedParents.forEach((parent) => {
+    if (!parent.isConnected) managedParents.delete(parent);
+  });
+
   const parents = new Set<HTMLElement>();
   document.querySelectorAll<HTMLElement>('.list-row').forEach((item) => {
     if (item.parentElement) parents.add(item.parentElement);
@@ -96,7 +115,10 @@ export function UniversalListLimit() {
     };
 
     scan();
-    const observer = new MutationObserver(schedule);
+    const observer = new MutationObserver((mutations) => {
+      const hasStructuralChange = mutations.some((mutation) => mutation.type === 'childList');
+      if (hasStructuralChange) schedule();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('popstate', schedule);
 
@@ -104,6 +126,7 @@ export function UniversalListLimit() {
       cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('popstate', schedule);
+      managedParents.clear();
     };
   }, []);
 
