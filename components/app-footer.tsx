@@ -8,16 +8,88 @@ export function AppFooter() {
   const { t } = useTranslation();
   return (
     <footer className="app-footer" aria-label={t('legal.footerLabel')}>
-      <nav className="app-footer-links" aria-label={t('legal.footerNav')}>
-        <Link href="/privacy">{t('legal.privacy')}</Link>
-        <Link href="/terms">{t('legal.terms')}</Link>
-        <a href={supportMailtoHref()}>{t('legal.support')}</a>
-      </nav>
-      <p className="app-footer-copy">© {new Date().getFullYear()} Everitt Ventures</p>
+      <div className="app-footer-inner">
+        <p className="app-footer-copy">© {new Date().getFullYear()} Everitt Ventures</p>
+        <nav className="app-footer-links" aria-label={t('legal.footerNav')}>
+          <Link href="/privacy">{t('legal.privacy')}</Link>
+          <Link href="/terms">{t('legal.terms')}</Link>
+          <a href={supportMailtoHref()}>{t('legal.support')}</a>
+        </nav>
+      </div>
       <style jsx global>{`
-        .app-footer{width:100%!important;max-width:100%!important;margin:28px auto 0!important;padding:14px 16px calc(14px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:space-between!important;gap:10px 20px!important;border:1px solid #d7e0e7!important;border-radius:14px!important;background:rgba(255,255,255,.97)!important;color:#243f53!important;box-shadow:0 8px 24px rgba(19,36,51,.10)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
-        .app-footer-links{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px 16px!important;margin:0!important;padding:0!important}.app-footer-links a,.app-footer-copy{color:#243f53!important;font-size:12px!important;line-height:1.4!important}.app-footer-links a{font-weight:700!important;text-decoration:none!important}.app-footer-links a:hover,.app-footer-links a:focus-visible{color:#132433!important;text-decoration:underline!important;text-underline-offset:3px!important}.app-footer-links a:focus-visible{outline:2px solid #285d78!important;outline-offset:3px!important;border-radius:4px!important}.app-footer-copy{margin:0!important;font-weight:600!important}
-        @media(max-width:700px){.app-footer{margin-top:22px!important;padding:14px 14px calc(16px + env(safe-area-inset-bottom))!important;align-items:center!important;justify-content:center!important;text-align:center!important}.app-footer-links{justify-content:center!important}}
+        .app-footer {
+          width: 100% !important;
+          margin: 30px 0 0 !important;
+          padding: 0 0 calc(18px + env(safe-area-inset-bottom)) !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          color: #5b667a !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+        }
+        .app-footer-inner {
+          width: 100% !important;
+          padding-top: 16px !important;
+          border-top: 1px solid #e7eef7 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 12px 24px !important;
+        }
+        .app-footer-copy {
+          margin: 0 !important;
+          color: #7c8798 !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          line-height: 1.5 !important;
+          letter-spacing: .01em !important;
+        }
+        .app-footer-links {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          justify-content: flex-end !important;
+          gap: 8px 18px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .app-footer-links a {
+          color: #5b667a !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          line-height: 1.5 !important;
+          text-decoration: none !important;
+          transition: color .16s ease !important;
+        }
+        .app-footer-links a:hover,
+        .app-footer-links a:focus-visible {
+          color: #234a84 !important;
+          text-decoration: none !important;
+        }
+        .app-footer-links a:focus-visible {
+          outline: 2px solid #4f7cc4 !important;
+          outline-offset: 3px !important;
+          border-radius: 4px !important;
+        }
+        @media (max-width: 700px) {
+          .app-footer {
+            margin-top: 24px !important;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+          }
+          .app-footer-inner {
+            padding-top: 14px !important;
+            flex-direction: column-reverse !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+          .app-footer-links {
+            width: 100% !important;
+            justify-content: flex-start !important;
+            gap: 8px 16px !important;
+          }
+        }
       `}</style>
     </footer>
   );
