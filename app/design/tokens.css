@@ -5,6 +5,7 @@
 :root {
   /* Brand and surfaces */
   --eo-color-brand: #243f53;
+  --eo-color-brand-deep: #1d3343;
   --eo-color-accent: #285d78;
   --eo-color-page: #e9eef2;
   --eo-color-surface: #ffffff;
@@ -15,6 +16,14 @@
   --eo-color-border: #d5dee5;
   --eo-color-border-strong: #b8c7d1;
   --eo-color-focus: rgba(40, 93, 120, 0.18);
+  --eo-color-on-brand: #ffffff;
+
+  /* Existing signed-in shell appearance */
+  --eo-shell-overlay: rgba(19, 36, 51, 0.58);
+  --eo-shell-header-border: rgba(255, 255, 255, 0.08);
+  --eo-role-banner-border: rgba(255, 255, 255, 0.2);
+  --eo-role-banner-context: rgba(255, 255, 255, 0.76);
+  --eo-command-shadow: 0 10px 24px rgba(19, 36, 51, 0.12);
 
   /* Spacing */
   --eo-space-1: 4px;
@@ -44,7 +53,8 @@
   --eo-control: 48px;
   --eo-filter-tab: 36px;
 
-  /* Compatibility aliases for existing views */
+  /* Compatibility aliases for existing views. Values intentionally preserve
+     the current rendered appearance while legacy selectors are retired. */
   --eo-ink: var(--eo-color-text);
   --eo-muted: var(--eo-color-muted);
   --eo-canvas: var(--eo-color-page);
@@ -54,11 +64,19 @@
   --ink-3: var(--eo-color-muted);
   --line: var(--eo-color-border);
   --accent: var(--eo-color-accent);
+  --accent-strong: var(--eo-color-brand);
+  --secondary-blue: var(--eo-color-accent);
+  --selected: var(--eo-color-surface-subtle);
   --surface: var(--eo-color-surface);
   --card: var(--eo-color-surface);
   --text: var(--eo-color-text);
   --text-secondary: var(--eo-color-text-secondary);
   --muted: var(--eo-color-muted);
+  --navy-primary: var(--eo-color-brand);
+  --navy-secondary: var(--eo-color-brand-deep);
+  --warm-white: var(--eo-color-surface);
+  --soft-white: var(--eo-color-surface);
+  --bg: var(--eo-color-page);
 
   /* Legacy Jobs aliases */
   --job-label-gap: var(--eo-space-1);
