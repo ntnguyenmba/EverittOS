@@ -47,24 +47,29 @@ body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row,
 @media (max-width: 760px) {
   body .dashboard-shell.jobs-shell-minimal .jobs-header-actions {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: 1fr !important;
     align-items: stretch !important;
     justify-items: stretch !important;
     gap: 8px !important;
     width: 100% !important;
   }
 
-  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > :is(.btn, a.btn, button.btn) {
+  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+  }
+
+  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions :is(.btn, a.btn, button.btn),
+  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > * :is(.btn, a.btn, button.btn) {
     width: 100% !important;
     min-width: 0 !important;
     height: 44px !important;
     margin: 0 !important;
     align-self: stretch !important;
     justify-self: stretch !important;
-  }
-
-  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > .btn-primary {
-    grid-column: 1 / -1 !important;
   }
 }
 
@@ -84,10 +89,8 @@ body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row,
     justify-content: flex-start !important;
   }
 
-  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > :is(.btn, a.btn, button.btn) { width: 100% !important; }
-}
-
-@media (max-width: 420px) {
-  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions { grid-template-columns: 1fr !important; }
-  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > .btn-primary { grid-column: 1 !important; }
+  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions :is(.btn, a.btn, button.btn),
+  body .dashboard-shell.jobs-shell-minimal .jobs-header-actions > * :is(.btn, a.btn, button.btn) {
+    width: 100% !important;
+  }
 }
