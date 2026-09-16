@@ -21,23 +21,26 @@ export function AppFooter() {
       <style jsx global>{`
         .app-footer {
           width: 100% !important;
-          margin: 24px 0 0 !important;
-          padding: 0 0 calc(14px + env(safe-area-inset-bottom)) !important;
+          margin: 22px 0 0 !important;
+          padding: 0 0 calc(12px + env(safe-area-inset-bottom)) !important;
           background: transparent !important;
           border: 0 !important;
-          border-radius: 0 !important;
           box-shadow: none !important;
-          color: #172033 !important;
         }
         .app-footer-inner {
           width: 100% !important;
           box-sizing: border-box !important;
-          padding: 13px 2px 0 !important;
-          border-top: 1px solid #d7e0ea !important;
+          padding: 12px 14px !important;
+          border: 1px solid rgba(221,230,242,.96) !important;
+          border-radius: 12px !important;
+          background: rgba(248,250,252,.94) !important;
+          box-shadow: 0 4px 14px rgba(23,32,51,.06) !important;
+          backdrop-filter: blur(8px) !important;
+          -webkit-backdrop-filter: blur(8px) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
-          gap: 10px 18px !important;
+          gap: 8px 18px !important;
         }
         .app-footer-links {
           display: flex !important;
@@ -50,9 +53,9 @@ export function AppFooter() {
         }
         .app-footer-links a,
         .app-footer-copy {
-          color: #344154 !important;
+          color: #172033 !important;
           font-size: 12px !important;
-          line-height: 1.45 !important;
+          line-height: 1.4 !important;
         }
         .app-footer-links a {
           font-weight: 650 !important;
@@ -60,7 +63,7 @@ export function AppFooter() {
         }
         .app-footer-copy {
           margin: 0 !important;
-          font-weight: 500 !important;
+          font-weight: 550 !important;
           white-space: nowrap !important;
         }
         .app-footer-links a:hover,
@@ -74,24 +77,27 @@ export function AppFooter() {
         }
         @media (max-width: 700px) {
           .app-footer {
-            margin-top: 18px !important;
-            padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+            margin-top: 16px !important;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
           }
           .app-footer-inner {
-            padding-top: 12px !important;
+            width: calc(100% - 20px) !important;
+            margin: 0 10px !important;
+            padding: 10px 12px !important;
+            border-radius: 11px !important;
             flex-direction: column !important;
             justify-content: center !important;
-            gap: 7px !important;
+            gap: 5px !important;
             text-align: center !important;
           }
           .app-footer-links {
             width: 100% !important;
             justify-content: center !important;
-            gap: 8px !important;
+            gap: 7px !important;
           }
           .app-footer-links a,
           .app-footer-copy {
-            color: #243f53 !important;
+            color: #172033 !important;
             font-size: 12px !important;
           }
         }
