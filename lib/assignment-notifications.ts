@@ -18,6 +18,18 @@ type AssignmentNotificationInput = {
   email?: string | null;
 };
 
+export type JobChangeReason = 'schedule' | 'address' | 'cancelled';
+
+type JobChangeNotificationInput = {
+  supabase: SupabaseLike;
+  organizationId: string;
+  assignedUserId: string | null | undefined;
+  jobId: string;
+  jobTitle: string;
+  reasons: JobChangeReason[];
+  email?: string | null;
+};
+
 function notificationTitle(kind: AssignmentKind) {
   if (kind === 'job') return 'Job assignment updated';
   if (kind === 'lead') return 'Lead assignment updated';
@@ -50,6 +62,23 @@ function assignmentEmailHtml(kind: AssignmentKind, title: string, url: string) {
   });
 }
 
+async function resolveNotificationEmail(input: {
+  supabase: SupabaseLike;
+  assignedUserId: string;
+  email?: string | null;
+}) {
+  let email = input.email?.trim() || '';
+  if (!email) {
+    const { data: profile } = await input.supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', input.assignedUserId)
+      .maybeSingle();
+    email = profile?.email?.trim() || '';
+  }
+  return email;
+}
+
 export async function sendAssignmentNotification(input: AssignmentNotificationInput): Promise<void> {
   if (!input.assignedUserId) return;
 
@@ -65,17 +94,68 @@ export async function sendAssignmentNotification(input: AssignmentNotificationIn
     ...(input.kind === 'job' ? { related_job_id: input.recordId } : {})
   });
 
-  let email = input.email?.trim() || '';
-  if (!email) {
-    const { data: profile } = await input.supabase.from('profiles').select('email').eq('id', input.assignedUserId).maybeSingle();
-    email = profile?.email?.trim() || '';
-  }
-
+  const email = await resolveNotificationEmail({
+    supabase: input.supabase,
+    assignedUserId: input.assignedUserId,
+    email: input.email
+  });
   if (!email) return;
 
   await sendTransactionalEmail({
     to: email,
     subject: notificationTitle(input.kind),
     html: assignmentEmailHtml(input.kind, body, url)
+  });
+}
+
+function jobChangeText(reasons: JobChangeReason[]) {
+  const labels: string[] = [];
+  if (reasons.includes('schedule')) labels.push('date or time');
+  if (reasons.includes('address')) labels.push('address');
+  if (reasons.includes('cancelled')) labels.push('status');
+  return labels.join(', ');
+}
+
+export async function sendJobChangeNotification(input: JobChangeNotificationInput): Promise<void> {
+  if (!input.assignedUserId || !input.reasons.length) return;
+
+  const cancelled = input.reasons.includes('cancelled');
+  const subject = cancelled ? 'Job cancelled' : 'Job details updated';
+  const jobTitle = input.jobTitle || 'Untitled job';
+  const changed = jobChangeText(input.reasons);
+  const body = cancelled
+    ? `${jobTitle} was cancelled.`
+    : `${jobTitle} changed: ${changed}.`;
+  const url = appUrl(`/jobs/${input.jobId}`);
+
+  await input.supabase.from('notifications').insert({
+    organization_id: input.organizationId,
+    user_id: input.assignedUserId,
+    type: 'job_update',
+    title: subject,
+    body,
+    related_job_id: input.jobId
+  });
+
+  const email = await resolveNotificationEmail({
+    supabase: input.supabase,
+    assignedUserId: input.assignedUserId,
+    email: input.email
+  });
+  if (!email) return;
+
+  const bodyHtml = cancelled
+    ? `<p><strong>${jobTitle}</strong> has been cancelled.</p>`
+    : `<p><strong>${jobTitle}</strong> was updated.</p><p>Changed: ${changed}.</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject,
+    html: renderEmailTemplate({
+      title: subject,
+      bodyHtml,
+      ctaLabel: 'View job',
+      ctaUrl: url
+    })
   });
 }
