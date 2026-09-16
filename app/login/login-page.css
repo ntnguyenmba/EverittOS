@@ -5,26 +5,22 @@
   min-height: 100dvh;
   overflow-x: hidden;
   --login-navy: #24475c;
-  --login-navy-deep: #17384d;
   --login-blue: #285f7d;
   --login-blue-hover: #1f4f69;
   --login-text: #172433;
   --login-secondary: #5b667a;
   --login-muted: #7c8798;
   --login-border: #cfdbe4;
-  --login-divider: #dfe8ee;
+  --login-divider: #e4ebf0;
 }
 
-/* Match the signed-in app: dark navy chrome over the same architectural image. */
 .auth-tech-page .auth-tech-background {
-  opacity: .72 !important;
-  filter: saturate(.62) contrast(1.02) brightness(.86) !important;
+  opacity: .64 !important;
+  filter: saturate(.55) contrast(1.02) brightness(.9) !important;
 }
 
 .auth-tech-page .auth-tech-overlay {
-  background:
-    linear-gradient(180deg, rgba(23,56,77,.18), rgba(23,56,77,.36)),
-    rgba(244,248,250,.08) !important;
+  background: rgba(31,64,83,.22) !important;
 }
 
 .auth-tech-page .auth-tech-shell {
@@ -35,19 +31,19 @@
   padding: 0 24px 28px !important;
 }
 
-/* Full-width app-style header. */
+/* One app-style header only. */
 .auth-tech-page .auth-tech-header {
   width: calc(100% + 48px) !important;
   max-width: none !important;
-  min-height: 92px !important;
+  min-height: 86px !important;
   margin: 0 -24px !important;
   padding: 0 clamp(24px,5vw,48px) !important;
   display: grid !important;
   grid-template-columns: 1fr auto !important;
   align-items: center !important;
   background: var(--login-navy) !important;
-  border-bottom: 1px solid rgba(255,255,255,.12) !important;
-  box-shadow: 0 8px 24px rgba(12,30,42,.14) !important;
+  border-bottom: 1px solid rgba(255,255,255,.1) !important;
+  box-shadow: 0 8px 22px rgba(12,30,42,.12) !important;
 }
 
 .auth-tech-page .auth-tech-header .brand-logo {
@@ -59,14 +55,12 @@
   text-shadow: none !important;
 }
 
-/* AuthShell intentionally renders the symbol only. Add the app name visually here. */
 .auth-tech-page .auth-tech-header .brand-logo::after {
   content: 'EverittOS';
   color: #fff;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: -.02em;
-  line-height: 1;
 }
 
 .auth-tech-page .auth-tech-header .brand-logo img,
@@ -76,36 +70,37 @@
 
 .auth-tech-page .auth-shell-language.auth-tech-language {
   width: auto !important;
-  max-width: 170px !important;
+  max-width: 160px !important;
   margin: 0 !important;
 }
 
 .auth-tech-page .auth-tech-language select,
 .auth-tech-page .auth-tech-language button {
-  min-width: 126px !important;
-  min-height: 44px !important;
-  border: 1px solid rgba(255,255,255,.34) !important;
-  border-radius: 11px !important;
-  background: rgba(255,255,255,.96) !important;
+  min-width: 124px !important;
+  min-height: 42px !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
   color: var(--login-text) !important;
   box-shadow: none !important;
   font-weight: 750 !important;
 }
 
+/* Clean white workspace card. No second dark block. */
 .auth-tech-page .auth-tech-card:has(.login-intro) {
-  width: min(500px,calc(100vw - 48px)) !important;
-  max-width: min(500px,calc(100vw - 48px)) !important;
-  margin: clamp(28px,5vh,52px) auto clamp(22px,3vh,34px) !important;
-  padding: 0 !important;
+  width: min(470px,calc(100vw - 48px)) !important;
+  max-width: min(470px,calc(100vw - 48px)) !important;
+  margin: clamp(34px,5vh,56px) auto 24px !important;
+  padding: 30px 32px 26px !important;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.94) !important;
-  border-radius: 22px !important;
+  border: 1px solid rgba(207,219,228,.95) !important;
+  border-radius: 18px !important;
   background: rgba(255,255,255,.985) !important;
-  box-shadow: 0 28px 72px rgba(13,34,49,.22) !important;
-  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 58px rgba(13,34,49,.18) !important;
+  backdrop-filter: blur(14px);
 }
 
 .auth-tech-card:has(.login-intro) > * {
@@ -116,27 +111,26 @@
 
 .auth-tech-card:has(.login-intro) .auth-card-heading { display: none; }
 
-/* Navy identity band echoes the owner/status band used inside the app. */
 .login-intro {
   order: -1;
-  padding: 28px 34px 25px;
-  margin: 0 0 26px;
-  border-bottom: 0;
-  background: var(--login-navy);
+  padding: 0 0 21px;
+  margin: 0 0 23px;
+  border-bottom: 1px solid var(--login-divider);
+  background: transparent !important;
 }
 
 .login-eyebrow {
   margin: 0 0 8px !important;
-  color: #d8e8f3 !important;
+  color: var(--login-blue) !important;
   font-size: 10px !important;
   font-weight: 800 !important;
   letter-spacing: .15em;
 }
 
 .login-intro h2 {
-  margin: 0 0 9px;
-  color: #fff !important;
-  font-size: clamp(28px,4vw,36px);
+  margin: 0 0 8px;
+  color: var(--login-text) !important;
+  font-size: clamp(29px,4vw,35px);
   font-weight: 780;
   line-height: 1.08;
   letter-spacing: -.04em;
@@ -145,30 +139,16 @@
 .login-intro-copy {
   margin: 0 !important;
   max-width: 390px;
-  color: #e4edf3 !important;
+  color: var(--login-secondary) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
-  line-height: 1.55 !important;
-}
-
-/* Keep every functional auth control intact; only align it visually with the app. */
-.auth-tech-card:has(.login-intro) .auth-form,
-.auth-tech-card:has(.login-intro) > .auth-message,
-.auth-tech-card:has(.login-intro) > .auth-plan-note,
-.auth-tech-card:has(.login-intro) > .login-divider,
-.auth-tech-card:has(.login-intro) > .auth-links,
-.auth-tech-card:has(.login-intro) > .auth-legal-note,
-.auth-tech-card:has(.login-intro) > button,
-.auth-tech-card:has(.login-intro) > .btn {
-  margin-left: 34px !important;
-  margin-right: 34px !important;
-  width: calc(100% - 68px) !important;
+  line-height: 1.52 !important;
 }
 
 .auth-tech-card:has(.login-intro) .auth-form {
-  gap: 15px;
+  gap: 14px;
   padding: 0 !important;
-  margin-top: 0 !important;
+  margin: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -185,14 +165,13 @@
   color: var(--login-text) !important;
   font-size: 12px !important;
   font-weight: 750 !important;
-  letter-spacing: .02em;
 }
 
 .auth-tech-card:has(.login-intro) .input {
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   border: 1px solid var(--login-border) !important;
-  border-radius: 10px !important;
+  border-radius: 9px !important;
   background: #fff !important;
   color: var(--login-text) !important;
   -webkit-text-fill-color: var(--login-text) !important;
@@ -203,10 +182,8 @@
   color: var(--login-muted) !important;
   -webkit-text-fill-color: var(--login-muted) !important;
   opacity: 1 !important;
-  font-weight: 500;
 }
 
-.auth-tech-card:has(.login-intro) .input:hover { border-color: #aebfcb !important; }
 .auth-tech-card:has(.login-intro) .input:focus {
   border-color: var(--login-blue) !important;
   outline: none !important;
@@ -214,8 +191,8 @@
 }
 
 .auth-tech-card:has(.login-intro) .btn {
-  min-height: 50px;
-  border-radius: 10px !important;
+  min-height: 48px;
+  border-radius: 9px !important;
   font-size: 14px;
   font-weight: 750;
   box-shadow: none !important;
@@ -234,10 +211,10 @@
 }
 
 .auth-tech-card:has(.login-intro) .btn-primary:disabled {
-  background: #e5edf2 !important;
-  border-color: #cbd7df !important;
-  color: #5f7080 !important;
-  -webkit-text-fill-color: #5f7080 !important;
+  background: #e6edf2 !important;
+  border-color: #cfdbe4 !important;
+  color: #617384 !important;
+  -webkit-text-fill-color: #617384 !important;
   opacity: 1 !important;
 }
 
@@ -251,15 +228,15 @@
 
 .auth-tech-card:has(.login-intro) .auth-password-toggle {
   position: absolute !important;
-  right: 8px !important;
+  right: 7px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   width: auto !important;
-  min-width: 52px !important;
+  min-width: 50px !important;
   min-height: 34px !important;
   height: 34px !important;
   margin: 0 !important;
-  padding: 0 9px !important;
+  padding: 0 8px !important;
   border: 0 !important;
   border-radius: 7px !important;
   background: #eef4f7 !important;
@@ -273,8 +250,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 16px !important;
-  margin-bottom: 14px !important;
+  margin: 16px 0 14px !important;
   color: var(--login-muted);
   font-size: 11px;
   font-weight: 700;
@@ -310,74 +286,52 @@
 
 .auth-tech-card:has(.login-intro) .auth-legal-note {
   margin-top: 14px !important;
-  margin-bottom: 24px !important;
+  margin-bottom: 0 !important;
   color: var(--login-muted) !important;
   font-size: 10.5px;
   line-height: 1.45;
 }
 
 .auth-tech-page .auth-tech-footer {
-  padding: 8px 0 0 !important;
+  padding: 6px 0 0 !important;
 }
 
 .auth-tech-page .auth-tech-footer .auth-legal-footer,
 .auth-tech-page .auth-tech-footer .auth-legal-footer a {
-  color: rgba(255,255,255,.95) !important;
-  text-shadow: 0 2px 12px rgba(11,29,42,.5) !important;
+  color: rgba(255,255,255,.96) !important;
+  text-shadow: 0 2px 12px rgba(11,29,42,.48) !important;
 }
 
 @media (max-width: 760px) {
   .auth-tech-page .auth-tech-shell { padding: 0 16px 20px !important; }
   .auth-tech-page .auth-tech-header {
     width: calc(100% + 32px) !important;
-    min-height: 74px !important;
+    min-height: 72px !important;
     margin: 0 -16px !important;
     padding: 0 18px !important;
   }
   .auth-tech-page .auth-tech-header .brand-logo::after { font-size: 18px; }
   .auth-tech-page .auth-tech-language select,
-  .auth-tech-page .auth-tech-language button { min-width: 108px !important; max-width: 130px !important; }
+  .auth-tech-page .auth-tech-language button { min-width: 106px !important; max-width: 126px !important; }
   .auth-tech-page .auth-tech-card:has(.login-intro) {
     width: calc(100vw - 32px) !important;
-    max-width: 460px !important;
+    max-width: 450px !important;
     margin: 20px auto 18px !important;
-    border-radius: 18px !important;
+    padding: 24px 22px 21px !important;
+    border-radius: 16px !important;
   }
-  .login-intro { padding: 23px 22px 21px; margin-bottom: 22px; }
-  .login-intro h2 { font-size: 29px; }
+  .login-intro { padding-bottom: 18px; margin-bottom: 20px; }
+  .login-intro h2 { font-size: 28px; }
   .login-intro-copy { font-size: 13px !important; }
-  .auth-tech-card:has(.login-intro) .auth-form,
-  .auth-tech-card:has(.login-intro) > .auth-message,
-  .auth-tech-card:has(.login-intro) > .auth-plan-note,
-  .auth-tech-card:has(.login-intro) > .login-divider,
-  .auth-tech-card:has(.login-intro) > .auth-links,
-  .auth-tech-card:has(.login-intro) > .auth-legal-note,
-  .auth-tech-card:has(.login-intro) > button,
-  .auth-tech-card:has(.login-intro) > .btn {
-    margin-left: 22px !important;
-    margin-right: 22px !important;
-    width: calc(100% - 44px) !important;
-  }
-  .auth-tech-card:has(.login-intro) .auth-legal-note { margin-bottom: 21px !important; }
 }
 
 @media (max-width: 390px) {
   .auth-tech-page .auth-tech-header { padding: 0 14px !important; }
   .auth-tech-page .auth-tech-header .brand-logo::after { font-size: 17px; }
   .auth-tech-page .auth-tech-language select,
-  .auth-tech-page .auth-tech-language button { min-width: 96px !important; max-width: 112px !important; }
-  .auth-tech-page .auth-tech-card:has(.login-intro) { width: calc(100vw - 24px) !important; }
-  .login-intro { padding: 21px 18px 19px; }
-  .auth-tech-card:has(.login-intro) .auth-form,
-  .auth-tech-card:has(.login-intro) > .auth-message,
-  .auth-tech-card:has(.login-intro) > .auth-plan-note,
-  .auth-tech-card:has(.login-intro) > .login-divider,
-  .auth-tech-card:has(.login-intro) > .auth-links,
-  .auth-tech-card:has(.login-intro) > .auth-legal-note,
-  .auth-tech-card:has(.login-intro) > button,
-  .auth-tech-card:has(.login-intro) > .btn {
-    margin-left: 18px !important;
-    margin-right: 18px !important;
-    width: calc(100% - 36px) !important;
+  .auth-tech-page .auth-tech-language button { min-width: 94px !important; max-width: 110px !important; }
+  .auth-tech-page .auth-tech-card:has(.login-intro) {
+    width: calc(100vw - 24px) !important;
+    padding: 22px 18px 20px !important;
   }
 }
