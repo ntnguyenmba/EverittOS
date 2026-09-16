@@ -1,12 +1,18 @@
 import { appUrl } from '@/lib/app-url';
 import { sendTransactionalEmail } from '@/lib/email-provider';
-import { jobAssignedEmailHtml, renderEmailTemplate } from '@/lib/email-templates';
+import { renderEmailTemplate } from '@/lib/email-templates';
+import { normalizeLocale, type Locale } from '@/lib/i18n/config';
+import {
+  getAssignmentNotificationCopy,
+  type AssignmentNotificationKind,
+  type JobChangeReasonKey
+} from '@/lib/i18n/assignment-notification-copy';
 
 type SupabaseLike = {
   from: (table: string) => any;
 };
 
-type AssignmentKind = 'job' | 'customer' | 'lead';
+type AssignmentKind = AssignmentNotificationKind;
 
 type AssignmentNotificationInput = {
   supabase: SupabaseLike;
@@ -18,7 +24,7 @@ type AssignmentNotificationInput = {
   email?: string | null;
 };
 
-export type JobChangeReason = 'schedule' | 'address' | 'cancelled';
+export type JobChangeReason = JobChangeReasonKey;
 
 type JobChangeNotificationInput = {
   supabase: SupabaseLike;
@@ -30,102 +36,84 @@ type JobChangeNotificationInput = {
   email?: string | null;
 };
 
-function notificationTitle(kind: AssignmentKind) {
-  if (kind === 'job') return 'Job assignment updated';
-  if (kind === 'lead') return 'Lead assignment updated';
-  return 'Customer assignment updated';
-}
-
-function notificationBody(kind: AssignmentKind, title: string) {
-  if (kind === 'job') return title || 'Untitled job';
-  if (kind === 'lead') return title || 'Untitled lead';
-  return title || 'Untitled customer';
-}
-
 function recordUrl(kind: AssignmentKind, recordId: string) {
   if (kind === 'job') return appUrl(`/jobs/${recordId}`);
   if (kind === 'lead') return appUrl(`/leads/${recordId}`);
   return appUrl(`/customers/${recordId}`);
 }
 
-function assignmentEmailHtml(kind: AssignmentKind, title: string, url: string) {
-  if (kind === 'job') {
-    return jobAssignedEmailHtml({ jobTitle: title || 'Untitled job', jobUrl: url });
-  }
-
-  const label = kind === 'lead' ? 'lead' : 'customer';
-  return renderEmailTemplate({
-    title: `New ${label} assignment`,
-    bodyHtml: `<p>You have been assigned to <strong>${title || `Untitled ${label}`}</strong>.</p>`,
-    ctaLabel: `View ${label}`,
-    ctaUrl: url
-  });
-}
-
-async function resolveNotificationEmail(input: {
+async function resolveRecipient(input: {
   supabase: SupabaseLike;
   assignedUserId: string;
   email?: string | null;
-}) {
-  let email = input.email?.trim() || '';
-  if (!email) {
-    const { data: profile } = await input.supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', input.assignedUserId)
-      .maybeSingle();
-    email = profile?.email?.trim() || '';
-  }
-  return email;
+}): Promise<{ email: string; locale: Locale }> {
+  const { data: profile } = await input.supabase
+    .from('profiles')
+    .select('email, locale')
+    .eq('id', input.assignedUserId)
+    .maybeSingle();
+
+  return {
+    email: input.email?.trim() || profile?.email?.trim() || '',
+    locale: normalizeLocale(profile?.locale)
+  };
 }
 
 export async function sendAssignmentNotification(input: AssignmentNotificationInput): Promise<void> {
   if (!input.assignedUserId) return;
 
-  const body = notificationBody(input.kind, input.title);
+  const recipient = await resolveRecipient({
+    supabase: input.supabase,
+    assignedUserId: input.assignedUserId,
+    email: input.email
+  });
+  const copy = getAssignmentNotificationCopy(recipient.locale);
+  const title = input.title?.trim() || copy.untitled[input.kind];
+  const subject = copy.assignmentTitle[input.kind];
   const url = recordUrl(input.kind, input.recordId);
 
   await input.supabase.from('notifications').insert({
     organization_id: input.organizationId,
     user_id: input.assignedUserId,
     type: 'assignment',
-    title: notificationTitle(input.kind),
-    body,
+    title: subject,
+    body: title,
     ...(input.kind === 'job' ? { related_job_id: input.recordId } : {})
   });
 
-  const email = await resolveNotificationEmail({
-    supabase: input.supabase,
-    assignedUserId: input.assignedUserId,
-    email: input.email
-  });
-  if (!email) return;
+  if (!recipient.email) return;
 
   await sendTransactionalEmail({
-    to: email,
-    subject: notificationTitle(input.kind),
-    html: assignmentEmailHtml(input.kind, body, url)
+    to: recipient.email,
+    subject,
+    html: renderEmailTemplate({
+      title: subject,
+      bodyHtml: `<p>${copy.assignedBody(input.kind, `<strong>${title}</strong>`)}</p>`,
+      ctaLabel: copy.viewLabel[input.kind],
+      ctaUrl: url
+    })
   });
 }
 
-function jobChangeText(reasons: JobChangeReason[]) {
-  const labels: string[] = [];
-  if (reasons.includes('schedule')) labels.push('date or time');
-  if (reasons.includes('address')) labels.push('address');
-  if (reasons.includes('cancelled')) labels.push('status');
-  return labels.join(', ');
+function jobChangeText(reasons: JobChangeReason[], locale: Locale) {
+  const copy = getAssignmentNotificationCopy(locale);
+  return reasons.map((reason) => copy.changeLabels[reason]).join(', ');
 }
 
 export async function sendJobChangeNotification(input: JobChangeNotificationInput): Promise<void> {
   if (!input.assignedUserId || !input.reasons.length) return;
 
+  const recipient = await resolveRecipient({
+    supabase: input.supabase,
+    assignedUserId: input.assignedUserId,
+    email: input.email
+  });
+  const copy = getAssignmentNotificationCopy(recipient.locale);
   const cancelled = input.reasons.includes('cancelled');
-  const subject = cancelled ? 'Job cancelled' : 'Job details updated';
-  const jobTitle = input.jobTitle || 'Untitled job';
-  const changed = jobChangeText(input.reasons);
-  const body = cancelled
-    ? `${jobTitle} was cancelled.`
-    : `${jobTitle} changed: ${changed}.`;
+  const subject = cancelled ? copy.cancelledTitle : copy.updatedTitle;
+  const jobTitle = input.jobTitle?.trim() || copy.untitled.job;
+  const changed = jobChangeText(input.reasons, recipient.locale);
+  const body = cancelled ? copy.cancelledBody(jobTitle) : copy.updatedBody(jobTitle, changed);
   const url = appUrl(`/jobs/${input.jobId}`);
 
   await input.supabase.from('notifications').insert({
@@ -137,24 +125,19 @@ export async function sendJobChangeNotification(input: JobChangeNotificationInpu
     related_job_id: input.jobId
   });
 
-  const email = await resolveNotificationEmail({
-    supabase: input.supabase,
-    assignedUserId: input.assignedUserId,
-    email: input.email
-  });
-  if (!email) return;
+  if (!recipient.email) return;
 
   const bodyHtml = cancelled
-    ? `<p><strong>${jobTitle}</strong> has been cancelled.</p>`
-    : `<p><strong>${jobTitle}</strong> was updated.</p><p>Changed: ${changed}.</p>`;
+    ? `<p>${copy.cancelledBody(`<strong>${jobTitle}</strong>`)}</p>`
+    : `<p>${copy.updatedBody(`<strong>${jobTitle}</strong>`, changed)}</p>`;
 
   await sendTransactionalEmail({
-    to: email,
+    to: recipient.email,
     subject,
     html: renderEmailTemplate({
       title: subject,
       bodyHtml,
-      ctaLabel: 'View job',
+      ctaLabel: copy.viewJob,
       ctaUrl: url
     })
   });
