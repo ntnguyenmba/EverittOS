@@ -47,9 +47,7 @@
   }
 }
 
-/* Central signed-in header behavior for owner, client, and worker views.
-   Sticky keeps the header frozen while preserving its document-space height,
-   so page content and Ask Everitt always begin below it instead of underneath it. */
+/* Central signed-in header behavior for owner, client, and worker views. */
 @media (max-width: 1024px) {
   .dashboard-shell-header,
   html[data-native-app='true'] .dashboard-shell-header,
@@ -65,7 +63,7 @@
     max-width: 100% !important;
     margin: 0 !important;
     box-sizing: border-box !important;
-    background: #243f53 !important;
+    background: var(--eo-color-brand) !important;
     border-bottom: 1px solid rgba(255,255,255,.10) !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
