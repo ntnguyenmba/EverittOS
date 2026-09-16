@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { sendAssignmentNotification } from '@/lib/assignment-notifications';
+import {
+  sendAssignmentNotification,
+  sendJobChangeNotification,
+  type JobChangeReason
+} from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
@@ -25,51 +29,17 @@ export const dynamic = 'force-dynamic';
 type RouteContext = { params: Promise<{ id: string }> };
 
 const ALLOWED_FIELDS = new Set([
-  'title',
-  'customer_name',
-  'customer_email',
-  'phone',
-  'address',
-  'notes',
-  'status',
-  'start_date',
-  'due_date',
-  'scheduled_start',
-  'scheduled_end',
-  'assigned_to',
-  'assigned_email',
-  'priority',
-  'customer_notes',
-  'completion_verified',
-  'customer_id',
-  'property_id',
-  'timezone'
+  'title','customer_name','customer_email','phone','address','notes','status','start_date','due_date',
+  'scheduled_start','scheduled_end','assigned_to','assigned_email','priority','customer_notes',
+  'completion_verified','customer_id','property_id','timezone'
 ]);
-
 const INTERNAL_ONLY_FIELDS = new Set(['internal_notes']);
-
 const MANAGER_ONLY_FIELDS = new Set([
-  'title',
-  'customer_name',
-  'customer_email',
-  'phone',
-  'address',
-  'start_date',
-  'due_date',
-  'scheduled_start',
-  'scheduled_end',
-  'assigned_to',
-  'assigned_email',
-  'priority',
-  'customer_notes',
-  'completion_verified',
-  'customer_id',
-  'property_id',
-  'internal_notes',
-  'timezone'
+  'title','customer_name','customer_email','phone','address','start_date','due_date','scheduled_start',
+  'scheduled_end','assigned_to','assigned_email','priority','customer_notes','completion_verified',
+  'customer_id','property_id','internal_notes','timezone'
 ]);
-
-const STAFF_ALLOWED_FIELDS = new Set(['status', 'notes']);
+const STAFF_ALLOWED_FIELDS = new Set(['status','notes']);
 
 async function resolveAssignedWorkerId(
   ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
@@ -79,20 +49,11 @@ async function resolveAssignedWorkerId(
   if (!rawAssignedTo) return { ok: true, workerId: null, assignedUserId: null };
 
   const { data: member } = await ctx.supabase
-    .from('organization_members')
-    .select('user_id')
-    .eq('organization_id', ctx.workspace.organizationId)
-    .eq('user_id', rawAssignedTo)
-    .eq('active', true)
-    .maybeSingle();
+    .from('organization_members').select('user_id')
+    .eq('organization_id', ctx.workspace.organizationId).eq('user_id', rawAssignedTo).eq('active', true).maybeSingle();
 
   if (member?.user_id) {
-    const { data: profile } = await ctx.supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', rawAssignedTo)
-      .maybeSingle();
-
+    const { data: profile } = await ctx.supabase.from('profiles').select('email, full_name').eq('id', rawAssignedTo).maybeSingle();
     const displayName = profile?.full_name?.trim() || profile?.email?.trim() || 'Team member';
     try {
       const workerId = await ensureWorkerForPerson(
@@ -111,17 +72,28 @@ async function resolveAssignedWorkerId(
   }
 
   const { data: worker } = await ctx.supabase
-    .from('workers')
-    .select('id, auth_user_id')
-    .eq('id', rawAssignedTo)
-    .eq('organization_id', ctx.workspace.organizationId)
-    .maybeSingle();
-
-  if (worker?.id) {
-    return { ok: true, workerId: worker.id, assignedUserId: worker.auth_user_id || null };
-  }
-
+    .from('workers').select('id, auth_user_id').eq('id', rawAssignedTo)
+    .eq('organization_id', ctx.workspace.organizationId).maybeSingle();
+  if (worker?.id) return { ok: true, workerId: worker.id, assignedUserId: worker.auth_user_id || null };
   return { ok: false, error: 'Assigned teammate must be an active member or worker in this workspace.' };
+}
+
+async function resolveWorkerNotificationTarget(
+  ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
+  workerId: string | null | undefined
+): Promise<{ assignedUserId: string | null; email: string | null }> {
+  if (!workerId) return { assignedUserId: null, email: null };
+  const { data: worker } = await ctx.supabase
+    .from('workers').select('auth_user_id, email').eq('id', workerId)
+    .eq('organization_id', ctx.workspace.organizationId).maybeSingle();
+  return { assignedUserId: worker?.auth_user_id || null, email: worker?.email?.trim() || null };
+}
+
+function changedValue(payload: Record<string, unknown>, existing: Record<string, unknown>, field: string) {
+  if (!(field in payload)) return false;
+  const next = payload[field] == null ? '' : String(payload[field]);
+  const before = existing[field] == null ? '' : String(existing[field]);
+  return next !== before;
 }
 
 async function jobsHaveFinancialHistory(
@@ -141,58 +113,30 @@ async function jobsHaveFinancialHistory(
 
 function permanentDeleteErrorResponse(rawMessage: string) {
   if (isFinancialHistoryDeleteError(rawMessage)) {
-    return NextResponse.json(
-      { error: FINANCIAL_HISTORY_DELETE_MESSAGE, code: 'HAS_FINANCIAL_HISTORY' },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: FINANCIAL_HISTORY_DELETE_MESSAGE, code: 'HAS_FINANCIAL_HISTORY' }, { status: 409 });
   }
   const message = mapWorkspaceSaveError(rawMessage);
   const conflict = isPermanentDeleteConflictError(rawMessage);
-  return NextResponse.json(
-    {
-      error: conflict
-        ? `This job could not be permanently deleted because related records still reference it. ${message}`
-        : message
-    },
-    { status: conflict ? 409 : 400 }
-  );
+  return NextResponse.json({ error: conflict ? `This job could not be permanently deleted because related records still reference it. ${message}` : message }, { status: conflict ? 409 : 400 });
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
-  }
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
 
   const { id } = await context.params;
   const body = (await request.json()) as Record<string, unknown>;
-
   const { data: existing, error: readError } = await ctx.supabase
     .from('jobs')
-    .select('id, title, completed_at, status')
-    .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
-    .maybeSingle();
+    .select('id, title, completed_at, status, address, start_date, due_date, scheduled_start, scheduled_end, timezone, assigned_to, assigned_email')
+    .eq('id', id).eq('organization_id', ctx.workspace.organizationId).maybeSingle();
 
-  if (readError) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
-  }
-  if (!existing) {
-    return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
-  }
+  if (readError) return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
+  if (!existing) return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
 
-  const { data: editableShare } = ctx.canManage
-    ? { data: null }
-    : await ctx.supabase
-        .from('record_shares')
-        .select('id')
-        .eq('organization_id', ctx.workspace.organizationId)
-        .eq('record_type', 'job')
-        .eq('record_id', id)
-        .eq('shared_with_user_id', ctx.userId)
-        .eq('access_level', 'edit')
-        .maybeSingle();
-
+  const { data: editableShare } = ctx.canManage ? { data: null } : await ctx.supabase
+    .from('record_shares').select('id').eq('organization_id', ctx.workspace.organizationId)
+    .eq('record_type', 'job').eq('record_id', id).eq('shared_with_user_id', ctx.userId).eq('access_level', 'edit').maybeSingle();
   const canEditSharedJob = Boolean(editableShare?.id);
   const canEditJobDetails = ctx.canManage || canEditSharedJob;
 
@@ -202,87 +146,51 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const payload: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body)) {
-    if (ALLOWED_FIELDS.has(key) || (ctx.canManage && INTERNAL_ONLY_FIELDS.has(key))) {
-      payload[key] = value;
-    }
+    if (ALLOWED_FIELDS.has(key) || (ctx.canManage && INTERNAL_ONLY_FIELDS.has(key))) payload[key] = value;
   }
 
   delete payload.completed_at;
-  if (String(payload.status || '').toLowerCase() === 'completed' && !existing.completed_at) {
-    payload.completed_at = new Date().toISOString();
-  }
-
+  if (String(payload.status || '').toLowerCase() === 'completed' && !existing.completed_at) payload.completed_at = new Date().toISOString();
   const payloadKeys = Object.keys(payload);
+  if (!payloadKeys.length) return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
 
-  if (!payloadKeys.length) {
-    return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
+  if (!canEditJobDetails && !payloadKeys.every((key) => STAFF_ALLOWED_FIELDS.has(key))) {
+    return NextResponse.json({ error: 'Only owners, admins, managers, or teammates with edit access can edit job details.' }, { status: 403 });
   }
-
-  if (!canEditJobDetails) {
-    const staffOnlyUpdate = payloadKeys.every((key) => STAFF_ALLOWED_FIELDS.has(key));
-    if (!staffOnlyUpdate) {
-      return NextResponse.json(
-        { error: 'Only owners, admins, managers, or teammates with edit access can edit job details.' },
-        { status: 403 }
-      );
-    }
-  }
-
   if (payloadKeys.some((key) => MANAGER_ONLY_FIELDS.has(key)) && !canEditJobDetails) {
     return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
   }
 
   if ('timezone' in payload) {
     const rawTimeZone = payload.timezone;
-    if (rawTimeZone === null || rawTimeZone === '') {
-      payload.timezone = null;
-    } else if (!isValidTimeZone(rawTimeZone)) {
-      return NextResponse.json({ error: 'Invalid job timezone.' }, { status: 400 });
-    } else {
-      payload.timezone = rawTimeZone.trim();
-    }
+    if (rawTimeZone === null || rawTimeZone === '') payload.timezone = null;
+    else if (!isValidTimeZone(rawTimeZone)) return NextResponse.json({ error: 'Invalid job timezone.' }, { status: 400 });
+    else payload.timezone = rawTimeZone.trim();
   }
 
   if ('scheduled_start' in payload) {
     const rawStart = payload.scheduled_start;
-    if (rawStart !== null && typeof rawStart !== 'string') {
-      return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
-    }
+    if (rawStart !== null && typeof rawStart !== 'string') return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
     const normalizedStart = normalizeJobScheduleTimestamp(rawStart);
-    if (rawStart && !normalizedStart) {
-      return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
-    }
+    if (rawStart && !normalizedStart) return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
     payload.scheduled_start = normalizedStart;
-    if (normalizedStart && !('start_date' in payload)) {
-      payload.start_date = localDateFromIso(normalizedStart);
-    }
+    if (normalizedStart && !('start_date' in payload)) payload.start_date = localDateFromIso(normalizedStart);
   }
 
   if ('scheduled_end' in payload) {
     const rawEnd = payload.scheduled_end;
-    if (rawEnd !== null && typeof rawEnd !== 'string') {
-      return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
-    }
+    if (rawEnd !== null && typeof rawEnd !== 'string') return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
     const normalizedEnd = normalizeJobScheduleTimestamp(rawEnd);
-    if (rawEnd && !normalizedEnd) {
-      return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
-    }
+    if (rawEnd && !normalizedEnd) return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
     payload.scheduled_end = normalizedEnd;
-    if (normalizedEnd && !('due_date' in payload)) {
-      payload.due_date = localDateFromIso(normalizedEnd);
-    }
+    if (normalizedEnd && !('due_date' in payload)) payload.due_date = localDateFromIso(normalizedEnd);
   }
 
   let assignedUserId: string | null = null;
   if ('assigned_to' in payload) {
-    if (!canAssignJobs(ctx.workspace.role)) {
-      return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
-    }
-
+    if (!canAssignJobs(ctx.workspace.role)) return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
     const resolvedAssignment = await resolveAssignedWorkerId(ctx, payload.assigned_to);
-    if (!resolvedAssignment.ok) {
-      return NextResponse.json({ error: resolvedAssignment.error }, { status: 400 });
-    }
+    if (!resolvedAssignment.ok) return NextResponse.json({ error: resolvedAssignment.error }, { status: 400 });
     payload.assigned_to = resolvedAssignment.workerId;
     assignedUserId = resolvedAssignment.assignedUserId;
   }
@@ -290,31 +198,26 @@ export async function PATCH(request: Request, context: RouteContext) {
   if ('assigned_email' in payload && !canAssignJobs(ctx.workspace.role)) {
     return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
   }
-
   if ('assigned_email' in payload) {
     const emailCheck = validateAssignedEmail(payload.assigned_email);
-    if (!emailCheck.ok) {
-      return NextResponse.json({ error: emailCheck.error }, { status: 400 });
-    }
+    if (!emailCheck.ok) return NextResponse.json({ error: emailCheck.error }, { status: 400 });
     payload.assigned_email = emailCheck.email;
   }
 
-  const { error } = await ctx.supabase
-    .from('jobs')
-    .update(payload)
-    .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId);
+  const assignmentChanged = 'assigned_to' in payload && String(payload.assigned_to || '') !== String(existing.assigned_to || '');
+  const scheduleFields = ['scheduled_start','scheduled_end','start_date','due_date','timezone'];
+  const scheduleChanged = scheduleFields.some((field) => changedValue(payload, existing as Record<string, unknown>, field));
+  const addressChanged = changedValue(payload, existing as Record<string, unknown>, 'address');
+  const previousStatus = String(existing.status || '').toLowerCase();
+  const nextStatus = String(payload.status ?? existing.status ?? '').toLowerCase();
+  const cancelledChanged = ['cancelled','canceled'].includes(nextStatus) && !['cancelled','canceled'].includes(previousStatus);
 
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
-  }
+  const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id).eq('organization_id', ctx.workspace.organizationId);
+  if (error) return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
 
-  const scheduleChanged = ['scheduled_start', 'scheduled_end', 'start_date', 'due_date', 'timezone'].some((field) => field in payload);
   if (scheduleChanged) {
     const admin = createAdminSupabase();
-    if (admin) {
-      await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, id);
-    }
+    if (admin) await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, id);
   }
 
   await logWorkspaceActivity(
@@ -327,16 +230,33 @@ export async function PATCH(request: Request, context: RouteContext) {
     { assignedTo: payload.assigned_to ?? null, assignedUserId, timezone: payload.timezone ?? null }
   );
 
-  if (assignedUserId) {
+  if (assignmentChanged && assignedUserId) {
     await sendAssignmentNotification({
       supabase: ctx.supabase,
       organizationId: ctx.workspace.organizationId,
       assignedUserId,
       kind: 'job',
       recordId: id,
-      title: existing.title || 'Untitled job',
+      title: typeof payload.title === 'string' ? payload.title : existing.title || 'Untitled job',
       email: typeof payload.assigned_email === 'string' ? payload.assigned_email : null
     });
+  } else if (scheduleChanged || addressChanged || cancelledChanged) {
+    const target = await resolveWorkerNotificationTarget(ctx, String(existing.assigned_to || ''));
+    const reasons: JobChangeReason[] = [];
+    if (scheduleChanged) reasons.push('schedule');
+    if (addressChanged) reasons.push('address');
+    if (cancelledChanged) reasons.push('cancelled');
+    if (target.assignedUserId) {
+      await sendJobChangeNotification({
+        supabase: ctx.supabase,
+        organizationId: ctx.workspace.organizationId,
+        assignedUserId: target.assignedUserId,
+        jobId: id,
+        jobTitle: typeof payload.title === 'string' ? payload.title : existing.title || 'Untitled job',
+        reasons,
+        email: target.email || existing.assigned_email || null
+      });
+    }
   }
 
   return NextResponse.json({ ok: true, message: 'Job saved successfully.' });
@@ -344,66 +264,34 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
-  }
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
 
   const { id } = await context.params;
   const { data: existing, error: readError } = await ctx.supabase
-    .from('jobs')
-    .select('id, title, status, recurring_series_id, occurrence_date, start_date')
-    .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
-    .maybeSingle();
-
-  if (readError) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
-  }
-  if (!existing) {
-    return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
-  }
+    .from('jobs').select('id, title, status, recurring_series_id, occurrence_date, start_date')
+    .eq('id', id).eq('organization_id', ctx.workspace.organizationId).maybeSingle();
+  if (readError) return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
+  if (!existing) return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
 
   const rpc = await ctx.supabase.rpc('permanently_delete_job', { p_job_id: id });
   if (!rpc.error && rpc.data) {
-    const result = rpc.data as {
-      ok?: boolean;
-      deletedJobCount?: number;
-      recurringSeriesEnded?: boolean;
-      deletedFromDate?: string | null;
-      deletedJobIds?: string[];
-      photoStoragePaths?: string[];
-    };
+    const result = rpc.data as { ok?: boolean; deletedJobCount?: number; recurringSeriesEnded?: boolean; deletedFromDate?: string | null; deletedJobIds?: string[]; photoStoragePaths?: string[] };
     const deletedJobCount = Number(result.deletedJobCount || 0);
-    const photoStoragePaths = Array.isArray(result.photoStoragePaths)
-      ? result.photoStoragePaths.filter((path): path is string => typeof path === 'string' && path.length > 0)
-      : [];
+    const photoStoragePaths = Array.isArray(result.photoStoragePaths) ? result.photoStoragePaths.filter((path): path is string => typeof path === 'string' && path.length > 0) : [];
     if (photoStoragePaths.length) {
       const storageClient = createAdminSupabase() || ctx.supabase;
       await storageClient.storage.from('job-photos').remove(photoStoragePaths);
     }
     await logWorkspaceActivity(
-      ctx.workspace.organizationId,
-      ctx.userId,
-      'job',
-      id,
-      'job_deleted',
-      existing.recurring_series_id
-        ? `Recurring job deleted from ${result.deletedFromDate || 'selected visit'}: ${existing.title || 'Untitled'}`
-        : `Job deleted: ${existing.title || 'Untitled'}`,
-      {
-        deletedJobCount,
-        recurringSeriesId: existing.recurring_series_id || null,
-        deletedFromDate: result.deletedFromDate || null,
-        deletedJobIds: result.deletedJobIds || []
-      }
+      ctx.workspace.organizationId, ctx.userId, 'job', id, 'job_deleted',
+      existing.recurring_series_id ? `Recurring job deleted from ${result.deletedFromDate || 'selected visit'}: ${existing.title || 'Untitled'}` : `Job deleted: ${existing.title || 'Untitled'}`,
+      { deletedJobCount, recurringSeriesId: existing.recurring_series_id || null, deletedFromDate: result.deletedFromDate || null, deletedJobIds: result.deletedJobIds || [] }
     );
     return NextResponse.json({
       ok: true,
       deletedJobCount,
       recurringSeriesEnded: Boolean(result.recurringSeriesEnded),
-      message: existing.recurring_series_id
-        ? `${deletedJobCount} recurring visit${deletedJobCount === 1 ? '' : 's'} removed.`
-        : 'Job removed.'
+      message: existing.recurring_series_id ? `${deletedJobCount} recurring visit${deletedJobCount === 1 ? '' : 's'} removed.` : 'Job removed.'
     });
   }
 
@@ -413,90 +301,36 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   let jobIds = [existing.id];
   let deletedFromDate: string | null = null;
-
   if (existing.recurring_series_id) {
     deletedFromDate = resolveOccurrenceAnchorDate(existing);
-    if (!deletedFromDate) {
-      return NextResponse.json({ error: 'This recurring visit is missing its occurrence date.' }, { status: 400 });
-    }
-
+    if (!deletedFromDate) return NextResponse.json({ error: 'This recurring visit is missing its occurrence date.' }, { status: 400 });
     const { data: seriesJobs, error: futureError } = await ctx.supabase
-      .from('jobs')
-      .select('id, status, occurrence_date, start_date')
-      .eq('organization_id', ctx.workspace.organizationId)
-      .eq('recurring_series_id', existing.recurring_series_id);
-
-    if (futureError) {
-      return NextResponse.json({ error: mapWorkspaceSaveError(futureError.message) }, { status: 400 });
-    }
-
+      .from('jobs').select('id, status, occurrence_date, start_date')
+      .eq('organization_id', ctx.workspace.organizationId).eq('recurring_series_id', existing.recurring_series_id);
+    if (futureError) return NextResponse.json({ error: mapWorkspaceSaveError(futureError.message) }, { status: 400 });
     jobIds = selectRecurringJobsForPermanentDelete(seriesJobs || [], existing.id, deletedFromDate);
-
-    if (!jobIds.length) {
-      return NextResponse.json(
-        { error: 'Completed historical visits were preserved and there is nothing to delete.' },
-        { status: 400 }
-      );
-    }
+    if (!jobIds.length) return NextResponse.json({ error: 'Completed historical visits were preserved and there is nothing to delete.' }, { status: 400 });
   }
 
-  if (!jobIds.length) {
-    return NextResponse.json(
-      { error: 'Completed historical visits were preserved and there is nothing to delete.' },
-      { status: 400 }
-    );
-  }
-
+  if (!jobIds.length) return NextResponse.json({ error: 'Completed historical visits were preserved and there is nothing to delete.' }, { status: 400 });
   if (await jobsHaveFinancialHistory(ctx, jobIds)) {
-    return NextResponse.json(
-      { error: FINANCIAL_HISTORY_DELETE_MESSAGE, code: 'HAS_FINANCIAL_HISTORY' },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: FINANCIAL_HISTORY_DELETE_MESSAGE, code: 'HAS_FINANCIAL_HISTORY' }, { status: 409 });
   }
 
   if (existing.recurring_series_id && deletedFromDate) {
-    const { error: seriesError } = await ctx.supabase
-      .from('recurring_job_series')
-      .update({
-        status: 'ended',
-        end_date: previousIsoDate(deletedFromDate),
-        next_generation_date: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.recurring_series_id)
-      .eq('organization_id', ctx.workspace.organizationId);
-
-    if (seriesError) {
-      return NextResponse.json({ error: mapWorkspaceSaveError(seriesError.message) }, { status: 400 });
-    }
+    const { error: seriesError } = await ctx.supabase.from('recurring_job_series').update({
+      status: 'ended', end_date: previousIsoDate(deletedFromDate), next_generation_date: null, updated_at: new Date().toISOString()
+    }).eq('id', existing.recurring_series_id).eq('organization_id', ctx.workspace.organizationId);
+    if (seriesError) return NextResponse.json({ error: mapWorkspaceSaveError(seriesError.message) }, { status: 400 });
   }
 
-  await ctx.supabase
-    .from('record_shares')
-    .delete()
-    .eq('organization_id', ctx.workspace.organizationId)
-    .eq('record_type', 'job')
-    .in('record_id', jobIds);
-
-  const { error: deleteError } = await ctx.supabase
-    .from('jobs')
-    .delete()
-    .eq('organization_id', ctx.workspace.organizationId)
-    .in('id', jobIds);
-
-  if (deleteError) {
-    return permanentDeleteErrorResponse(deleteError.message || '');
-  }
+  await ctx.supabase.from('record_shares').delete().eq('organization_id', ctx.workspace.organizationId).eq('record_type', 'job').in('record_id', jobIds);
+  const { error: deleteError } = await ctx.supabase.from('jobs').delete().eq('organization_id', ctx.workspace.organizationId).in('id', jobIds);
+  if (deleteError) return permanentDeleteErrorResponse(deleteError.message || '');
 
   await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    'job',
-    id,
-    'job_deleted',
-    existing.recurring_series_id
-      ? `Recurring job deleted from ${deletedFromDate}: ${existing.title || 'Untitled'}`
-      : `Job deleted: ${existing.title || 'Untitled'}`,
+    ctx.workspace.organizationId, ctx.userId, 'job', id, 'job_deleted',
+    existing.recurring_series_id ? `Recurring job deleted from ${deletedFromDate}: ${existing.title || 'Untitled'}` : `Job deleted: ${existing.title || 'Untitled'}`,
     { deletedJobCount: jobIds.length, recurringSeriesId: existing.recurring_series_id || null, deletedFromDate }
   );
 
@@ -504,8 +338,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
     ok: true,
     deletedJobCount: jobIds.length,
     recurringSeriesEnded: Boolean(existing.recurring_series_id),
-    message: existing.recurring_series_id
-      ? `${jobIds.length} recurring visit${jobIds.length === 1 ? '' : 's'} removed.`
-      : 'Job removed.'
+    message: existing.recurring_series_id ? `${jobIds.length} recurring visit${jobIds.length === 1 ? '' : 's'} removed.` : 'Job removed.'
   });
 }
