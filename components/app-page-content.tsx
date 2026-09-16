@@ -2,6 +2,7 @@
 
 import { Children, isValidElement } from 'react';
 import { AskEverittCommand } from '@/components/ask-everitt-command';
+import { CompactRecordLists } from '@/components/compact-record-lists';
 import { JobGuidancePanel } from '@/components/job-guidance-panel';
 import { JobsListNextActionHints } from '@/components/jobs-list-next-action-hints';
 
@@ -35,6 +36,7 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
     >
       {chrome}
       <div className="app-page-stage">
+        <CompactRecordLists />
         <JobGuidancePanel />
         <JobsListNextActionHints />
         {page}
