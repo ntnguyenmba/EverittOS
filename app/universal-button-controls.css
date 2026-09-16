@@ -1,31 +1,48 @@
-/* EverittOS universal button sizing authority.
-   Loaded after the other signed-in visual rules so buttons keep readable,
-   content-sized labels on web, iOS and Android. */
+/* EverittOS universal button sizing and alignment authority.
+   Loaded after the other signed-in visual rules so buttons stay readable,
+   level and content-sized on web, iOS and Android. */
 
 body :is(.dashboard-shell, .role-portal-shell) :is(.btn, a.btn, button.btn) {
   box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   flex: 0 0 auto !important;
   width: auto !important;
   max-width: 100% !important;
   min-width: 0 !important;
   min-height: 44px !important;
-  height: auto !important;
+  height: 44px !important;
+  margin: 0 !important;
   padding: 10px 14px !important;
   border-radius: 10px !important;
   white-space: nowrap !important;
   overflow: visible !important;
   text-overflow: clip !important;
   line-height: 1.2 !important;
+  vertical-align: middle !important;
 }
 
 body :is(.dashboard-shell, .role-portal-shell) :is(.btn, a.btn, button.btn) > * {
   min-width: 0;
 }
 
-body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row, .action-row, .actions, .card-actions, .form-actions, .modal-actions, .page-header-action, .jobs-header-actions) {
+body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row, .action-row, .actions, .card-actions, .form-actions, .modal-actions, .page-header-action, .page-header-actions, .app-page-top-actions, .jobs-header-actions) {
+  display: flex !important;
+  flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center !important;
+  justify-content: flex-start !important;
+  align-content: center !important;
   gap: 8px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row, .action-row, .actions, .card-actions, .form-actions, .modal-actions, .page-header-action, .page-header-actions, .app-page-top-actions, .jobs-header-actions) > * {
+  align-self: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 @media (max-width: 700px) {
@@ -34,7 +51,13 @@ body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row,
     width: auto !important;
     max-width: 100% !important;
     min-height: 44px !important;
+    height: 44px !important;
     padding: 10px 13px !important;
     font-size: 15px !important;
+  }
+
+  body :is(.dashboard-shell, .role-portal-shell) :is(.inline-actions, .button-row, .action-row, .actions, .card-actions, .form-actions, .modal-actions, .page-header-action, .page-header-actions, .app-page-top-actions, .jobs-header-actions) {
+    width: 100% !important;
+    justify-content: flex-start !important;
   }
 }
