@@ -7,8 +7,8 @@ html[data-native-app='true'] .dashboard-shell-header {
   width: 100% !important;
   margin: 0 !important;
   padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left)) !important;
-  background: #243f53 !important;
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  background: var(--eo-color-brand) !important;
+  border-bottom: 1px solid var(--eo-shell-header-border) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -22,7 +22,7 @@ html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal 
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
-  background: #243f53 !important;
+  background: var(--eo-color-brand) !important;
   box-shadow: none !important;
 }
 
@@ -35,7 +35,7 @@ html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal 
   padding: 6px 4px !important;
   border: 0 !important;
   border-radius: 0 !important;
-  background: #243f53 !important;
+  background: var(--eo-color-brand) !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
 }
@@ -52,14 +52,14 @@ html[data-native-app='true'] .dashboard-shell .app-page-content > .everitt-cmd-t
   z-index: 2 !important;
   margin: 0 0 4px !important;
   transform: none !important;
-  background: #ffffff !important;
-  color: #132433 !important;
-  border: 1px solid #d5dee5 !important;
-  box-shadow: 0 8px 20px rgba(19,36,51,.12) !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  box-shadow: var(--eo-command-shadow) !important;
 }
 
 html[data-native-app='true'] .dashboard-shell .app-page-content > .everitt-cmd-trigger * {
-  color: #132433 !important;
+  color: var(--eo-color-text) !important;
 }
 
 /* Native app account actions live in the drawer. */
