@@ -1,7 +1,7 @@
 export const CATCH_FEATURE = 'catchGrowth' as const;
 export const CATCH_REQUIRED_PLAN = 'enterprise' as const;
-export const CATCH_PRODUCT_NAME = 'Scout';
-export const CATCH_PRODUCT_LINE = 'Scout watches your EverittOS work and shows you who needs attention next.';
+export const CATCH_PRODUCT_NAME = 'Catch';
+export const CATCH_PRODUCT_LINE = 'Catch watches your EverittOS work and shows you who needs attention next.';
 export const CATCH_STAGES=[{id:'inquiry',label:'Inquiry',href:'/leads',hint:'New requests waiting for a reply.'},{id:'booking',label:'Booking',href:'/bookings',hint:'Customers waiting for a date or confirmation.'},{id:'customer',label:'Customer',href:'/customers',hint:'People ready for current or repeat work.'},{id:'job',label:'Job',href:'/jobs',hint:'Work that needs to be scheduled, started, or finished.'},{id:'followup',label:'Follow-up',href:'/catch',hint:'Completed work or quiet customers who need a follow-up.'}] as const;
 export type CatchStageId=(typeof CATCH_STAGES)[number]['id'];export type CatchRecordKind='lead'|'booking'|'customer'|'job';
 export type CatchRecord={id:string;kind:CatchRecordKind;name:string;stage:CatchStageId;status?:string|null;email?:string|null;phone?:string|null;updatedAt?:string|null;createdAt?:string|null;href:string};
