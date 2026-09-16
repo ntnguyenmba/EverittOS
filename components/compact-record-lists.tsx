@@ -5,11 +5,27 @@ import { useTranslation } from '@/components/locale-provider';
 
 const DEFAULT_VISIBLE_COUNT = 3;
 let nextCompactListId = 1;
+let nextSecondarySectionId = 1;
 
 const labels = {
-  en: { showAll: (count: number) => `Show all ${count}`, showLess: 'Show less' },
-  es: { showAll: (count: number) => `Mostrar los ${count}`, showLess: 'Mostrar menos' },
-  vi: { showAll: (count: number) => `Hiển thị tất cả ${count}`, showLess: 'Thu gọn' }
+  en: {
+    showAll: (count: number) => `Show all ${count}`,
+    showLess: 'Show less',
+    openSection: 'Show section',
+    closeSection: 'Hide section'
+  },
+  es: {
+    showAll: (count: number) => `Mostrar los ${count}`,
+    showLess: 'Mostrar menos',
+    openSection: 'Mostrar sección',
+    closeSection: 'Ocultar sección'
+  },
+  vi: {
+    showAll: (count: number) => `Hiển thị tất cả ${count}`,
+    showLess: 'Thu gọn',
+    openSection: 'Hiển thị mục',
+    closeSection: 'Thu gọn mục'
+  }
 } as const;
 
 const candidateSelector = [
@@ -25,8 +41,25 @@ const candidateSelector = [
   '[class*="Rows"]'
 ].join(',');
 
+const secondarySelector = [
+  '[data-secondary-section]',
+  'section',
+  '[class*="history"]',
+  '[class*="History"]',
+  '[class*="activity"]',
+  '[class*="Activity"]',
+  '[class*="completed"]',
+  '[class*="Completed"]',
+  '[class*="archive"]',
+  '[class*="Archive"]',
+  '[class*="older"]',
+  '[class*="Older"]'
+].join(',');
+
 const blockedClassPattern = /(nav|menu|filter|tabs?|toolbar|button|metrics?|stats?|summary|kpi|quick|header|footer|form|fields?|plans?|pricing|pagination|controls?)/i;
 const recordClassPattern = /(list|feed|history|rows)/i;
+const secondaryClassPattern = /(history|activity|completed|archive|older)/i;
+const secondaryHeadingPattern = /^(history|activity|recent activity|completed|completed jobs|completed work|older records|older items|archive|archived|past activity|job history|customer history)$/i;
 
 function directChildren(element: HTMLElement) {
   return Array.from(element.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
@@ -54,6 +87,33 @@ function controlAnchor(element: HTMLElement) {
   return element;
 }
 
+function directHeading(element: HTMLElement) {
+  for (const child of directChildren(element)) {
+    if (/^H[2-4]$/.test(child.tagName)) return child;
+    const heading = child.querySelector<HTMLElement>(':scope > h2, :scope > h3, :scope > h4');
+    if (heading) return child;
+  }
+  return null;
+}
+
+function secondarySectionTitle(element: HTMLElement) {
+  const headingContainer = directHeading(element);
+  const heading = headingContainer?.matches('h2,h3,h4')
+    ? headingContainer
+    : headingContainer?.querySelector<HTMLElement>('h2,h3,h4');
+  return String(heading?.textContent || '').trim().replace(/\s+/g, ' ');
+}
+
+function isSecondarySection(element: HTMLElement) {
+  if (element.closest('[data-no-collapse]')) return false;
+  if (element.hasAttribute('data-secondary-section')) return true;
+  if (element.matches('form') || element.querySelector('form, input, textarea, select, [contenteditable="true"]')) return false;
+  const classText = String(element.className || '');
+  const title = secondarySectionTitle(element);
+  if (!directHeading(element)) return false;
+  return secondaryClassPattern.test(classText) || secondaryHeadingPattern.test(title);
+}
+
 export function CompactRecordLists() {
   const { locale } = useTranslation();
   const copy = labels[locale];
@@ -62,7 +122,8 @@ export function CompactRecordLists() {
     const root = document.querySelector<HTMLElement>('.app-page-stage');
     if (!root) return;
 
-    const managed = new Set<HTMLElement>();
+    const managedLists = new Set<HTMLElement>();
+    const managedSections = new Set<HTMLElement>();
     const controls = new Set<HTMLButtonElement>();
     let frame = 0;
 
@@ -86,7 +147,7 @@ export function CompactRecordLists() {
         children.forEach((child) => { child.hidden = false; });
         button?.remove();
         if (button) controls.delete(button);
-        managed.add(element);
+        managedLists.add(element);
         return;
       }
 
@@ -108,11 +169,50 @@ export function CompactRecordLists() {
 
       button.setAttribute('aria-expanded', String(expanded));
       button.textContent = expanded ? copy.showLess : copy.showAll(total);
-      managed.add(element);
+      managedLists.add(element);
+    }
+
+    function updateSecondarySection(element: HTMLElement) {
+      if (!isSecondarySection(element)) return;
+
+      const children = directChildren(element);
+      const heading = directHeading(element);
+      if (!heading || children.length < 2) return;
+
+      let id = element.dataset.secondarySectionId;
+      if (!id) {
+        id = `secondary-section-${nextSecondarySectionId++}`;
+        element.dataset.secondarySectionId = id;
+      }
+
+      const expanded = element.dataset.secondaryExpanded === 'true';
+      children.forEach((child) => {
+        if (child === heading || child.dataset.secondarySectionControl === id) return;
+        child.hidden = !expanded;
+      });
+
+      let button = element.querySelector<HTMLButtonElement>(`:scope > [data-secondary-section-control="${id}"]`);
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'app-secondary-disclosure';
+        button.dataset.secondarySectionControl = id;
+        button.addEventListener('click', () => {
+          element.dataset.secondaryExpanded = element.dataset.secondaryExpanded === 'true' ? 'false' : 'true';
+          updateSecondarySection(element);
+        });
+        heading.insertAdjacentElement('afterend', button);
+        controls.add(button);
+      }
+
+      button.setAttribute('aria-expanded', String(expanded));
+      button.textContent = expanded ? copy.closeSection : copy.openSection;
+      managedSections.add(element);
     }
 
     function scan() {
       root.querySelectorAll<HTMLElement>(candidateSelector).forEach(updateList);
+      root.querySelectorAll<HTMLElement>(secondarySelector).forEach(updateSecondarySection);
     }
 
     function scheduleScan() {
@@ -130,45 +230,62 @@ export function CompactRecordLists() {
     return () => {
       observer.disconnect();
       if (frame) window.cancelAnimationFrame(frame);
-      managed.forEach((element) => directChildren(element).forEach((child) => { child.hidden = false; }));
+      managedLists.forEach((element) => directChildren(element).forEach((child) => { child.hidden = false; }));
+      managedSections.forEach((element) => directChildren(element).forEach((child) => { child.hidden = false; }));
       controls.forEach((button) => button.remove());
     };
   }, [copy]);
 
   return (
     <style jsx global>{`
-      .app-list-disclosure {
+      .app-list-disclosure,
+      .app-secondary-disclosure {
         width: 100%;
-        min-height: 44px;
-        margin: 10px 0 2px;
-        padding: 10px 14px;
-        border: 1px solid rgba(36, 63, 83, .20);
-        border-radius: 12px;
+        min-height: 42px;
+        margin: 9px 0 2px;
+        padding: 9px 13px;
+        border: 1px solid rgba(36, 63, 83, .18);
+        border-radius: 11px;
         background: rgba(255, 255, 255, .97);
         color: #243f53;
         font: inherit;
-        font-size: 14px;
-        font-weight: 750;
+        font-size: 13px;
+        font-weight: 700;
         line-height: 1.25;
         text-align: center;
         cursor: pointer;
-        box-shadow: 0 5px 16px rgba(19, 36, 51, .07);
+        box-shadow: 0 4px 14px rgba(19, 36, 51, .06);
+      }
+      .app-secondary-disclosure {
+        width: auto;
+        min-width: 118px;
+        min-height: 36px;
+        margin: 6px 0 2px;
+        padding: 7px 11px;
+        font-size: 12px;
       }
       .app-list-disclosure:hover,
-      .app-list-disclosure:focus-visible {
+      .app-list-disclosure:focus-visible,
+      .app-secondary-disclosure:hover,
+      .app-secondary-disclosure:focus-visible {
         background: #eef3f5;
         color: #132433;
-        border-color: rgba(36, 63, 83, .34);
+        border-color: rgba(36, 63, 83, .32);
       }
-      .app-list-disclosure:focus-visible {
+      .app-list-disclosure:focus-visible,
+      .app-secondary-disclosure:focus-visible {
         outline: 2px solid #285d78;
         outline-offset: 2px;
       }
       @media (max-width: 760px) {
         .app-list-disclosure {
-          min-height: 46px;
+          min-height: 44px;
           margin-top: 8px;
-          border-radius: 11px;
+          border-radius: 10px;
+        }
+        .app-secondary-disclosure {
+          min-height: 38px;
+          margin-top: 6px;
         }
       }
     `}</style>
