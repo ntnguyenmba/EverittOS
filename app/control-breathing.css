@@ -18,11 +18,11 @@ html body .client-next-visit-paper,
 html body .job-financials-card,
 html body .role-summary-card,
 html body .team-directory-card {
-  background: #ffffff !important;
-  color: #132433 !important;
-  border: 1px solid #d5dee5 !important;
-  border-radius: 18px !important;
-  box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
   padding: 18px 20px !important;
   text-shadow: none !important;
 }
@@ -39,10 +39,10 @@ html body :is(
 html body .dashboard-shell table.jobs-operations-table,
 html body .dashboard-shell .jobs-table-card {
   display: block !important;
-  background: #ffffff !important;
-  border: 1px solid #d5dee5 !important;
-  border-radius: 18px !important;
-  box-shadow: 0 14px 30px rgba(27, 45, 60, 0.12) !important;
+  background: var(--eo-color-surface) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
   padding: 8px 18px !important;
 }
 
@@ -79,9 +79,9 @@ html body .role-portal-shell :is(
 ) {
   width: 100% !important;
   background: transparent !important;
-  color: #132433 !important;
+  color: var(--eo-color-text) !important;
   border: 0 !important;
-  border-bottom: 1px solid #d5dee5 !important;
+  border-bottom: 1px solid var(--eo-color-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   padding: 16px 0 !important;
@@ -131,7 +131,7 @@ html body .dashboard-shell .record-actions {
 
 html body .dashboard-shell .record-actions .btn {
   width: auto !important;
-  min-height: 44px !important;
+  min-height: var(--eo-tap) !important;
 }
 
 html body .contractor-portal-hero,
@@ -149,7 +149,6 @@ html body .client-next-visit-copy {
   margin-bottom: 0 !important;
 }
 
-/* Title block sits close to the first form or list on every page. */
 html body .dashboard-shell .app-page-stage > * + *,
 html body .role-portal-shell .app-page-stage > * + * {
   margin-top: 10px !important;
@@ -171,35 +170,35 @@ html body .list-row :is(h1, h2, h3, h4, strong, p),
 html body .portal-job-row :is(strong, p),
 html body .contractor-next-job :is(strong, p, span),
 html body .contractor-portal-hero :is(h1, h2, p) {
-  color: #132433 !important;
+  color: var(--eo-color-text) !important;
   text-shadow: none !important;
 }
 
 html body .muted {
-  color: #526777 !important;
+  color: var(--eo-color-muted) !important;
 }
 
 html body .btn,
 html body a.btn,
 html body button.btn {
-  min-height: 44px !important;
+  min-height: var(--eo-tap) !important;
   padding: 10px 16px !important;
-  border-radius: 12px !important;
+  border-radius: var(--eo-radius-control) !important;
   white-space: nowrap !important;
 }
 
 html body .btn-primary,
 html body button[type='submit'] {
-  background: #243f53 !important;
-  border-color: #243f53 !important;
-  color: #ffffff !important;
+  background: var(--eo-color-brand) !important;
+  border-color: var(--eo-color-brand) !important;
+  color: var(--eo-color-on-brand) !important;
 }
 
 html body .btn:not(.btn-primary),
 html body a.btn:not(.btn-primary) {
-  background: #ffffff !important;
-  border-color: #b8c7d1 !important;
-  color: #132433 !important;
+  background: var(--eo-color-surface) !important;
+  border-color: var(--eo-color-border-strong) !important;
+  color: var(--eo-color-text) !important;
 }
 
 html body .status-badge,
@@ -212,10 +211,10 @@ html body .eyebrow {
   width: max-content !important;
   min-height: 32px !important;
   padding: 6px 14px !important;
-  border-radius: 999px !important;
-  background: #eef3f5 !important;
-  border: 1px solid #d5dee5 !important;
-  color: #31495b !important;
+  border-radius: var(--eo-radius-pill) !important;
+  background: var(--eo-color-surface-subtle) !important;
+  border: 1px solid var(--eo-color-border) !important;
+  color: var(--eo-color-text-secondary) !important;
   white-space: nowrap !important;
 }
 
@@ -227,23 +226,10 @@ html body .page-actions {
   gap: 12px !important;
 }
 
-/* Signed-in chrome: Everitt navy, cool white pages, no bright blue. */
-:root {
-  --navy-primary: #243f53;
-  --navy-secondary: #1d3343;
-  --accent: #285d78;
-  --accent-strong: #243f53;
-  --secondary-blue: #285d78;
-  --selected: #eef3f5;
-  --warm-white: #ffffff;
-  --soft-white: #ffffff;
-  --bg: #e9eef2;
-}
-
 html body .dashboard-shell .card,
 html body .dashboard-shell .panel,
 html body .dashboard-shell .settings-card,
 html body .app-page-content > .everitt-cmd-trigger {
-  background: #ffffff !important;
-  color: #132433 !important;
+  background: var(--eo-color-surface) !important;
+  color: var(--eo-color-text) !important;
 }
