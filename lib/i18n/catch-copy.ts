@@ -1,167 +1,18 @@
 import type { Locale } from '@/lib/i18n/config';
 
 export type CatchActionCopy = {
-  leadTitle: (name: string) => string;
-  leadOldReason: string;
-  leadNewReason: string;
-  bookingTitle: (name: string) => string;
-  bookingReason: string;
-  jobTitle: (title: string) => string;
-  jobReason: string;
-  followUpTitle: (title: string, name: string) => string;
-  followUpReason: string;
-  inquiryDraft: (name: string) => string;
-  bookingDraft: (name: string) => string;
-  jobDraft: (name: string) => string;
-  followUpDraft: (name: string) => string;
+  leadTitle:(name:string)=>string; leadOldReason:string; leadNewReason:string;
+  bookingTitle:(name:string)=>string; bookingReason:string;
+  jobTitle:(title:string)=>string; jobReason:string;
+  followUpTitle:(title:string,name:string)=>string; followUpReason:string;
+  returnTitle:(name:string)=>string; returnReason:string;
+  inquiryDraft:(name:string)=>string; bookingDraft:(name:string)=>string; jobDraft:(name:string)=>string; followUpDraft:(name:string)=>string; returnDraft:(name:string)=>string;
 };
-
-type CatchCopy = {
-  product: string;
-  plan: string;
-  title: string;
-  addInquiry: string;
-  bookings: string;
-  upgrade: string;
-  checking: string;
-  empty: string;
-  reply: string;
-  open: string;
-  copy: string;
-  copied: string;
-  done: string;
-  hide: string;
-  hidden: string;
-  showAgain: string;
-  saveError: string;
-  copyError: string;
-  untitledJob: string;
-  job: string;
-  bookingRequest: string;
-  actions: CatchActionCopy;
+type CatchCopy={product:string;plan:string;title:string;upgrade:string;checking:string;empty:string;open:string;email:string;send:string;sending:string;sent:string;done:string;hide:string;hidden:string;showAgain:string;to:string;subject:string;message:string;close:string;emailSubject:string;emailRequired:string;sendError:string;saveError:string;untitledJob:string;job:string;bookingRequest:string;actions:CatchActionCopy};
+function firstName(name:string,fallback:string){return name.trim().split(/\s+/)[0]||fallback;}
+const COPY:Record<Locale,CatchCopy>={
+ en:{product:'Catch',plan:'Enterprise',title:'Needs attention',upgrade:'Upgrade to Enterprise',checking:'Checking...',empty:'Nothing needs attention.',open:'Open',email:'Email',send:'Send',sending:'Sending...',sent:'Sent',done:'Done',hide:'Hide',hidden:'Hidden',showAgain:'Show again',to:'To',subject:'Subject',message:'Message',close:'Close',emailSubject:'Checking in',emailRequired:'Enter an email address.',sendError:'Email was not sent.',saveError:'Could not save that change.',untitledJob:'Untitled job',job:'Job',bookingRequest:'Booking request',actions:{leadTitle:n=>`Reply to ${n}`,leadOldReason:'Waiting 3 days',leadNewReason:'Waiting 24 hours',bookingTitle:n=>`Confirm ${n}`,bookingReason:'Waiting for confirmation',jobTitle:t=>`Check ${t}`,jobReason:'Job still open',followUpTitle:(t,n)=>`Follow up with ${n}`,followUpReason:'Job finished 3 days ago',returnTitle:n=>`Check in with ${n}`,returnReason:'No activity for 60 days',inquiryDraft:n=>`Hi ${firstName(n,'there')}, just following up on your request. Do you still need help?`,bookingDraft:n=>`Hi ${firstName(n,'there')}, can we confirm your booking?`,jobDraft:n=>`Hi ${firstName(n,'there')}, checking in on your job. Let me know if you have any questions.`,followUpDraft:n=>`Hi ${firstName(n,'there')}, thanks again for working with us. How did everything go?`,returnDraft:n=>`Hi ${firstName(n,'there')}, checking in to see if you need help with anything again.`}},
+ es:{product:'Catch',plan:'Enterprise',title:'Necesita atención',upgrade:'Cambiar a Enterprise',checking:'Revisando...',empty:'Nada necesita atención.',open:'Abrir',email:'Correo',send:'Enviar',sending:'Enviando...',sent:'Enviado',done:'Listo',hide:'Ocultar',hidden:'Ocultos',showAgain:'Mostrar de nuevo',to:'Para',subject:'Asunto',message:'Mensaje',close:'Cerrar',emailSubject:'Seguimiento',emailRequired:'Ingresa un correo electrónico.',sendError:'No se envió el correo.',saveError:'No se pudo guardar el cambio.',untitledJob:'Trabajo sin título',job:'Trabajo',bookingRequest:'Solicitud de reserva',actions:{leadTitle:n=>`Responder a ${n}`,leadOldReason:'Esperando 3 días',leadNewReason:'Esperando 24 horas',bookingTitle:n=>`Confirmar con ${n}`,bookingReason:'Falta confirmación',jobTitle:t=>`Revisar ${t}`,jobReason:'El trabajo sigue abierto',followUpTitle:(t,n)=>`Dar seguimiento con ${n}`,followUpReason:'El trabajo terminó hace 3 días',returnTitle:n=>`Contactar a ${n}`,returnReason:'Sin actividad por 60 días',inquiryDraft:n=>`Hola ${firstName(n,'de nuevo')}, quería dar seguimiento a tu solicitud. ¿Todavía necesitas ayuda?`,bookingDraft:n=>`Hola ${firstName(n,'de nuevo')}, ¿podemos confirmar tu reserva?`,jobDraft:n=>`Hola ${firstName(n,'de nuevo')}, quería saber cómo va tu trabajo. Avísame si tienes alguna pregunta.`,followUpDraft:n=>`Hola ${firstName(n,'de nuevo')}, gracias por trabajar con nosotros. ¿Cómo salió todo?`,returnDraft:n=>`Hola ${firstName(n,'de nuevo')}, quería saber si necesitas ayuda con algo de nuevo.`}},
+ vi:{product:'Catch',plan:'Enterprise',title:'Cần xử lý',upgrade:'Nâng cấp Enterprise',checking:'Đang kiểm tra...',empty:'Không có việc cần xử lý.',open:'Mở',email:'Email',send:'Gửi',sending:'Đang gửi...',sent:'Đã gửi',done:'Xong',hide:'Ẩn',hidden:'Đã ẩn',showAgain:'Hiện lại',to:'Đến',subject:'Tiêu đề',message:'Nội dung',close:'Đóng',emailSubject:'Hỏi thăm',emailRequired:'Nhập địa chỉ email.',sendError:'Không gửi được email.',saveError:'Không lưu được thay đổi.',untitledJob:'Công việc chưa đặt tên',job:'Công việc',bookingRequest:'Yêu cầu đặt lịch',actions:{leadTitle:n=>`Trả lời ${n}`,leadOldReason:'Đã chờ 3 ngày',leadNewReason:'Đã chờ 24 giờ',bookingTitle:n=>`Xác nhận với ${n}`,bookingReason:'Đang chờ xác nhận',jobTitle:t=>`Kiểm tra ${t}`,jobReason:'Công việc vẫn đang mở',followUpTitle:(t,n)=>`Hỏi thăm ${n}`,followUpReason:'Công việc đã xong 3 ngày',returnTitle:n=>`Liên hệ lại ${n}`,returnReason:'Không có hoạt động trong 60 ngày',inquiryDraft:n=>`Chào ${firstName(n,'bạn')}, mình hỏi lại về yêu cầu của bạn. Bạn vẫn cần hỗ trợ chứ?`,bookingDraft:n=>`Chào ${firstName(n,'bạn')}, mình xác nhận lịch hẹn nhé?`,jobDraft:n=>`Chào ${firstName(n,'bạn')}, mình hỏi thăm về công việc của bạn. Nếu có câu hỏi cứ nhắn mình nhé.`,followUpDraft:n=>`Chào ${firstName(n,'bạn')}, cảm ơn bạn đã làm việc với bên mình. Mọi việc ổn chứ?`,returnDraft:n=>`Chào ${firstName(n,'bạn')}, mình hỏi thăm xem bạn có cần bên mình giúp gì thêm không.`}}
 };
-
-function firstName(name: string, fallback: string) {
-  return name.trim().split(/\s+/)[0] || fallback;
-}
-
-const COPY: Record<Locale, CatchCopy> = {
-  en: {
-    product: 'Catch',
-    plan: 'Enterprise',
-    title: 'Who needs attention',
-    addInquiry: 'Add inquiry',
-    bookings: 'Bookings',
-    upgrade: 'Upgrade to Enterprise',
-    checking: 'Checking...',
-    empty: 'Nothing needs attention.',
-    reply: 'Reply',
-    open: 'Open',
-    copy: 'Copy',
-    copied: 'Copied',
-    done: 'Done',
-    hide: 'Hide',
-    hidden: 'Hidden',
-    showAgain: 'Show again',
-    saveError: 'Could not save that change.',
-    copyError: 'Could not copy.',
-    untitledJob: 'Untitled job',
-    job: 'Job',
-    bookingRequest: 'Booking request',
-    actions: {
-      leadTitle: (name) => `Reply to ${name}`,
-      leadOldReason: 'Waiting 3 days',
-      leadNewReason: 'Waiting 24 hours',
-      bookingTitle: (name) => `Confirm ${name}`,
-      bookingReason: 'Waiting for confirmation',
-      jobTitle: (title) => `Check ${title}`,
-      jobReason: 'Job still open',
-      followUpTitle: (title, name) => `Follow up on ${title} with ${name}`,
-      followUpReason: 'Finished 3 days ago',
-      inquiryDraft: (name) => `Hi ${firstName(name, 'there')}, just following up on your request. Do you still need help?`,
-      bookingDraft: (name) => `Hi ${firstName(name, 'there')}, can we confirm your booking?`,
-      jobDraft: (name) => `Hi ${firstName(name, 'there')}, checking in on your job. Let me know if you have any questions.`,
-      followUpDraft: (name) => `Hi ${firstName(name, 'there')}, thanks again for working with us. How did everything go?`
-    }
-  },
-  es: {
-    product: 'Catch',
-    plan: 'Enterprise',
-    title: 'Quién necesita atención',
-    addInquiry: 'Agregar consulta',
-    bookings: 'Reservas',
-    upgrade: 'Cambiar a Enterprise',
-    checking: 'Revisando...',
-    empty: 'Nada necesita atención.',
-    reply: 'Respuesta',
-    open: 'Abrir',
-    copy: 'Copiar',
-    copied: 'Copiado',
-    done: 'Listo',
-    hide: 'Ocultar',
-    hidden: 'Ocultos',
-    showAgain: 'Mostrar de nuevo',
-    saveError: 'No se pudo guardar el cambio.',
-    copyError: 'No se pudo copiar.',
-    untitledJob: 'Trabajo sin título',
-    job: 'Trabajo',
-    bookingRequest: 'Solicitud de reserva',
-    actions: {
-      leadTitle: (name) => `Responder a ${name}`,
-      leadOldReason: 'Esperando 3 días',
-      leadNewReason: 'Esperando 24 horas',
-      bookingTitle: (name) => `Confirmar con ${name}`,
-      bookingReason: 'Falta confirmación',
-      jobTitle: (title) => `Revisar ${title}`,
-      jobReason: 'El trabajo sigue abierto',
-      followUpTitle: (title, name) => `Dar seguimiento a ${title} con ${name}`,
-      followUpReason: 'Terminó hace 3 días',
-      inquiryDraft: (name) => `Hola ${firstName(name, 'de nuevo')}, quería dar seguimiento a tu solicitud. ¿Todavía necesitas ayuda?`,
-      bookingDraft: (name) => `Hola ${firstName(name, 'de nuevo')}, ¿podemos confirmar tu reserva?`,
-      jobDraft: (name) => `Hola ${firstName(name, 'de nuevo')}, quería saber cómo va tu trabajo. Avísame si tienes alguna pregunta.`,
-      followUpDraft: (name) => `Hola ${firstName(name, 'de nuevo')}, gracias por trabajar con nosotros. ¿Cómo salió todo?`
-    }
-  },
-  vi: {
-    product: 'Catch',
-    plan: 'Enterprise',
-    title: 'Ai cần xử lý',
-    addInquiry: 'Thêm yêu cầu',
-    bookings: 'Lịch hẹn',
-    upgrade: 'Nâng cấp Enterprise',
-    checking: 'Đang kiểm tra...',
-    empty: 'Không có việc cần xử lý.',
-    reply: 'Tin nhắn',
-    open: 'Mở',
-    copy: 'Sao chép',
-    copied: 'Đã sao chép',
-    done: 'Xong',
-    hide: 'Ẩn',
-    hidden: 'Đã ẩn',
-    showAgain: 'Hiện lại',
-    saveError: 'Không lưu được thay đổi.',
-    copyError: 'Không sao chép được.',
-    untitledJob: 'Công việc chưa đặt tên',
-    job: 'Công việc',
-    bookingRequest: 'Yêu cầu đặt lịch',
-    actions: {
-      leadTitle: (name) => `Trả lời ${name}`,
-      leadOldReason: 'Đã chờ 3 ngày',
-      leadNewReason: 'Đã chờ 24 giờ',
-      bookingTitle: (name) => `Xác nhận với ${name}`,
-      bookingReason: 'Đang chờ xác nhận',
-      jobTitle: (title) => `Kiểm tra ${title}`,
-      jobReason: 'Công việc vẫn đang mở',
-      followUpTitle: (title, name) => `Hỏi thăm ${name} về ${title}`,
-      followUpReason: 'Đã hoàn tất 3 ngày',
-      inquiryDraft: (name) => `Chào ${firstName(name, 'bạn')}, mình hỏi lại về yêu cầu của bạn. Bạn vẫn cần hỗ trợ chứ?`,
-      bookingDraft: (name) => `Chào ${firstName(name, 'bạn')}, mình xác nhận lịch hẹn nhé?`,
-      jobDraft: (name) => `Chào ${firstName(name, 'bạn')}, mình hỏi thăm về công việc của bạn. Nếu có câu hỏi cứ nhắn mình nhé.`,
-      followUpDraft: (name) => `Chào ${firstName(name, 'bạn')}, cảm ơn bạn đã làm việc với bên mình. Mọi việc ổn chứ?`
-    }
-  }
-};
-
-export function getCatchCopy(locale: Locale): CatchCopy {
-  return COPY[locale] || COPY.en;
-}
+export function getCatchCopy(locale:Locale):CatchCopy{return COPY[locale]||COPY.en;}
