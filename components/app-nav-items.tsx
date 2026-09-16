@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { navLabel } from '@/lib/nav-i18n';
@@ -26,7 +27,17 @@ function navItemClassName(pathname: string, href: string, accessible: boolean, l
 function NavLinkRow({ href, label, accessible, requiredPlan, pathname, linkClassName, lockedClassName, onNavigate, activeOverride }: { href: string; label: string; accessible: boolean; requiredPlan?: EverittosPlan; pathname: string; linkClassName: string; lockedClassName: string; onNavigate?: () => void; activeOverride?: boolean }) {
   const destination = accessible ? href : billingUpgradeHref(requiredPlan || 'pro', label);
   const active = activeOverride ?? isNavLinkActive(pathname, href);
-  return <Link href={destination} className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName, activeOverride)} aria-current={active ? 'page' : undefined} aria-disabled={accessible ? undefined : true} onClick={onNavigate}>
+  return <Link
+    href={destination}
+    className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName, activeOverride)}
+    style={{ background: active ? 'var(--surface)' : 'transparent' }}
+    aria-current={active ? 'page' : undefined}
+    aria-disabled={accessible ? undefined : true}
+    onClick={(event) => {
+      event.currentTarget.blur();
+      onNavigate?.();
+    }}
+  >
     <span className="nav-item-label">{label}</span>
     {!accessible && requiredPlan ? <span className="nav-item-meta"><NavLockIcon /><span className="nav-plan-chip">{planShortBadgeName(requiredPlan)}</span></span> : null}
   </Link>;
@@ -44,6 +55,14 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
   const normalized = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
   const bookkeepingLabel = locale === 'es' ? 'Contabilidad' : locale === 'vi' ? 'Sổ sách' : 'Bookkeeping';
+  const [locationHash, setLocationHash] = useState('');
+
+  useEffect(() => {
+    const syncHash = () => setLocationHash(window.location.hash);
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, [pathname]);
 
   if (isClientRole(normalizedRole)) {
     const activeTab = searchParams.get('tab');
@@ -57,21 +76,22 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
 
   if (isContractorRole(normalizedRole)) {
     const links = [
-      { label: t('portal.contractor.nav.dashboard'), href: CONTRACTOR_PORTAL_HOME },
-      { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#current-jobs` },
-      { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#history` },
-      { label: t('portal.contractor.nav.settings'), href: CONTRACTOR_PORTAL_SETTINGS }
+      { label: t('portal.contractor.nav.dashboard'), href: CONTRACTOR_PORTAL_HOME, active: pathname === CONTRACTOR_PORTAL_HOME && locationHash !== '#current-jobs' && locationHash !== '#history' },
+      { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#current-jobs`, active: pathname === CONTRACTOR_PORTAL_HOME && locationHash === '#current-jobs' },
+      { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#history`, active: pathname === CONTRACTOR_PORTAL_HOME && locationHash === '#history' },
+      { label: t('portal.contractor.nav.settings'), href: CONTRACTOR_PORTAL_SETTINGS, active: pathname === CONTRACTOR_PORTAL_SETTINGS || pathname.startsWith(`${CONTRACTOR_PORTAL_SETTINGS}/`) }
     ].filter(({ href }) => !isExcluded(href, excludeHrefs));
-    return <nav className="app-nav" aria-label={t('portal.common.sections')}>{links.map(({ label, href }) => <NavLinkRow key={href} href={href} label={label} accessible={resolveNavItem(normalizedRole, normalized, href.split('#')[0]).accessible} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} />)}</nav>;
+    return <nav className="app-nav" aria-label={t('portal.common.sections')}>{links.map(({ label, href, active }) => <NavLinkRow key={href} href={href} label={label} accessible={resolveNavItem(normalizedRole, normalized, href.split('#')[0]).accessible} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} activeOverride={active} />)}</nav>;
   }
 
   const items = appNavItemsForRole(normalizedRole, normalized).filter(({ href }) => !isExcluded(href, excludeHrefs));
   const showBookkeeping = (normalizedRole === 'owner' || normalizedRole === 'admin' || normalizedRole === 'manager') && !isExcluded('/bookkeeping', excludeHrefs);
   const bookkeepingResolution = resolveNavItem(normalizedRole, normalized, '/bookkeeping');
+  const notificationsActive = isNavLinkActive(pathname, '/notifications');
 
   return <nav className="app-nav" aria-label={t('ux.mobileNavLabel')}>
     {items.map(({ label, href, resolution }) => <NavLinkRow key={href} href={href} label={navLabel(href, t, label, locale)} accessible={resolution.accessible} requiredPlan={resolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} />)}
     {showBookkeeping ? <NavLinkRow href="/bookkeeping" label={bookkeepingLabel} accessible={bookkeepingResolution.accessible} requiredPlan={bookkeepingResolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} /> : null}
-    {unread > 0 && !isExcluded('/notifications', excludeHrefs) ? <Link href="/notifications" className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`} onClick={onNavigate}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></Link> : null}
+    {unread > 0 && !isExcluded('/notifications', excludeHrefs) ? <Link href="/notifications" className={`nav-item nav-item-notifications${notificationsActive ? ' active' : ''} ${linkClassName}`} style={{ background: notificationsActive ? 'var(--surface)' : 'transparent' }} aria-current={notificationsActive ? 'page' : undefined} onClick={(event) => { event.currentTarget.blur(); onNavigate?.(); }}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></Link> : null}
   </nav>;
 }
