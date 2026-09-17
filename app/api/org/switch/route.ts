@@ -6,35 +6,25 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getOrgApiCopy } from '@/lib/i18n/org-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function resolveSwitchTarget(userId: string, organizationId: string) {
+type OrgCopy = ReturnType<typeof getOrgApiCopy>;
+
+async function resolveSwitchTarget(userId: string, organizationId: string, c: OrgCopy) {
   const admin = createAdminSupabase();
-  if (!admin) return { error: 'Server not configured', status: 503 } as const;
+  if (!admin) return { error: c.serverUnavailable, status: 503 } as const;
 
   const [{ data: membership, error: membershipError }, { data: organization, error: organizationError }] = await Promise.all([
-    admin
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('organization_id', organizationId)
-      .eq('active', true)
-      .maybeSingle(),
-    admin
-      .from('organizations')
-      .select('owner_user_id')
-      .eq('id', organizationId)
-      .maybeSingle()
+    admin.from('organization_members').select('role').eq('user_id', userId).eq('organization_id', organizationId).eq('active', true).maybeSingle(),
+    admin.from('organizations').select('owner_user_id').eq('id', organizationId).maybeSingle()
   ]);
 
-  if (membershipError || organizationError) {
-    return { error: membershipError?.message || organizationError?.message || 'Unable to switch workspace', status: 500 } as const;
-  }
-  if (!membership || !organization) {
-    return { error: 'You are not a member of this organization', status: 403 } as const;
-  }
+  if (membershipError || organizationError) return { error: c.switchWorkspace, status: 500 } as const;
+  if (!membership || !organization) return { error: c.notMember, status: 403 } as const;
 
   const role = organization.owner_user_id === userId ? 'owner' : normalizeRole(membership.role);
   return { role, destination: dashboardPathForRole(role) } as const;
@@ -43,16 +33,7 @@ async function resolveSwitchTarget(userId: string, organizationId: string) {
 async function persistActiveWorkspace(userId: string, organizationId: string) {
   const admin = createAdminSupabase();
   if (!admin) return;
-
-  // Keep the database fallback in sync with the httpOnly cookie. This matters
-  // on login/app startup when a request can resolve before the browser cookie
-  // is available. Without this, a person who belongs to both an owner and a
-  // worker workspace can briefly enter the worker workspace and then be sent
-  // back to their owner workspace.
-  await admin
-    .from('profiles')
-    .update({ organization_id: organizationId })
-    .eq('id', userId);
+  await admin.from('profiles').update({ organization_id: organizationId }).eq('id', userId);
 }
 
 function setActiveWorkspace(response: NextResponse, organizationId: string) {
@@ -66,6 +47,7 @@ function setActiveWorkspace(response: NextResponse, organizationId: string) {
 }
 
 export async function GET(request: Request) {
+  const c = getOrgApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL('/login', request.url));
@@ -74,7 +56,7 @@ export async function GET(request: Request) {
   const organizationId = url.searchParams.get('organizationId')?.trim();
   if (!organizationId) return NextResponse.redirect(new URL('/dashboard', request.url));
 
-  const target = await resolveSwitchTarget(user.id, organizationId);
+  const target = await resolveSwitchTarget(user.id, organizationId, c);
   if ('error' in target) return NextResponse.redirect(new URL('/dashboard', request.url));
 
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
@@ -95,15 +77,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const c = getOrgApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
 
   const body = (await request.json().catch(() => ({}))) as { organizationId?: string };
   const organizationId = body.organizationId?.trim();
-  if (!organizationId) return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
+  if (!organizationId) return NextResponse.json({ error: c.organizationIdRequired }, { status: 400 });
 
-  const target = await resolveSwitchTarget(user.id, organizationId);
+  const target = await resolveSwitchTarget(user.id, organizationId, c);
   if ('error' in target) return NextResponse.json({ error: target.error }, { status: target.status });
 
   const prior = await fetchOrganizationContextForUser(supabase, user.id);
