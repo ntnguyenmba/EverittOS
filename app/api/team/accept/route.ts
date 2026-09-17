@@ -24,10 +24,10 @@ async function sharedJobIdsForClient(admin: NonNullable<ReturnType<typeof create
   return (data || []).map((row) => String(row.job_id)).filter(Boolean);
 }
 
-function landingPayload(roleInput: string | null | undefined, organizationId: string, options?: { jobId?: string | null; sharedJobIds?: string[] | null; message?: string }) {
+function landingPayload(roleInput: string | null | undefined, organizationId: string, options?: { jobId?: string | null; sharedJobIds?: string[] | null; message?: string; alreadyAccepted?: boolean }) {
   const role = normalizeRole(roleInput);
   const redirectTo = inviteAcceptLandingPath(role, { jobId: options?.jobId, sharedJobIds: options?.sharedJobIds });
-  return { ok: true as const, organizationId, role, jobId: options?.jobId || null, redirectTo, ...(options?.message ? { message: options.message } : {}) };
+  return { ok: true as const, organizationId, role, jobId: options?.jobId || null, redirectTo, alreadyAccepted: options?.alreadyAccepted === true, ...(options?.message ? { message: options.message } : {}) };
 }
 
 export async function POST(request: Request) {
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
     if (invite.role === 'client') await repairClientPortalAccessForUser(admin, user.id, userEmail);
     const sharedJobIds = invite.role === 'client' ? await sharedJobIdsForClient(admin, user.id) : [];
-    return NextResponse.json(landingPayload(invite.role, invite.organization_id, { jobId: invite.job_id || null, sharedJobIds, message: c.alreadyAccepted }));
+    return NextResponse.json(landingPayload(invite.role, invite.organization_id, { jobId: invite.job_id || null, sharedJobIds, message: c.alreadyAccepted, alreadyAccepted: true }));
   }
 
   if (invite.status !== 'pending') return NextResponse.json({ error: c.invalidInvitationStatus(String(invite.status || '')) }, { status: 409 });
