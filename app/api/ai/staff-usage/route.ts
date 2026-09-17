@@ -9,34 +9,38 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getAiApiCopy } from '@/lib/i18n/ai-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** Staff AI usage summary for owners/admins (Billing / Settings). */
-export async function GET() {
+export async function GET(request: Request) {
+  const locale = localeFromRequest(request);
+  const c = getAiApiCopy(locale);
   const supabase = await createServerSupabase();
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: c.unauthorized }, { status: 401 });
   }
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
   if (!org) {
-    return NextResponse.json({ error: 'No workspace' }, { status: 403 });
+    return NextResponse.json({ error: c.noWorkspace }, { status: 403 });
   }
 
   const role = normalizeRole(org.role);
   if (!canManageBilling(role)) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+    return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
   }
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+    return NextResponse.json({ error: c.serverUnavailable }, { status: 503 });
   }
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
