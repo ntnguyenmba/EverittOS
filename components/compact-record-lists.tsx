@@ -74,6 +74,7 @@ function hasRepeatedStructure(children: HTMLElement[]) {
 
 function isCandidate(element: HTMLElement) {
   if (element.closest('[data-no-collapse]')) return false;
+  if (element.closest('.jobs-list-page')) return false;
   if (element.tagName === 'TBODY') return true;
   if (element.hasAttribute('data-compact-list')) return true;
 
@@ -106,6 +107,7 @@ function secondarySectionTitle(element: HTMLElement) {
 
 function isSecondarySection(element: HTMLElement) {
   if (element.closest('[data-no-collapse]')) return false;
+  if (element.closest('.jobs-list-page')) return false;
   if (element.hasAttribute('data-secondary-section')) return true;
   if (element.matches('form') || element.querySelector('form, input, textarea, select, [contenteditable="true"]')) return false;
   const classText = String(element.className || '');
