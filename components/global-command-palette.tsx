@@ -6,22 +6,28 @@ import { useTranslation } from '@/components/locale-provider';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import type { SearchResultItem } from '@/lib/os-types';
 
-const TYPE_LABELS: Record<SearchResultItem['type'], string> = {
-  customer: 'Customer',
-  property: 'Property',
-  job: 'Job',
-  invoice: 'Invoice',
-  contractor: 'Contractor',
-  task: 'Task',
-  document: 'Document',
-  template: 'Template',
-  form: 'Form'
-};
-
 const copy = {
-  en: { search: 'Search', searchWorkspace: 'Search workspace' },
-  es: { search: 'Buscar', searchWorkspace: 'Buscar en el espacio de trabajo' },
-  vi: { search: 'Tìm kiếm', searchWorkspace: 'Tìm kiếm trong không gian làm việc' }
+  en: {
+    search: 'Search', searchWorkspace: 'Search workspace', trigger: 'Search…',
+    placeholder: 'Search CRM, jobs, tasks, templates…', searching: 'Searching…',
+    searchFailed: 'Search failed', unavailable: 'Search unavailable', noResults: 'No results for “{query}”',
+    footer: 'Ask Everitt AI is on the floating button. Search finds records across your workspace without paid AI.',
+    types: { customer: 'Customer', property: 'Property', job: 'Job', invoice: 'Invoice', contractor: 'Contractor', task: 'Task', document: 'Document', template: 'Template', form: 'Form' }
+  },
+  es: {
+    search: 'Buscar', searchWorkspace: 'Buscar en el espacio de trabajo', trigger: 'Buscar…',
+    placeholder: 'Buscar clientes, trabajos, tareas y plantillas…', searching: 'Buscando…',
+    searchFailed: 'La búsqueda falló', unavailable: 'La búsqueda no está disponible', noResults: 'No hay resultados para “{query}”',
+    footer: 'Ask Everitt AI está en el botón flotante. La búsqueda encuentra registros en su espacio de trabajo sin IA pagada.',
+    types: { customer: 'Cliente', property: 'Propiedad', job: 'Trabajo', invoice: 'Factura', contractor: 'Contratista', task: 'Tarea', document: 'Documento', template: 'Plantilla', form: 'Formulario' }
+  },
+  vi: {
+    search: 'Tìm kiếm', searchWorkspace: 'Tìm kiếm trong không gian làm việc', trigger: 'Tìm kiếm…',
+    placeholder: 'Tìm khách hàng, công việc, nhiệm vụ và mẫu…', searching: 'Đang tìm…',
+    searchFailed: 'Tìm kiếm thất bại', unavailable: 'Tìm kiếm không khả dụng', noResults: 'Không có kết quả cho “{query}”',
+    footer: 'Ask Everitt AI nằm ở nút nổi. Tìm kiếm giúp tìm bản ghi trong không gian làm việc mà không cần AI trả phí.',
+    types: { customer: 'Khách hàng', property: 'Bất động sản', job: 'Công việc', invoice: 'Hóa đơn', contractor: 'Nhà thầu', task: 'Nhiệm vụ', document: 'Tài liệu', template: 'Mẫu', form: 'Biểu mẫu' }
+  }
 } as const;
 
 export function GlobalCommandPalette() {
@@ -39,7 +45,7 @@ export function GlobalCommandPalette() {
 
   useEffect(() => {
     setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
-  }, []);
+  }, [c.searchFailed, c.unavailable, locale]);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -50,16 +56,16 @@ export function GlobalCommandPalette() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}&locale=${encodeURIComponent(locale)}`);
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || 'Search failed');
+        setError(json.error || c.searchFailed);
         setResults([]);
         return;
       }
       setResults(json.results || []);
     } catch {
-      setError('Search unavailable');
+      setError(c.unavailable);
       setResults([]);
     } finally {
       setLoading(false);
@@ -117,7 +123,7 @@ export function GlobalCommandPalette() {
         onClick={() => setOpen(true)}
         aria-label={c.searchWorkspace}
       >
-        Search… <span className="muted">{kbd}</span>
+        {c.trigger} <span className="muted">{kbd}</span>
       </button>
 
       {open ? (
@@ -126,23 +132,23 @@ export function GlobalCommandPalette() {
             <input
               ref={inputRef}
               className="input global-search-input"
-              placeholder="Search CRM, jobs, tasks, templates…"
+              placeholder={c.placeholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && results[0]) navigate(results[0].href);
               }}
             />
-            {loading ? <p className="muted global-search-hint">Searching…</p> : null}
+            {loading ? <p className="muted global-search-hint">{c.searching}</p> : null}
             {error ? <p className="auth-message auth-message-error">{error}</p> : null}
             {!loading && query.length >= 2 && results.length === 0 && !error ? (
-              <p className="muted global-search-hint">No results for &ldquo;{query}&rdquo;</p>
+              <p className="muted global-search-hint">{c.noResults.replace('{query}', query)}</p>
             ) : null}
             <ul className="global-search-results">
               {results.map((item) => (
                 <li key={`${item.type}-${item.id}`}>
                   <button type="button" className="global-search-result" onClick={() => navigate(item.href)}>
-                    <span className="global-search-type">{TYPE_LABELS[item.type]}</span>
+                    <span className="global-search-type">{c.types[item.type]}</span>
                     <span className="global-search-title">{item.title}</span>
                     {item.subtitle ? <span className="muted global-search-sub">{item.subtitle}</span> : null}
                   </button>
@@ -150,7 +156,7 @@ export function GlobalCommandPalette() {
               ))}
             </ul>
             <p className="muted global-search-footer">
-              Ask Everitt AI is on the floating button. Search finds records across your workspace without paid AI.
+              {c.footer}
             </p>
           </div>
         </div>
