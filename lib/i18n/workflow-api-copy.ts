@@ -1,0 +1,47 @@
+import type { Locale } from '@/lib/i18n/config';
+
+const COPY: Record<Locale, {
+  unauthorized:string;
+  organizationNotFound:string;
+  permissionDenied:string;
+  serverUnavailable:string;
+  loadError:string;
+  planRequired:string;
+  nameRequired:string;
+  saveError:string;
+}> = {
+  en: {
+    unauthorized:'Unauthorized.',
+    organizationNotFound:'Organization not found.',
+    permissionDenied:'Permission denied.',
+    serverUnavailable:'This feature is temporarily unavailable.',
+    loadError:'Unable to load workflows.',
+    planRequired:'Workflows require Growth or higher.',
+    nameRequired:'Workflow name is required.',
+    saveError:'Unable to save workflow.'
+  },
+  es: {
+    unauthorized:'No autorizado.',
+    organizationNotFound:'No se encontró la organización.',
+    permissionDenied:'Permiso denegado.',
+    serverUnavailable:'Esta función no está disponible temporalmente.',
+    loadError:'No se pudieron cargar los flujos.',
+    planRequired:'Los flujos requieren Growth o superior.',
+    nameRequired:'El nombre del flujo es obligatorio.',
+    saveError:'No se pudo guardar el flujo.'
+  },
+  vi: {
+    unauthorized:'Không được phép.',
+    organizationNotFound:'Không tìm thấy tổ chức.',
+    permissionDenied:'Không có quyền.',
+    serverUnavailable:'Tính năng này tạm thời không khả dụng.',
+    loadError:'Không thể tải quy trình.',
+    planRequired:'Quy trình yêu cầu gói Growth trở lên.',
+    nameRequired:'Tên quy trình là bắt buộc.',
+    saveError:'Không thể lưu quy trình.'
+  }
+};
+
+export function getWorkflowApiCopy(locale: Locale) {
+  return COPY[locale] || COPY.en;
+}
