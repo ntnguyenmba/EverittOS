@@ -3,7 +3,9 @@ import { fetchOrganizationContextForUser, type OrganizationContext } from '@/lib
 
 export type { OrganizationContext };
 
+const CONTEXT_CACHE_TTL_MS = 5_000;
 const pendingContextRequests = new Map<string, Promise<OrganizationContext | null>>();
+const recentContexts = new Map<string, { value: OrganizationContext; expiresAt: number }>();
 
 async function loadOrganizationContext(userId: string): Promise<OrganizationContext | null> {
   // In the browser, the active workspace is stored in an httpOnly cookie. The
@@ -31,14 +33,30 @@ async function loadOrganizationContext(userId: string): Promise<OrganizationCont
 }
 
 export async function fetchOrganizationContext(userId: string): Promise<OrganizationContext | null> {
+  const cached = recentContexts.get(userId);
+  if (cached) {
+    if (cached.expiresAt > Date.now()) return cached.value;
+    recentContexts.delete(userId);
+  }
+
   const pending = pendingContextRequests.get(userId);
   if (pending) return pending;
 
-  const request = loadOrganizationContext(userId).finally(() => {
-    if (pendingContextRequests.get(userId) === request) {
-      pendingContextRequests.delete(userId);
-    }
-  });
+  const request = loadOrganizationContext(userId)
+    .then((organization) => {
+      if (organization) {
+        recentContexts.set(userId, {
+          value: organization,
+          expiresAt: Date.now() + CONTEXT_CACHE_TTL_MS
+        });
+      }
+      return organization;
+    })
+    .finally(() => {
+      if (pendingContextRequests.get(userId) === request) {
+        pendingContextRequests.delete(userId);
+      }
+    });
 
   pendingContextRequests.set(userId, request);
   return request;
