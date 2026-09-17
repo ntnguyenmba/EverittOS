@@ -45,7 +45,7 @@ export function GlobalCommandPalette() {
 
   useEffect(() => {
     setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
-  }, [c.searchFailed, c.unavailable, locale]);
+  }, []);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -70,7 +70,7 @@ export function GlobalCommandPalette() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [c.searchFailed, c.unavailable, locale]);
 
   useEffect(() => {
     if (!open) return;
