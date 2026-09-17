@@ -11,8 +11,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const c = getResourceApiCopy(localeFromRequest(request));
-  const ctx = await requireFinanceApiAccess();
+  const locale = localeFromRequest(request);
+  const c = getResourceApiCopy(locale);
+  const ctx = await requireFinanceApiAccess(locale);
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const jobId = new URL(request.url).searchParams.get('jobId');
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const locale = localeFromRequest(request);
   const c = getResourceApiCopy(locale);
-  const ctx = await requireFinanceApiAccess();
+  const ctx = await requireFinanceApiAccess(locale);
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
   if (!ctx.canManage) return NextResponse.json({ error: c.invoiceManagers }, { status: 403 });
 
