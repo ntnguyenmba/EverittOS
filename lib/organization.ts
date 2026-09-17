@@ -3,7 +3,9 @@ import { fetchOrganizationContextForUser, type OrganizationContext } from '@/lib
 
 export type { OrganizationContext };
 
-export async function fetchOrganizationContext(userId: string): Promise<OrganizationContext | null> {
+const pendingContextRequests = new Map<string, Promise<OrganizationContext | null>>();
+
+async function loadOrganizationContext(userId: string): Promise<OrganizationContext | null> {
   // In the browser, the active workspace is stored in an httpOnly cookie. The
   // browser cannot read that cookie directly, so resolve it on the server.
   // This keeps an owner workspace separate from another company's client or
@@ -26,4 +28,18 @@ export async function fetchOrganizationContext(userId: string): Promise<Organiza
   }
 
   return fetchOrganizationContextForUser(supabase, userId);
+}
+
+export async function fetchOrganizationContext(userId: string): Promise<OrganizationContext | null> {
+  const pending = pendingContextRequests.get(userId);
+  if (pending) return pending;
+
+  const request = loadOrganizationContext(userId).finally(() => {
+    if (pendingContextRequests.get(userId) === request) {
+      pendingContextRequests.delete(userId);
+    }
+  });
+
+  pendingContextRequests.set(userId, request);
+  return request;
 }
