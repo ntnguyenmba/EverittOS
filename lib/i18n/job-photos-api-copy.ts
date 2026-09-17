@@ -2,6 +2,7 @@ import type { Locale } from '@/lib/i18n/config';
 
 type JobPhotosApiCopy = {
   invalidJobId: string;
+  invalidId: string;
   unauthorized: string;
   loadError: string;
   photoIdRequired: string;
@@ -10,6 +11,8 @@ type JobPhotosApiCopy = {
   jobNotFound: string;
   photoNotFound: string;
   permissionDenied: string;
+  noChanges: string;
+  saveError: string;
   deleteError: string;
   teamMember: string;
 };
@@ -17,6 +20,7 @@ type JobPhotosApiCopy = {
 const COPY: Record<Locale, JobPhotosApiCopy> = {
   en: {
     invalidJobId: 'Invalid job ID.',
+    invalidId: 'Invalid ID.',
     unauthorized: 'Unauthorized.',
     loadError: 'Unable to load job photos.',
     photoIdRequired: 'A valid photo ID is required.',
@@ -25,11 +29,14 @@ const COPY: Record<Locale, JobPhotosApiCopy> = {
     jobNotFound: 'Job not found.',
     photoNotFound: 'Photo not found.',
     permissionDenied: 'Permission denied.',
+    noChanges: 'No changes were provided.',
+    saveError: 'Unable to update the photo.',
     deleteError: 'Unable to delete the photo.',
     teamMember: 'Team member'
   },
   es: {
     invalidJobId: 'El ID del trabajo no es válido.',
+    invalidId: 'El ID no es válido.',
     unauthorized: 'No autorizado.',
     loadError: 'No se pudieron cargar las fotos del trabajo.',
     photoIdRequired: 'Se requiere un ID de foto válido.',
@@ -38,11 +45,14 @@ const COPY: Record<Locale, JobPhotosApiCopy> = {
     jobNotFound: 'No se encontró el trabajo.',
     photoNotFound: 'No se encontró la foto.',
     permissionDenied: 'Permiso denegado.',
+    noChanges: 'No se proporcionaron cambios.',
+    saveError: 'No se pudo actualizar la foto.',
     deleteError: 'No se pudo eliminar la foto.',
     teamMember: 'Miembro del equipo'
   },
   vi: {
     invalidJobId: 'ID công việc không hợp lệ.',
+    invalidId: 'ID không hợp lệ.',
     unauthorized: 'Không được phép.',
     loadError: 'Không thể tải ảnh công việc.',
     photoIdRequired: 'Cần có ID ảnh hợp lệ.',
@@ -51,6 +61,8 @@ const COPY: Record<Locale, JobPhotosApiCopy> = {
     jobNotFound: 'Không tìm thấy công việc.',
     photoNotFound: 'Không tìm thấy ảnh.',
     permissionDenied: 'Không có quyền.',
+    noChanges: 'Không có thay đổi nào được cung cấp.',
+    saveError: 'Không thể cập nhật ảnh.',
     deleteError: 'Không thể xóa ảnh.',
     teamMember: 'Thành viên nhóm'
   }
