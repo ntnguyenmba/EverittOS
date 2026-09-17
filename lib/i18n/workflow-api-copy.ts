@@ -9,6 +9,11 @@ const COPY: Record<Locale, {
   planRequired:string;
   nameRequired:string;
   saveError:string;
+  workflowNotFound:string;
+  stepNotFound:string;
+  stepTitleRequired:string;
+  stepIdRequired:string;
+  stepSaveError:string;
 }> = {
   en: {
     unauthorized:'Unauthorized.',
@@ -18,7 +23,12 @@ const COPY: Record<Locale, {
     loadError:'Unable to load workflows.',
     planRequired:'Workflows require Growth or higher.',
     nameRequired:'Workflow name is required.',
-    saveError:'Unable to save workflow.'
+    saveError:'Unable to save workflow.',
+    workflowNotFound:'Workflow not found.',
+    stepNotFound:'Step not found in workflow.',
+    stepTitleRequired:'Step title is required.',
+    stepIdRequired:'Step ID is required.',
+    stepSaveError:'Unable to save workflow step.'
   },
   es: {
     unauthorized:'No autorizado.',
@@ -28,7 +38,12 @@ const COPY: Record<Locale, {
     loadError:'No se pudieron cargar los flujos.',
     planRequired:'Los flujos requieren Growth o superior.',
     nameRequired:'El nombre del flujo es obligatorio.',
-    saveError:'No se pudo guardar el flujo.'
+    saveError:'No se pudo guardar el flujo.',
+    workflowNotFound:'No se encontró el flujo.',
+    stepNotFound:'No se encontró el paso en el flujo.',
+    stepTitleRequired:'El título del paso es obligatorio.',
+    stepIdRequired:'El ID del paso es obligatorio.',
+    stepSaveError:'No se pudo guardar el paso del flujo.'
   },
   vi: {
     unauthorized:'Không được phép.',
@@ -38,7 +53,12 @@ const COPY: Record<Locale, {
     loadError:'Không thể tải quy trình.',
     planRequired:'Quy trình yêu cầu gói Growth trở lên.',
     nameRequired:'Tên quy trình là bắt buộc.',
-    saveError:'Không thể lưu quy trình.'
+    saveError:'Không thể lưu quy trình.',
+    workflowNotFound:'Không tìm thấy quy trình.',
+    stepNotFound:'Không tìm thấy bước trong quy trình.',
+    stepTitleRequired:'Tên bước là bắt buộc.',
+    stepIdRequired:'ID bước là bắt buộc.',
+    stepSaveError:'Không thể lưu bước quy trình.'
   }
 };
 
