@@ -9,26 +9,29 @@ import { aiModeUsageEvent, recordAiUsage } from '@/lib/ai-usage-events';
 import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getAiApiCopy } from '@/lib/i18n/ai-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const c = getAiApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: c.unauthorized, code: 'unauthorized' }, { status: 401 });
   }
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
+    return NextResponse.json({ error: c.serverUnavailable, code: 'not_configured' }, { status: 503 });
   }
 
-  const body = (await request.json()) as {
+  const body = (await request.json().catch(() => ({}))) as {
     prompt?: string;
     messages?: AiChatMessage[];
     feature?: AiFeatureId;
@@ -48,9 +51,29 @@ export async function POST(request: Request) {
           : gate.code === 'unauthorized' || gate.code === 'no_organization'
             ? 401
             : 503;
+    const localizedGateMessage =
+      gate.code === 'plan_required'
+        ? c.planLocked
+        : gate.code === 'subscription_inactive'
+          ? c.subscriptionInactive
+          : gate.code === 'permission_denied'
+            ? c.permissionDenied
+            : gate.code === 'rate_limited'
+              ? c.rateLimited
+              : gate.code === 'everittteam_budget_exhausted'
+                ? c.budgetLocked
+                : gate.code === 'staff_daily_limit'
+                  ? c.staffDailyLimit
+                  : gate.code === 'staff_monthly_limit'
+                    ? c.staffMonthlyLimit
+                    : gate.code === 'unauthorized'
+                      ? c.unauthorized
+                      : gate.code === 'no_organization'
+                        ? c.noWorkspace
+                        : gate.message;
     return NextResponse.json(
       {
-        error: gate.message,
+        error: localizedGateMessage,
         code: gate.code,
         requiredPlan: gate.requiredPlan || 'business',
         locked: gate.code === 'plan_required'
@@ -61,14 +84,14 @@ export async function POST(request: Request) {
 
   if (!canSeeOrgWideData(gate.org.role) && normalizeRole(gate.org.role) !== 'employee') {
     return NextResponse.json(
-      { error: 'Your role cannot use Everitt AI.', code: 'permission_denied', locked: false },
+      { error: c.roleCannotUse, code: 'permission_denied', locked: false },
       { status: 403 }
     );
   }
 
   const prompt = body.prompt?.trim();
   if (!prompt) {
-    return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
+    return NextResponse.json({ error: c.promptRequired }, { status: 400 });
   }
 
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
@@ -81,7 +104,8 @@ export async function POST(request: Request) {
 
   if (!result.ok) {
     const status = result.code === 'rate_limited' ? 429 : 503;
-    return NextResponse.json({ error: result.message, code: result.code }, { status });
+    const message = result.code === 'rate_limited' ? c.rateLimited : result.message;
+    return NextResponse.json({ error: message, code: result.code }, { status });
   }
 
   const { cleanReply, action } = parseProposedAction(result.reply);
