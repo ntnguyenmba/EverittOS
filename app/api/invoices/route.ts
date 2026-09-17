@@ -3,77 +3,50 @@ import { logActivityServer } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
 import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
-import {
-  isMissingSchemaError,
-  SCHEMA_SETUP_HINT,
-  schemaEmptyPayload
-} from '@/lib/supabase-schema-errors';
+import { isMissingSchemaError, SCHEMA_SETUP_HINT, schemaEmptyPayload } from '@/lib/supabase-schema-errors';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const c = getResourceApiCopy(localeFromRequest(request));
   const ctx = await requireFinanceApiAccess();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-  }
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const jobId = new URL(request.url).searchParams.get('jobId');
-  let query = ctx.supabase
-    .from('invoices')
-    .select('*')
-    .eq('organization_id', ctx.organizationId)
-    .order('created_at', { ascending: false });
-
+  let query = ctx.supabase.from('invoices').select('*').eq('organization_id', ctx.organizationId).order('created_at', { ascending: false });
   if (jobId) query = query.eq('job_id', jobId);
-
   const { data, error } = await query;
   if (error) {
-    if (isMissingSchemaError(error)) {
-      return NextResponse.json(schemaEmptyPayload('invoices', { setupHint: SCHEMA_SETUP_HINT }));
-    }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    if (isMissingSchemaError(error)) return NextResponse.json(schemaEmptyPayload('invoices', { setupHint: SCHEMA_SETUP_HINT }));
+    return NextResponse.json({ error: c.loadInvoices }, { status: 400 });
   }
-
   return NextResponse.json({ invoices: data || [], schemaReady: true });
 }
 
 export async function POST(request: Request) {
+  const locale = localeFromRequest(request);
+  const c = getResourceApiCopy(locale);
   const ctx = await requireFinanceApiAccess();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-  }
-
-  if (!ctx.canManage) {
-    return NextResponse.json({ error: 'Only managers can create invoices' }, { status: 403 });
-  }
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  if (!ctx.canManage) return NextResponse.json({ error: c.invoiceManagers }, { status: 403 });
 
   const body = await request.json();
   const amount = parseMoneyInput(body.amount);
-  if (amount <= 0) {
-    return NextResponse.json({ error: 'Invoice amount must be greater than zero' }, { status: 400 });
-  }
+  if (amount <= 0) return NextResponse.json({ error: c.invoiceAmount }, { status: 400 });
 
   const amountPaid = parseMoneyInput(body.amount_paid ?? body.amountPaid ?? 0);
-  const status =
-    amountPaid >= amount ? 'paid' : amountPaid > 0 ? 'partial' : String(body.status || 'sent').trim() || 'sent';
+  const status = amountPaid >= amount ? 'paid' : amountPaid > 0 ? 'partial' : String(body.status || 'sent').trim() || 'sent';
 
   const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
-  if (jobError) {
-    return NextResponse.json({ error: jobError }, { status: 400 });
-  }
+  if (jobError) return NextResponse.json({ error: jobError }, { status: 400 });
   const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
-  if (customerError) {
-    return NextResponse.json({ error: customerError }, { status: 400 });
-  }
+  if (customerError) return NextResponse.json({ error: customerError }, { status: 400 });
 
   const { data: profile } = await ctx.supabase.from('profiles').select('locale').eq('id', ctx.userId).maybeSingle();
-  const documentLocale =
-    body.document_locale === 'es' || body.document_locale === 'vi' || body.document_locale === 'en'
-      ? body.document_locale
-      : profile?.locale === 'es' || profile?.locale === 'vi'
-        ? profile.locale
-        : 'en';
+  const documentLocale = body.document_locale === 'es' || body.document_locale === 'vi' || body.document_locale === 'en' ? body.document_locale : profile?.locale === 'es' || profile?.locale === 'vi' ? profile.locale : locale;
 
   const insertPayload: Record<string, unknown> = {
     organization_id: ctx.organizationId,
@@ -91,29 +64,16 @@ export async function POST(request: Request) {
   };
 
   let result = await ctx.supabase.from('invoices').insert(insertPayload).select('*').single();
-
   if (result.error && /document_locale/i.test(result.error.message || '')) {
     delete insertPayload.document_locale;
     result = await ctx.supabase.from('invoices').insert(insertPayload).select('*').single();
   }
-
   const { data, error } = result;
-
   if (error) {
-    if (isMissingSchemaError(error)) {
-      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
-    }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    if (isMissingSchemaError(error)) return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    return NextResponse.json({ error: c.saveInvoice }, { status: 400 });
   }
 
-  await logActivityServer({
-    organizationId: ctx.organizationId,
-    userId: ctx.userId,
-    entityType: 'invoice',
-    entityId: data.id,
-    action: status === 'paid' ? 'invoice_paid' : 'invoice_created',
-    message: status === 'paid' ? 'Invoice paid' : 'Invoice sent'
-  });
-
+  await logActivityServer({ organizationId: ctx.organizationId, userId: ctx.userId, entityType: 'invoice', entityId: data.id, action: status === 'paid' ? 'invoice_paid' : 'invoice_created', message: status === 'paid' ? 'Invoice paid' : 'Invoice sent' });
   return NextResponse.json({ invoice: data });
 }
