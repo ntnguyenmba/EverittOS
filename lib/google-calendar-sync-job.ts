@@ -3,6 +3,8 @@ import { syncJobToGoogleCalendar } from '@/lib/google-calendar-sync';
 
 const RETRY_DELAYS_MS = [0, 350, 1200] as const;
 
+type CalendarSyncOutcome = { ok: true } | { ok: false; error?: string };
+
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -17,7 +19,7 @@ export async function syncJobToGoogleCalendarSafe(
   admin: SupabaseClient,
   organizationId: string,
   jobId: string
-): Promise<void> {
+): Promise<CalendarSyncOutcome> {
   try {
     const { data: settings } = await admin
       .from('organization_settings')
@@ -25,14 +27,19 @@ export async function syncJobToGoogleCalendarSafe(
       .eq('organization_id', organizationId)
       .maybeSingle();
     const timezone = settings?.timezone || 'America/New_York';
+    let lastError: string | undefined;
 
     for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt += 1) {
       if (RETRY_DELAYS_MS[attempt] > 0) await wait(RETRY_DELAYS_MS[attempt]);
       const result = await syncJobToGoogleCalendar(admin, organizationId, jobId, timezone);
-      if (result.ok) return;
-      if (!isRetryableCalendarError(result.error || '') || attempt === RETRY_DELAYS_MS.length - 1) return;
+      if (result.ok) return { ok: true };
+      lastError = result.error || undefined;
+      if (!isRetryableCalendarError(result.error || '') || attempt === RETRY_DELAYS_MS.length - 1) {
+        return { ok: false, error: lastError };
+      }
     }
-  } catch {
-    /* Calendar sync is secondary and must never make a successful job save fail. */
+    return { ok: false, error: lastError };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : undefined };
   }
 }
