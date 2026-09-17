@@ -3,33 +3,24 @@ import { AI_REQUIRED_PLAN, planHasAiAccess } from '@/lib/ai-features';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { getAiUsageStats } from '@/lib/ai-server';
 import { aiConfigured, getActiveAiProviderInfo } from '@/lib/ai/config';
-import {
-  EVERITTTEAM_BUDGET_EXHAUSTED_MESSAGE,
-  getEverittteamBudgetWarning,
-  getEverittteamPoolUsage,
-  isEverittteamAccount
-} from '@/lib/everittteam-ai-budget';
+import { getEverittteamBudgetWarning, getEverittteamPoolUsage, isEverittteamAccount } from '@/lib/everittteam-ai-budget';
 import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { isClientRole, isOwner, isStaffRole, normalizeRole } from '@/lib/roles';
-import {
-  getDailyAiPromptCount,
-  getMonthlyAiPromptCount,
-  getStaffAiUsageSummary,
-  shouldApplyStaffAiLimits,
-  STAFF_DAILY_AI_PROMPT_LIMIT,
-  STAFF_MONTHLY_AI_PROMPT_LIMIT
-} from '@/lib/ai-usage-events';
+import { getDailyAiPromptCount, getMonthlyAiPromptCount, getStaffAiUsageSummary, shouldApplyStaffAiLimits, STAFF_DAILY_AI_PROMPT_LIMIT, STAFF_MONTHLY_AI_PROMPT_LIMIT } from '@/lib/ai-usage-events';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getAiApiCopy } from '@/lib/i18n/ai-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const c = getAiApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
 
   const org = await fetchOrganizationContextForRequest(supabase, user.id);
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
@@ -79,28 +70,7 @@ export async function GET() {
 
   const everittteamLocked = everittteam?.applies && everittteam.budgetExhausted && !everittteam.ownerBypass;
   const aiModeAvailable = allowed && gateStatus.ok && !everittteamLocked;
-  const lockedMessage = !allowed
-    ? 'Everitt AI writing and analysis is available on Business and Enterprise plans. Ask Everitt search still works.'
-    : everittteamLocked
-      ? EVERITTTEAM_BUDGET_EXHAUSTED_MESSAGE
-      : gateStatus.ok ? null : gateStatus.message || null;
+  const lockedMessage = !allowed ? c.planLocked : everittteamLocked ? c.budgetLocked : gateStatus.ok ? null : gateStatus.message || null;
 
-  return NextResponse.json({
-    searchAvailable,
-    aiModeAvailable,
-    allowed: aiModeAvailable,
-    configured,
-    provider: providerInfo.id,
-    providerLabel: providerInfo.displayName,
-    model: providerInfo.model,
-    plan,
-    requiredPlan: AI_REQUIRED_PLAN,
-    locked: !aiModeAvailable && gateStatus.code === 'plan_required',
-    aiLocked: !aiModeAvailable,
-    lockedMessage,
-    gate: gateStatus,
-    everittteam,
-    staffAi,
-    usage
-  });
+  return NextResponse.json({ searchAvailable, aiModeAvailable, allowed: aiModeAvailable, configured, provider: providerInfo.id, providerLabel: providerInfo.displayName, model: providerInfo.model, plan, requiredPlan: AI_REQUIRED_PLAN, locked: !aiModeAvailable && gateStatus.code === 'plan_required', aiLocked: !aiModeAvailable, lockedMessage, gate: gateStatus, everittteam, staffAi, usage });
 }
