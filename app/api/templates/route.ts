@@ -4,111 +4,52 @@ import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import type { TemplateCategory } from '@/lib/os-types';
 import { createServerSupabase } from '@/lib/supabase-server';
-import {
-  isMissingSchemaError,
-  SCHEMA_SETUP_HINT,
-  schemaEmptyPayload
-} from '@/lib/supabase-schema-errors';
+import { isMissingSchemaError, schemaEmptyPayload } from '@/lib/supabase-schema-errors';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getTemplateApiCopy } from '@/lib/i18n/template-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const CATEGORIES: TemplateCategory[] = [
-  'sop',
-  'proposal',
-  'contract',
-  'estimate',
-  'invoice',
-  'email',
-  'checklist',
-  'workflow'
-];
+const CATEGORIES: TemplateCategory[] = ['sop','proposal','contract','estimate','invoice','email','checklist','workflow'];
 
 export async function GET(request: Request) {
+  const c = getTemplateApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
 
-  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
-    email: user.email || '',
-    userMetadata: user.user_metadata || undefined
-  });
-  if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, { email: user.email || '', userMetadata: user.user_metadata || undefined });
+  if (!org) return NextResponse.json({ error: c.organizationNotFound }, { status: 404 });
 
   const category = new URL(request.url).searchParams.get('category');
-  let query = supabase
-    .from('template_library')
-    .select('id, category, title, body, version, created_at, updated_at')
-    .eq('organization_id', org.organizationId)
-    .order('updated_at', { ascending: false });
-
-  if (category && CATEGORIES.includes(category as TemplateCategory)) {
-    query = query.eq('category', category);
-  }
+  let query = supabase.from('template_library').select('id, category, title, body, version, created_at, updated_at').eq('organization_id', org.organizationId).order('updated_at', { ascending: false });
+  if (category && CATEGORIES.includes(category as TemplateCategory)) query = query.eq('category', category);
 
   const { data, error } = await query;
   if (error) {
-    if (isMissingSchemaError(error)) {
-      return NextResponse.json(
-        schemaEmptyPayload('templates', { categories: CATEGORIES, setupHint: SCHEMA_SETUP_HINT })
-      );
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (isMissingSchemaError(error)) return NextResponse.json(schemaEmptyPayload('templates', { categories: CATEGORIES }));
+    return NextResponse.json({ error: c.loadTemplates }, { status: 500 });
   }
   return NextResponse.json({ templates: data || [], categories: CATEGORIES, schemaReady: true });
 }
 
 export async function POST(request: Request) {
+  const c = getTemplateApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
 
-  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
-    email: user.email || '',
-    userMetadata: user.user_metadata || undefined
-  });
-  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, { email: user.email || '', userMetadata: user.user_metadata || undefined });
+  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
 
   const body = (await request.json()) as { title?: string; category?: string; body?: string };
-  if (!body.title?.trim()) {
-    return NextResponse.json({ error: 'title is required' }, { status: 400 });
-  }
-
+  if (!body.title?.trim()) return NextResponse.json({ error: c.titleRequired }, { status: 400 });
   const category = CATEGORIES.includes(body.category as TemplateCategory) ? body.category : 'sop';
 
-  const { data, error } = await supabase
-    .from('template_library')
-    .insert({
-      organization_id: org.organizationId,
-      title: body.title.trim(),
-      category,
-      body: body.body?.trim() || '',
-      created_by: user.id
-    })
-    .select('*')
-    .single();
+  const { data, error } = await supabase.from('template_library').insert({ organization_id: org.organizationId, title: body.title.trim(), category, body: body.body?.trim() || '', created_by: user.id }).select('*').single();
+  if (error) return NextResponse.json({ error: c.saveTemplate }, { status: isMissingSchemaError(error) ? 503 : 400 });
 
-  if (error) {
-    if (isMissingSchemaError(error)) {
-      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
-    }
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  await logActivityServer({
-    organizationId: org.organizationId,
-    userId: user.id,
-    entityType: 'template',
-    entityId: data.id,
-    action: 'template_created',
-    message: `Template created: ${data.title}`
-  });
-
+  await logActivityServer({ organizationId: org.organizationId, userId: user.id, entityType: 'template', entityId: data.id, action: 'template_created', message: `Template created: ${data.title}` });
   return NextResponse.json({ template: data });
 }
