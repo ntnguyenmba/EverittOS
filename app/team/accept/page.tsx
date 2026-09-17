@@ -13,31 +13,46 @@ type AcceptStatus = 'checking' | 'needs-sign-in' | 'accepted' | 'already-accepte
 
 const copy = {
   en: {
-    continue: 'Continue',
-    openSharedJob: 'Open shared job',
-    openContractorPortal: 'Open contractor portal',
-    allSet: 'All set',
-    signInRequired: 'Sign in required',
-    actionNeeded: 'Action needed',
-    checking: 'Checking'
+    continue: 'Continue', openSharedJob: 'Open shared job', openContractorPortal: 'Open contractor portal',
+    allSet: 'All set', signInRequired: 'Sign in required', actionNeeded: 'Action needed', checking: 'Checking',
+    checkingInvite: 'Checking your invitation…', signInStep: 'Next step: sign in with the same email address that received the invite, then return here to open your shared access.',
+    acceptError: 'Could not accept invitation. Ask the workspace owner to resend the invite.',
+    clientAlready: 'You already have access. Opening your shared job…', clientAccepted: 'Invitation accepted. Opening your shared job…',
+    contractorAlready: 'You already have contractor access. Opening your portal…', contractorAccepted: 'Invitation accepted. Opening your contractor portal…',
+    teamAlready: 'You are already connected to this workspace. No further action is needed.', teamAccepted: 'Invitation accepted. You are now connected to the workspace.',
+    sharedAccess: 'EverittOS shared access', teamAccess: 'EverittOS team access', acceptShared: 'Accept shared job invitation',
+    acceptContractor: 'Accept contractor invitation', acceptTeam: 'Accept team invitation',
+    clientHelp: 'This page connects your signed-in account so you can view the shared job. Use the same email address that received the invitation.',
+    teamHelp: 'This page connects your signed-in account to the business workspace. Use the same email address that received the invitation.',
+    accept: 'Accept invitation', signInInvited: 'Sign in with invited email', loading: 'Loading…'
   },
   es: {
-    continue: 'Continuar',
-    openSharedJob: 'Abrir trabajo compartido',
-    openContractorPortal: 'Abrir portal de contratista',
-    allSet: 'Todo listo',
-    signInRequired: 'Inicio de sesión requerido',
-    actionNeeded: 'Acción necesaria',
-    checking: 'Verificando'
+    continue: 'Continuar', openSharedJob: 'Abrir trabajo compartido', openContractorPortal: 'Abrir portal de contratista',
+    allSet: 'Todo listo', signInRequired: 'Inicio de sesión requerido', actionNeeded: 'Acción necesaria', checking: 'Verificando',
+    checkingInvite: 'Verificando su invitación…', signInStep: 'Siguiente paso: inicie sesión con el mismo correo que recibió la invitación y vuelva aquí para abrir el acceso compartido.',
+    acceptError: 'No se pudo aceptar la invitación. Pida al propietario que la envíe de nuevo.',
+    clientAlready: 'Ya tiene acceso. Abriendo el trabajo compartido…', clientAccepted: 'Invitación aceptada. Abriendo el trabajo compartido…',
+    contractorAlready: 'Ya tiene acceso de contratista. Abriendo su portal…', contractorAccepted: 'Invitación aceptada. Abriendo el portal de contratista…',
+    teamAlready: 'Ya está conectado a este espacio de trabajo. No necesita hacer nada más.', teamAccepted: 'Invitación aceptada. Ahora está conectado al espacio de trabajo.',
+    sharedAccess: 'Acceso compartido de EverittOS', teamAccess: 'Acceso al equipo de EverittOS', acceptShared: 'Aceptar invitación al trabajo compartido',
+    acceptContractor: 'Aceptar invitación de contratista', acceptTeam: 'Aceptar invitación al equipo',
+    clientHelp: 'Esta página conecta su cuenta para ver el trabajo compartido. Use el mismo correo que recibió la invitación.',
+    teamHelp: 'Esta página conecta su cuenta al espacio de trabajo. Use el mismo correo que recibió la invitación.',
+    accept: 'Aceptar invitación', signInInvited: 'Iniciar sesión con el correo invitado', loading: 'Cargando…'
   },
   vi: {
-    continue: 'Tiếp tục',
-    openSharedJob: 'Mở công việc được chia sẻ',
-    openContractorPortal: 'Mở cổng nhà thầu',
-    allSet: 'Đã sẵn sàng',
-    signInRequired: 'Cần đăng nhập',
-    actionNeeded: 'Cần hành động',
-    checking: 'Đang kiểm tra'
+    continue: 'Tiếp tục', openSharedJob: 'Mở công việc được chia sẻ', openContractorPortal: 'Mở cổng nhà thầu',
+    allSet: 'Đã sẵn sàng', signInRequired: 'Cần đăng nhập', actionNeeded: 'Cần hành động', checking: 'Đang kiểm tra',
+    checkingInvite: 'Đang kiểm tra lời mời…', signInStep: 'Bước tiếp theo: đăng nhập bằng đúng email đã nhận lời mời, rồi quay lại đây để mở quyền truy cập được chia sẻ.',
+    acceptError: 'Không thể chấp nhận lời mời. Hãy yêu cầu chủ không gian làm việc gửi lại lời mời.',
+    clientAlready: 'Bạn đã có quyền truy cập. Đang mở công việc được chia sẻ…', clientAccepted: 'Đã chấp nhận lời mời. Đang mở công việc được chia sẻ…',
+    contractorAlready: 'Bạn đã có quyền nhà thầu. Đang mở cổng của bạn…', contractorAccepted: 'Đã chấp nhận lời mời. Đang mở cổng nhà thầu…',
+    teamAlready: 'Bạn đã kết nối với không gian làm việc này. Không cần làm gì thêm.', teamAccepted: 'Đã chấp nhận lời mời. Bạn hiện đã kết nối với không gian làm việc.',
+    sharedAccess: 'Quyền truy cập chia sẻ EverittOS', teamAccess: 'Quyền truy cập nhóm EverittOS', acceptShared: 'Chấp nhận lời mời công việc được chia sẻ',
+    acceptContractor: 'Chấp nhận lời mời nhà thầu', acceptTeam: 'Chấp nhận lời mời nhóm',
+    clientHelp: 'Trang này kết nối tài khoản đã đăng nhập để bạn xem công việc được chia sẻ. Hãy dùng đúng email đã nhận lời mời.',
+    teamHelp: 'Trang này kết nối tài khoản đã đăng nhập với không gian làm việc. Hãy dùng đúng email đã nhận lời mời.',
+    accept: 'Chấp nhận lời mời', signInInvited: 'Đăng nhập bằng email được mời', loading: 'Đang tải…'
   }
 } as const;
 
@@ -47,7 +62,7 @@ function AcceptInviteForm() {
   const { locale } = useTranslation();
   const c = copy[locale];
   const token = params.get('token') || '';
-  const [message, setMessage] = useState('Checking your invitation...');
+  const [message, setMessage] = useState(c.checkingInvite);
   const [status, setStatus] = useState<AcceptStatus>('checking');
   const [loading, setLoading] = useState(false);
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
@@ -57,7 +72,7 @@ function AcceptInviteForm() {
   const accept = useCallback(async () => {
     setLoading(true);
     setStatus('checking');
-    setMessage('Checking your invitation...');
+    setMessage(c.checkingInvite);
 
     const {
       data: { user }
@@ -66,7 +81,7 @@ function AcceptInviteForm() {
     if (!user) {
       setLoading(false);
       setStatus('needs-sign-in');
-      setMessage('Next step: sign in with the same email address that received the invite, then return here to open your shared access.');
+      setMessage(c.signInStep);
       return;
     }
 
@@ -80,7 +95,7 @@ function AcceptInviteForm() {
 
     if (!res.ok) {
       setStatus('error');
-      setMessage(json.error || 'Could not accept invitation. Ask the workspace owner to resend the invite.');
+      setMessage(json.error || c.acceptError);
       return;
     }
 
@@ -97,14 +112,14 @@ function AcceptInviteForm() {
     setInviteRole(role);
     setRedirectTo(destination);
 
-    const alreadyAccepted = typeof json.message === 'string' && json.message.toLowerCase().includes('already accepted');
+    const alreadyAccepted = json.alreadyAccepted === true;
     setStatus(alreadyAccepted ? 'already-accepted' : 'accepted');
 
     if (isClientRole(role)) {
       setMessage(
         alreadyAccepted
-          ? 'You already have access. Opening your shared job…'
-          : 'Invitation accepted. Opening your shared job…'
+          ? c.clientAlready
+          : c.clientAccepted
       );
       router.replace(destination);
       return;
@@ -113,8 +128,8 @@ function AcceptInviteForm() {
     if (isContractorRole(role)) {
       setMessage(
         alreadyAccepted
-          ? 'You already have contractor access. Opening your portal…'
-          : 'Invitation accepted. Opening your contractor portal…'
+          ? c.contractorAlready
+          : c.contractorAccepted
       );
       router.replace(destination);
       return;
@@ -122,10 +137,10 @@ function AcceptInviteForm() {
 
     setMessage(
       alreadyAccepted
-        ? 'You are already connected to this workspace. No further action is needed.'
-        : 'Invitation accepted. You are now connected to the workspace.'
+        ? c.teamAlready
+        : c.teamAccepted
     );
-  }, [router, token]);
+  }, [c, router, token]);
 
   useEffect(() => {
     void accept();
@@ -139,18 +154,18 @@ function AcceptInviteForm() {
   return (
     <AuthenticatedSection>
       <div className="card form">
-        <p className="eyebrow">{isPortalInvite ? 'EverittOS shared access' : 'EverittOS team access'}</p>
+        <p className="eyebrow">{isPortalInvite ? c.sharedAccess : c.teamAccess}</p>
         <h2>
           {isClientInvite
-            ? 'Accept shared job invitation'
+            ? c.acceptShared
             : isContractorInvite
-              ? 'Accept contractor invitation'
-              : 'Accept team invitation'}
+              ? c.acceptContractor
+              : c.acceptTeam}
         </h2>
         <p>
           {isClientInvite
-            ? 'This page connects your signed-in account so you can view the shared job. Use the same email address that received the invitation.'
-            : 'This page connects your signed-in account to the business workspace. Use the same email address that received the invitation.'}
+            ? c.clientHelp
+            : c.teamHelp}
         </p>
         <div className="auth-message" role="status">
           <strong>
@@ -171,12 +186,12 @@ function AcceptInviteForm() {
             </button>
           ) : (
             <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void accept()}>
-              {loading ? 'Checking...' : 'Accept invitation'}
+              {loading ? c.checking : c.accept}
             </button>
           )}
           {status === 'needs-sign-in' ? (
             <Link className="btn" href={signInHref}>
-              Sign in with invited email
+              {c.signInInvited}
             </Link>
           ) : null}
         </div>
@@ -185,12 +200,17 @@ function AcceptInviteForm() {
   );
 }
 
+function InviteLoading() {
+  const { locale } = useTranslation();
+  return <div className="card">{copy[locale].loading}</div>;
+}
+
 export default function AcceptInvitePage() {
   return (
     <Suspense
       fallback={
         <AuthenticatedSection>
-          <div className="card">Loading...</div>
+          <InviteLoading />
         </AuthenticatedSection>
       }
     >
