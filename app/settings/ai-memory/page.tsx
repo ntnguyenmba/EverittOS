@@ -6,7 +6,6 @@ import { SettingsShell } from '@/components/settings/settings-shell';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { useTranslation } from '@/components/locale-provider';
 import { useAsyncAction } from '@/hooks/use-async-action';
-import { FEEDBACK } from '@/lib/feedback-labels';
 import { canAccessFeature } from '@/lib/plan-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -76,13 +75,14 @@ export default function AiMemorySettingsPage() {
         router.push('/login?next=/settings/ai-memory');
         return;
       }
-      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+      const [{ data: profile }, org] = await Promise.all([
+        supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+        fetchOrganizationContext(user.id)
+      ]);
       const p = normalizePlan(profile?.plan);
-      const r = normalizeRole(profile?.role);
+      const r = normalizeRole(org?.role || profile?.role);
       setPlan(p);
       setRole(r);
-
-      const org = await fetchOrganizationContext(user.id);
       if (!org) {
         setLoading(false);
         return;
@@ -177,7 +177,7 @@ export default function AiMemorySettingsPage() {
           <textarea className="input" rows={3} value={brandVoice} onChange={(e) => setBrandVoice(e.target.value)} />
         </label>
         <button type="submit" className="btn btn-primary" disabled={saving}>
-          {buttonLabel(c.save, FEEDBACK.loading)}
+          {buttonLabel(c.save, t('feedback.loading'))}
         </button>
       </form>
     </SettingsShell>
