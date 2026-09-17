@@ -6,32 +6,29 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canManageOrganizationSettings } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getMiscApiCopy } from '@/lib/i18n/misc-api-copy';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(request: Request, { params }: RouteParams) {
+  const c = getMiscApiCopy(localeFromRequest(request));
   const { id } = await params;
   const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !canManageOrganizationSettings(org.role)) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
+  if (!org || !canManageOrganizationSettings(org.role)) return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  if (!limitsForPlan(plan).apiAccess) {
-    return NextResponse.json({ error: 'API access requires Growth or Enterprise.' }, { status: 403 });
-  }
+  if (!limitsForPlan(plan).apiAccess) return NextResponse.json({ error: c.apiAccessPlan }, { status: 403 });
 
   const admin = createAdminSupabase();
-  if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+  if (!admin) return NextResponse.json({ error: c.serverUnavailable }, { status: 503 });
 
   const ok = await revokeApiKey(admin, id, org.organizationId);
-  if (!ok) return NextResponse.json({ error: 'Key not found or already revoked' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: c.keyNotFound }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }
