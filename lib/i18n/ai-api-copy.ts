@@ -14,6 +14,7 @@ type AiApiCopy = {
   staffDailyLimit: string;
   staffMonthlyLimit: string;
   budgetLocked: string;
+  budgetWarning: string;
   budgetVerificationFailed: string;
 };
 
@@ -32,6 +33,7 @@ const COPY: Record<Locale, AiApiCopy> = {
     staffDailyLimit: 'Daily AI prompt limit reached.',
     staffMonthlyLimit: 'Monthly AI prompt limit reached.',
     budgetLocked: 'The AI budget for this workspace has been reached. Ask Everitt search still works.',
+    budgetWarning: 'The AI budget for this workspace is nearing its monthly limit.',
     budgetVerificationFailed: 'Unable to verify the AI budget right now.'
   },
   es: {
@@ -48,6 +50,7 @@ const COPY: Record<Locale, AiApiCopy> = {
     staffDailyLimit: 'Se alcanzó el límite diario de indicaciones de IA.',
     staffMonthlyLimit: 'Se alcanzó el límite mensual de indicaciones de IA.',
     budgetLocked: 'Se alcanzó el presupuesto de IA de este espacio de trabajo. La búsqueda de Ask Everitt sigue funcionando.',
+    budgetWarning: 'El presupuesto de IA de este espacio de trabajo se está acercando a su límite mensual.',
     budgetVerificationFailed: 'No se pudo verificar el presupuesto de IA en este momento.'
   },
   vi: {
@@ -64,6 +67,7 @@ const COPY: Record<Locale, AiApiCopy> = {
     staffDailyLimit: 'Đã đạt giới hạn yêu cầu AI hằng ngày.',
     staffMonthlyLimit: 'Đã đạt giới hạn yêu cầu AI hằng tháng.',
     budgetLocked: 'Ngân sách AI của không gian làm việc này đã đạt giới hạn. Tìm kiếm Ask Everitt vẫn hoạt động.',
+    budgetWarning: 'Ngân sách AI của không gian làm việc này sắp đạt giới hạn hàng tháng.',
     budgetVerificationFailed: 'Hiện không thể xác minh ngân sách AI.'
   }
 };
