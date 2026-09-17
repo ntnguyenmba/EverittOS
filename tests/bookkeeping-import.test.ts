@@ -21,6 +21,16 @@ describe('bookkeeping CSV parsing', () => {
     assert.deepEqual(parsed.rows, []);
   });
 
+  it('supports line breaks inside quoted fields and flags rows with the wrong number of cells', () => {
+    const multiline = parseBookkeepingImportCsv('type,date,amount,name,notes\nexpense,2026-09-16,10,Supplies,"First line\nSecond line"');
+    assert.equal(multiline.fatalError, null);
+    assert.equal(multiline.rows[0].notes, 'First line\nSecond line');
+    assert.deepEqual(multiline.rows[0].errors, []);
+
+    const malformedRow = parseBookkeepingImportCsv('type,date,amount,name\nexpense,2026-09-16,10,Supplies,unexpected');
+    assert.deepEqual(malformedRow.rows[0].errors, ['malformed_row']);
+  });
+
   it('requires a data row and the type, date, and amount columns', () => {
     assert.equal(parseBookkeepingImportCsv('type,date,amount').fatalError, 'missing_rows');
     assert.equal(parseBookkeepingImportCsv('type,date,name\nexpense,2026-09-16,Supplies').fatalError, 'missing_required_columns');
@@ -92,7 +102,7 @@ describe('bookkeeping import API and localization safeguards', () => {
   it('provides English, Spanish, and Vietnamese copy for every parser and API validation error', () => {
     const page = readFileSync(join(process.cwd(), 'app/bookkeeping/import/page.tsx'), 'utf8');
     for (const locale of ['en:', 'es:', 'vi:']) assert.match(page, new RegExp(`\\b${locale}`));
-    for (const key of ['csv_required', 'csv_too_large', 'missing_rows', 'missing_required_columns', 'malformed_csv', 'invalid_type', 'invalid_date', 'invalid_amount']) {
+    for (const key of ['csv_required', 'csv_too_large', 'missing_rows', 'missing_required_columns', 'malformed_csv', 'malformed_row', 'invalid_type', 'invalid_date', 'invalid_amount']) {
       assert.equal((page.match(new RegExp(`${key}:`, 'g')) || []).length, 3, `${key} must be translated in all three locales`);
     }
   });
