@@ -19,7 +19,7 @@ export type BookkeepingImportRow = {
 type ExistingEntry = { entry_type:string|null; entry_date:string|null; amount:number|string|null; title:string|null; counterparty:string|null };
 const HEADER_ALIASES: Record<string,string[]> = { entry_type:['entry_type','type','transaction_type'], entry_date:['entry_date','date','transaction_date'], amount:['amount','total'], title:['title','name','source','description'], counterparty:['counterparty','customer','worker','vendor','payee'], category:['category'], payment_method:['payment_method','payment method','method'], notes:['notes','note','memo'] };
 function normalize(value:unknown){return String(value??'').trim().toLowerCase().replace(/\s+/g,' ')}
-function parseCsvLine(line:string){const cells:string[]=[];let current='';let quoted=false;for(let i=0;i<line.length;i+=1){const char=line[i];if(char==='"'){if(quoted&&line[i+1]==='"'){current+='"';i+=1}else quoted=!quoted}else if(char===','&&!quoted){cells.push(current.trim());current=''}else current+=char}if(quoted)return null;cells.push(current.trim());return cells}
+function parseCsvRecords(csv:string){const records:string[][]=[];let cells:string[]=[];let current='';let quoted=false;for(let i=0;i<csv.length;i+=1){const char=csv[i];if(char==='"'){if(quoted&&csv[i+1]==='"'){current+='"';i+=1}else quoted=!quoted}else if(char===','&&!quoted){cells.push(current.trim());current=''}else if((char==='\n'||char==='\r')&&!quoted){if(char==='\r'&&csv[i+1]==='\n')i+=1;cells.push(current.trim());if(cells.some(cell=>cell.length>0))records.push(cells);cells=[];current=''}else current+=char}if(quoted)return{records:[] as string[][],malformed:true};cells.push(current.trim());if(cells.some(cell=>cell.length>0))records.push(cells);return{records,malformed:false}}
 function indexFor(headers:string[],key:keyof typeof HEADER_ALIASES){const aliases=HEADER_ALIASES[key].map(normalize);return headers.findIndex(header=>aliases.includes(normalize(header)))}
 function valueAt(cells:string[],index:number){return index>=0?String(cells[index]??'').trim():''}
 function normalizeType(value:string):BookkeepingEntryType|''{const normalized=normalize(value).replace(/[ -]+/g,'_');if(['income','revenue','payment_received'].includes(normalized))return'income';if(['worker_payment','contractor_payment','contractor_pay','worker_pay','payroll'].includes(normalized))return'worker_payment';if(['expense','expenses','cost'].includes(normalized))return'expense';return''}
@@ -28,15 +28,14 @@ function normalizeAmount(value:string){const cleaned=value.replace(/[$,\s]/g,'')
 function fingerprint(row:Pick<BookkeepingImportRow,'entryType'|'entryDate'|'amount'|'title'|'counterparty'>){return[row.entryType,row.entryDate,Number(row.amount||0).toFixed(2),normalize(row.counterparty||row.title)].join('|')}
 
 export function parseBookkeepingImportCsv(csv:string){
-  const lines=csv.replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim().length>0);
-  if(lines.length<2)return{rows:[] as BookkeepingImportRow[],fatalError:'missing_rows'};
-  const headers=parseCsvLine(lines[0]);
-  if(!headers)return{rows:[] as BookkeepingImportRow[],fatalError:'malformed_csv'};
+  const parsedCsv=parseCsvRecords(csv.replace(/^\uFEFF/,''));
+  if(parsedCsv.malformed)return{rows:[] as BookkeepingImportRow[],fatalError:'malformed_csv'};
+  const records=parsedCsv.records;
+  if(records.length<2)return{rows:[] as BookkeepingImportRow[],fatalError:'missing_rows'};
+  const headers=records[0];
   const indexes={entryType:indexFor(headers,'entry_type'),entryDate:indexFor(headers,'entry_date'),amount:indexFor(headers,'amount'),title:indexFor(headers,'title'),counterparty:indexFor(headers,'counterparty'),category:indexFor(headers,'category'),paymentMethod:indexFor(headers,'payment_method'),notes:indexFor(headers,'notes')};
   if(indexes.entryType<0||indexes.entryDate<0||indexes.amount<0)return{rows:[] as BookkeepingImportRow[],fatalError:'missing_required_columns'};
-  const parsedLines=lines.slice(1).map(parseCsvLine);
-  if(parsedLines.some((cells)=>cells===null))return{rows:[] as BookkeepingImportRow[],fatalError:'malformed_csv'};
-  const rows=(parsedLines as string[][]).map((cells,index):BookkeepingImportRow=>{const entryType=normalizeType(valueAt(cells,indexes.entryType));const entryDate=normalizeDate(valueAt(cells,indexes.entryDate));const amount=normalizeAmount(valueAt(cells,indexes.amount));const errors:string[]=[];if(!entryType)errors.push('invalid_type');if(!entryDate)errors.push('invalid_date');if(amount===null||amount<=0)errors.push('invalid_amount');return{rowNumber:index+2,entryType,entryDate,amount,title:valueAt(cells,indexes.title),counterparty:valueAt(cells,indexes.counterparty),category:valueAt(cells,indexes.category),paymentMethod:valueAt(cells,indexes.paymentMethod),notes:valueAt(cells,indexes.notes),errors,duplicateKind:null,duplicateReason:null}});
+  const rows=records.slice(1).map((cells,index):BookkeepingImportRow=>{const entryType=normalizeType(valueAt(cells,indexes.entryType));const entryDate=normalizeDate(valueAt(cells,indexes.entryDate));const amount=normalizeAmount(valueAt(cells,indexes.amount));const errors:string[]=[];if(cells.length!==headers.length)errors.push('malformed_row');if(!entryType)errors.push('invalid_type');if(!entryDate)errors.push('invalid_date');if(amount===null||amount<=0)errors.push('invalid_amount');return{rowNumber:index+2,entryType,entryDate,amount,title:valueAt(cells,indexes.title),counterparty:valueAt(cells,indexes.counterparty),category:valueAt(cells,indexes.category),paymentMethod:valueAt(cells,indexes.paymentMethod),notes:valueAt(cells,indexes.notes),errors,duplicateKind:null,duplicateReason:null}});
   return{rows,fatalError:null as string|null};
 }
 
