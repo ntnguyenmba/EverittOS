@@ -19,7 +19,6 @@ import { useTeamOptions } from '@/lib/team-options-client';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
-import { FEEDBACK } from '@/lib/feedback-labels';
 import { customerStageLabel, getCustomerLifecycleCopy } from '@/lib/i18n/customer-lifecycle-copy';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -30,19 +29,46 @@ const CUSTOMER_STAGE_VALUES = ['active', 'past', 'recurring', 'inactive', 'forme
 
 const customerDetailCopy = {
   en: {
-    moveToLeads: 'Move to leads',
-    moveToLeadsConfirm: 'Move this customer back to Leads?',
-    archiveConfirm: 'Archive this customer?'
+    moveToLeads: 'Move to leads', moveToLeadsConfirm: 'Move this customer back to Leads?', archiveConfirm: 'Archive this customer?',
+    setupError: 'Your account is still setting up. Refresh and try again.', logoUploadError: 'Logo upload failed.', logoSaveError: 'Logo could not be saved.',
+    saveError: 'Unable to save customer.', moveError: 'Unable to move customer back to leads.', similarJobError: 'Unable to create a similar job.',
+    loading: 'Loading…', back: 'Back', call: 'Call', text: 'Text', maps: 'Maps', newJob: 'New job',
+    email: 'Email', phone: 'Phone', notOnFile: 'Not on file', serviceAddress: 'Service address', billingAddress: 'Billing address',
+    details: 'Customer details', companyName: 'Company / client name', contactName: 'Contact name', emailAddress: 'Email address',
+    phoneNumber: 'Phone number', preferredContact: 'Preferred contact method', notSet: 'Not set', any: 'Any',
+    assignTo: 'Assign to', unassigned: 'Unassigned', status: 'Status', notes: 'Notes', logo: 'Logo', uploading: 'Uploading…', save: 'Save',
+    jobs: 'Jobs', noJobs: 'No jobs yet.', creating: 'Creating…', bookAgain: 'Book again', sharing: 'Sharing',
+    reports: 'Reports', noReports: 'No reports yet.', portalAccess: 'Customer dashboard access',
+    portalPlan: 'Available on Growth and higher plans.', noPortalAccess: 'No portal access yet.', remove: 'Remove', more: 'More',
+    archiveError: 'Unable to archive customer.'
   },
   es: {
-    moveToLeads: 'Mover a prospectos',
-    moveToLeadsConfirm: '¿Mover este cliente de nuevo a Prospectos?',
-    archiveConfirm: '¿Archivar este cliente?'
+    moveToLeads: 'Mover a prospectos', moveToLeadsConfirm: '¿Mover este cliente de nuevo a Prospectos?', archiveConfirm: '¿Archivar este cliente?',
+    setupError: 'Su cuenta aún se está configurando. Actualice e inténtelo de nuevo.', logoUploadError: 'No se pudo subir el logotipo.', logoSaveError: 'No se pudo guardar el logotipo.',
+    saveError: 'No se pudo guardar el cliente.', moveError: 'No se pudo mover el cliente a prospectos.', similarJobError: 'No se pudo crear un trabajo similar.',
+    loading: 'Cargando…', back: 'Volver', call: 'Llamar', text: 'Mensaje', maps: 'Mapas', newJob: 'Nuevo trabajo',
+    email: 'Correo', phone: 'Teléfono', notOnFile: 'No registrado', serviceAddress: 'Dirección de servicio', billingAddress: 'Dirección de facturación',
+    details: 'Detalles del cliente', companyName: 'Nombre de empresa / cliente', contactName: 'Nombre de contacto', emailAddress: 'Correo electrónico',
+    phoneNumber: 'Número de teléfono', preferredContact: 'Método de contacto preferido', notSet: 'No establecido', any: 'Cualquiera',
+    assignTo: 'Asignar a', unassigned: 'Sin asignar', status: 'Estado', notes: 'Notas', logo: 'Logotipo', uploading: 'Subiendo…', save: 'Guardar',
+    jobs: 'Trabajos', noJobs: 'Aún no hay trabajos.', creating: 'Creando…', bookAgain: 'Reservar de nuevo', sharing: 'Compartir',
+    reports: 'Informes', noReports: 'Aún no hay informes.', portalAccess: 'Acceso al portal del cliente',
+    portalPlan: 'Disponible en los planes Growth y superiores.', noPortalAccess: 'Aún no hay acceso al portal.', remove: 'Eliminar', more: 'Más',
+    archiveError: 'No se pudo archivar el cliente.'
   },
   vi: {
-    moveToLeads: 'Chuyển sang tiềm năng',
-    moveToLeadsConfirm: 'Chuyển khách hàng này trở lại Tiềm năng?',
-    archiveConfirm: 'Lưu trữ khách hàng này?'
+    moveToLeads: 'Chuyển sang tiềm năng', moveToLeadsConfirm: 'Chuyển khách hàng này trở lại Tiềm năng?', archiveConfirm: 'Lưu trữ khách hàng này?',
+    setupError: 'Tài khoản của bạn vẫn đang được thiết lập. Hãy tải lại và thử lại.', logoUploadError: 'Tải logo thất bại.', logoSaveError: 'Không thể lưu logo.',
+    saveError: 'Không thể lưu khách hàng.', moveError: 'Không thể chuyển khách hàng về nhóm tiềm năng.', similarJobError: 'Không thể tạo công việc tương tự.',
+    loading: 'Đang tải…', back: 'Quay lại', call: 'Gọi', text: 'Nhắn tin', maps: 'Bản đồ', newJob: 'Công việc mới',
+    email: 'Email', phone: 'Điện thoại', notOnFile: 'Chưa có', serviceAddress: 'Địa chỉ dịch vụ', billingAddress: 'Địa chỉ thanh toán',
+    details: 'Chi tiết khách hàng', companyName: 'Tên công ty / khách hàng', contactName: 'Tên liên hệ', emailAddress: 'Địa chỉ email',
+    phoneNumber: 'Số điện thoại', preferredContact: 'Cách liên hệ ưu tiên', notSet: 'Chưa đặt', any: 'Bất kỳ',
+    assignTo: 'Giao cho', unassigned: 'Chưa giao', status: 'Trạng thái', notes: 'Ghi chú', logo: 'Logo', uploading: 'Đang tải lên…', save: 'Lưu',
+    jobs: 'Công việc', noJobs: 'Chưa có công việc.', creating: 'Đang tạo…', bookAgain: 'Đặt lại', sharing: 'Chia sẻ',
+    reports: 'Báo cáo', noReports: 'Chưa có báo cáo.', portalAccess: 'Quyền truy cập trang khách hàng',
+    portalPlan: 'Có trên gói Growth trở lên.', noPortalAccess: 'Chưa có quyền truy cập trang khách hàng.', remove: 'Xóa', more: 'Thêm',
+    archiveError: 'Không thể lưu trữ khách hàng.'
   }
 } as const;
 
@@ -105,8 +131,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const org = await fetchOrganizationContext(user.id);
+    const [{ data: profile }, org] = await Promise.all([
+      supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+      fetchOrganizationContext(user.id)
+    ]);
     const workspaceRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan));
     setCanEdit(isManagerRole(workspaceRole));
@@ -194,7 +222,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     if (!user) return;
     const org = await ensureOrganizationForUser(user.id);
     if (!org?.organizationId) {
-      appFeedback.error('Your account is still setting up. Refresh and try again.');
+      appFeedback.error(copy.setupError);
       return;
     }
 
@@ -202,7 +230,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const { path, error } = await uploadCustomerLogo(supabase, org.organizationId, customerId, file);
     if (error || !path) {
       setLogoUploading(false);
-      appFeedback.error(error || 'Logo upload failed.');
+      appFeedback.error(error || copy.logoUploadError);
       return;
     }
 
@@ -214,7 +242,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const logoJson = (await logoRes.json().catch(() => ({}))) as { error?: string };
     setLogoUploading(false);
     if (!logoRes.ok) {
-      appFeedback.error(logoJson.error || 'Logo could not be saved.');
+      appFeedback.error(logoJson.error || copy.logoSaveError);
       return;
     }
     setLogoPath(path);
@@ -244,7 +272,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSavingCustomer(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save customer.');
+      appFeedback.error(json.error || copy.saveError);
       return;
     }
     appFeedback.saved();
@@ -263,7 +291,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setMovingToLead(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to move customer back to leads.');
+      appFeedback.error(json.error || copy.moveError);
       return;
     }
     appFeedback.saved();
@@ -297,7 +325,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
     setDuplicatingJobId(null);
     if (!res.ok || !json.job?.id) {
-      appFeedback.error(json.error || 'Unable to create a similar job.');
+      appFeedback.error(json.error || copy.similarJobError);
       return;
     }
     router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
@@ -306,7 +334,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   if (loading) {
     return (
       <AppShell plan={plan}>
-        <div className="card">Loading...</div>
+        <div className="card">{copy.loading}</div>
       </AppShell>
     );
   }
@@ -320,7 +348,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
           <p className="muted">{customerStageLabel(pipelineStage, locale)}</p>
         </div>
         <Link className="btn" href="/customers">
-          Back
+          {copy.back}
         </Link>
       </div>
 
@@ -328,57 +356,57 @@ export default function CustomerDetailPage({ params }: PageProps) {
         <div className="button-row" style={{ flexWrap: 'wrap' }}>
           {phone ? (
             <a className="btn btn-primary" href={`tel:${phone}`}>
-              Call
+              {copy.call}
             </a>
           ) : null}
           {phone ? (
             <a className="btn" href={`sms:${phone}`}>
-              Text
+              {copy.text}
             </a>
           ) : null}
           {address ? (
             <a className="btn" href={`https://maps.google.com/?q=${encodeURIComponent(address)}`} target="_blank" rel="noreferrer">
-              Maps
+              {copy.maps}
             </a>
           ) : null}
           {canEdit ? (
             <Link className="btn" href={`/jobs/new?customerId=${customerId}`}>
-              New job
+              {copy.newJob}
             </Link>
           ) : null}
         </div>
         <div style={{ marginTop: 14 }}>
           {email ? (
             <p>
-              <strong>Email:</strong> <ContactLink type="email" value={email} />
+              <strong>{copy.email}:</strong> <ContactLink type="email" value={email} />
             </p>
           ) : (
-            <p className="muted">Email: Not on file</p>
+            <p className="muted">{copy.email}: {copy.notOnFile}</p>
           )}
           {phone ? (
             <p>
-              <strong>Phone:</strong> <ContactLink type="phone" value={phone} />
+              <strong>{copy.phone}:</strong> <ContactLink type="phone" value={phone} />
             </p>
           ) : (
-            <p className="muted">Phone: Not on file</p>
+            <p className="muted">{copy.phone}: {copy.notOnFile}</p>
           )}
-          {address ? <p><strong>Service address:</strong> {address}</p> : null}
-          {billingAddress ? <p><strong>Billing address:</strong> {billingAddress}</p> : null}
+          {address ? <p><strong>{copy.serviceAddress}:</strong> {address}</p> : null}
+          {billingAddress ? <p><strong>{copy.billingAddress}:</strong> {billingAddress}</p> : null}
         </div>
       </div>
 
       <details className="card" style={{ marginBottom: 18 }}>
-        <summary><strong>Customer details</strong></summary>
+        <summary><strong>{copy.details}</strong></summary>
         <div className="form" style={{ marginTop: 16 }}>
-          <label>Company / client name</label>
+          <label>{copy.companyName}</label>
           <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
-          <label htmlFor="customer-contact-name">Contact name</label>
+          <label htmlFor="customer-contact-name">{copy.contactName}</label>
           <input id="customer-contact-name" className="input" value={contactName} disabled={!canEdit} onChange={(e) => setContactName(e.target.value)} />
-          <label htmlFor="customer-email">Email address</label>
+          <label htmlFor="customer-email">{copy.emailAddress}</label>
           <input id="customer-email" className="input" type="email" autoComplete="email" inputMode="email" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="customer-phone">Phone number</label>
+          <label htmlFor="customer-phone">{copy.phoneNumber}</label>
           <input id="customer-phone" className="input" type="tel" autoComplete="tel" inputMode="tel" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
-          <label htmlFor="preferred-contact">Preferred contact method</label>
+          <label htmlFor="preferred-contact">{copy.preferredContact}</label>
           <select
             id="preferred-contact"
             className="input"
@@ -386,50 +414,50 @@ export default function CustomerDetailPage({ params }: PageProps) {
             disabled={!canEdit}
             onChange={(e) => setPreferredContactMethod(e.target.value)}
           >
-            <option value="">Not set</option>
-            <option value="email">Email</option>
-            <option value="phone">Phone</option>
-            <option value="text">Text</option>
-            <option value="any">Any</option>
+            <option value="">{copy.notSet}</option>
+            <option value="email">{copy.email}</option>
+            <option value="phone">{copy.phone}</option>
+            <option value="text">{copy.text}</option>
+            <option value="any">{copy.any}</option>
           </select>
           <AddressAutocomplete
             id="customer-address"
-            label="Service address"
+            label={copy.serviceAddress}
             value={address}
             disabled={!canEdit}
             onChange={(formatted) => setAddress(formatted)}
           />
           <AddressAutocomplete
             id="customer-billing-address"
-            label="Billing address"
+            label={copy.billingAddress}
             value={billingAddress}
             disabled={!canEdit}
             onChange={(formatted) => setBillingAddress(formatted)}
           />
-          <label>Assign to</label>
+          <label>{copy.assignTo}</label>
           <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
-            <option value="">Unassigned</option>
+            <option value="">{copy.unassigned}</option>
             {teamOptions.map((member) => (
               <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
             ))}
           </select>
-          <label>Status</label>
+          <label>{copy.status}</label>
           <select className="input" value={pipelineStage} disabled={!canEdit} onChange={(e) => setPipelineStage(e.target.value)}>
             {CUSTOMER_STAGE_VALUES.map((stage) => (
               <option key={stage} value={stage}>{customerStageLabel(stage, locale)}</option>
             ))}
           </select>
-          <label>Notes</label>
+          <label>{copy.notes}</label>
           <textarea className="input" rows={3} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} />
           {canEdit ? (
             <>
               <label className="auth-field">
-                <span>Logo</span>
+                <span>{copy.logo}</span>
                 <input className="input" type="file" accept="image/png,image/jpeg,image/webp" disabled={logoUploading} onChange={(e) => void uploadLogo(e.target.files?.[0] || null)} />
               </label>
-              {logoUploading ? <p className="loading-state" role="status">Uploading...</p> : null}
+              {logoUploading ? <p className="loading-state" role="status">{copy.uploading}</p> : null}
               <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
-                {savingCustomer ? FEEDBACK.loading : 'Save'}
+                {savingCustomer ? t('feedback.loading') : copy.save}
               </button>
             </>
           ) : null}
@@ -438,10 +466,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="dashboard-section-head">
-          <h3>Jobs</h3>
-          {canEdit ? <Link href={`/jobs/new?customerId=${customerId}`} className="dashboard-section-link">New job</Link> : null}
+          <h3>{copy.jobs}</h3>
+          {canEdit ? <Link href={`/jobs/new?customerId=${customerId}`} className="dashboard-section-link">{copy.newJob}</Link> : null}
         </div>
-        {jobs.length === 0 ? <p className="muted">No jobs yet.</p> : null}
+        {jobs.length === 0 ? <p className="muted">{copy.noJobs}</p> : null}
         {jobs.map((job) => (
           <div key={job.id} className="list-row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <Link href={`/jobs/${job.id}`}>{job.title}</Link>
@@ -453,7 +481,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 disabled={duplicatingJobId === job.id}
                 onClick={() => void bookAgain(job.id)}
               >
-                {duplicatingJobId === job.id ? 'Creating…' : 'Book again'}
+                {duplicatingJobId === job.id ? copy.creating : copy.bookAgain}
               </button>
             ) : null}
           </div>
@@ -464,7 +492,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
       {orgId ? (
         <details className="card" style={{ marginBottom: 18 }}>
-          <summary><strong>Sharing</strong></summary>
+          <summary><strong>{copy.sharing}</strong></summary>
           <div style={{ marginTop: 16 }}>
             <RecordSharingPanel organizationId={orgId} recordType="customer" recordId={customerId} canManage={canEdit} />
           </div>
@@ -472,9 +500,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
       ) : null}
 
       <details className="card" style={{ marginBottom: 18 }}>
-        <summary><strong>Reports</strong></summary>
+        <summary><strong>{copy.reports}</strong></summary>
         <div style={{ marginTop: 16 }}>
-          {reports.length === 0 ? <p className="muted">No reports yet.</p> : null}
+          {reports.length === 0 ? <p className="muted">{copy.noReports}</p> : null}
           {reports.map((report) => (
             <div key={report.id} className="list-row">
               <Link href={`/jobs/${report.job_id}/report`}>{report.title}</Link>
@@ -484,12 +512,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
       </details>
 
       <details className="card" style={{ marginBottom: 18 }}>
-        <summary><strong>Customer dashboard access</strong></summary>
+        <summary><strong>{copy.portalAccess}</strong></summary>
         <div style={{ marginTop: 16 }}>
           {!limitsForPlan(plan).clientPortal ? (
-            <p className="muted">Available on Growth and higher plans.</p>
+            <p className="muted">{copy.portalPlan}</p>
           ) : portalAccess.length === 0 ? (
-            <p className="muted">No portal access yet.</p>
+            <p className="muted">{copy.noPortalAccess}</p>
           ) : (
             portalAccess.map((row) => (
               <div key={`${row.job_id}-${row.client_user_id}`} className="list-row">
@@ -510,7 +538,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                       load();
                     }}
                   >
-                    Remove
+                    {copy.remove}
                   </button>
                 ) : null}
               </div>
@@ -521,12 +549,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
       {canEdit ? (
         <details className="card">
-          <summary><strong>More</strong></summary>
+          <summary><strong>{copy.more}</strong></summary>
           <div className="button-row" style={{ marginTop: 16, flexWrap: 'wrap' }}>
             {pipelineStage !== 'active' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.markActive}</button> : null}
             {pipelineStage !== 'past' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('past')}>{lifecycle.actions.markPast}</button> : null}
             {pipelineStage === 'archived' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.restore}</button> : null}
-            <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>{movingToLead ? FEEDBACK.loading : copy.moveToLeads}</button>
+            <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>{movingToLead ? t('feedback.loading') : copy.moveToLeads}</button>
             <button
               type="button"
               className="btn btn-danger"
@@ -535,7 +563,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
                 const json = (await res.json().catch(() => ({}))) as { error?: string };
                 if (!res.ok) {
-                  appFeedback.error(json.error || 'Unable to archive customer.');
+                  appFeedback.error(json.error || copy.archiveError);
                   return;
                 }
                 appFeedback.deleted();
