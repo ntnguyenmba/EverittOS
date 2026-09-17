@@ -2,6 +2,7 @@ import type { Locale } from '@/lib/i18n/config';
 
 export type JobCreateCopy = {
   pageTitle: string;
+  loadingForm: string;
   intro: string;
   customerHeading: string;
   customerChoice: string;
@@ -84,6 +85,7 @@ export type JobCreateCopy = {
 
 const en: JobCreateCopy = {
   pageTitle: 'Create job',
+  loadingForm: 'Loading form…',
   intro: 'Choose an existing customer or add a new one, then save the job.',
   customerHeading: '1. Customer',
   customerChoice: 'Customer type',
@@ -166,6 +168,7 @@ const en: JobCreateCopy = {
 
 const es: JobCreateCopy = {
   pageTitle: 'Crear trabajo',
+  loadingForm: 'Cargando formulario…',
   intro: 'Elija un cliente existente o agregue uno nuevo y luego guarde el trabajo.',
   customerHeading: '1. Cliente',
   customerChoice: 'Tipo de cliente',
@@ -248,6 +251,7 @@ const es: JobCreateCopy = {
 
 const vi: JobCreateCopy = {
   pageTitle: 'Tạo công việc',
+  loadingForm: 'Đang tải biểu mẫu…',
   intro: 'Chọn khách hàng có sẵn hoặc thêm khách hàng mới, rồi lưu công việc.',
   customerHeading: '1. Khách hàng',
   customerChoice: 'Loại khách hàng',
