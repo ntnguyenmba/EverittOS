@@ -17,7 +17,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const c = getAiApiCopy(localeFromRequest(request));
+  const locale = localeFromRequest(request);
+  const c = getAiApiCopy(locale);
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: c.unauthorized }, { status: 401 });
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
     }
 
     if (allowed) {
-      const gate = await verifyAiRequest(supabase, admin, user.id);
+      const gate = await verifyAiRequest(supabase, admin, user.id, { locale });
       gateStatus = gate.ok ? { ok: true } : { ok: false, code: gate.code, message: gate.message };
       if (gate.ok || gate.code === 'rate_limited') usage = await getAiUsageStats(admin, org.organizationId, plan);
     }
