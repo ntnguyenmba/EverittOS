@@ -9,11 +9,16 @@ import { useTranslation } from '@/components/locale-provider';
 import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import styles from './job-form-simplify.module.css';
 
+function JobCreatorLoading() {
+  const { locale } = useTranslation();
+  return <p className="loading-state">{getJobCreateCopy(locale).loadingForm}</p>;
+}
+
 const JobCreator = dynamic(
   () => import('@/components/job-creator').then((mod) => mod.JobCreator),
   {
     ssr: false,
-    loading: () => <p className="loading-state">Loading form…</p>
+    loading: () => <JobCreatorLoading />
   }
 );
 
@@ -33,7 +38,7 @@ export default function NewJobPage() {
       </header>
 
       <div className={styles.formWrap}>
-        <Suspense fallback={<p className="loading-state">Loading form…</p>}>
+        <Suspense fallback={<p className="loading-state">{copy.loadingForm}</p>}>
           <JobCreator onJobCreated={(jobId) => window.location.assign(`/jobs/${jobId}`)} />
         </Suspense>
       </div>
