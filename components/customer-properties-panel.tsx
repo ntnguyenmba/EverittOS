@@ -58,9 +58,45 @@ const emptyDraft = (): DraftProperty => ({
 });
 
 const copy = {
-  en: { archiveConfirm: 'Archive this property? Existing jobs keep their saved address snapshot.' },
-  es: { archiveConfirm: '¿Archivar esta propiedad? Los trabajos existentes conservarán la dirección guardada.' },
-  vi: { archiveConfirm: 'Lưu trữ địa điểm này? Các công việc hiện có vẫn giữ bản sao địa chỉ đã lưu.' }
+  en: {
+    archiveConfirm: 'Archive this property? Existing jobs keep their saved address snapshot.', loadError: 'Unable to load properties.',
+    nameRequired: 'Property name is required.', saveError: 'Unable to save property.', archiveError: 'Unable to archive property.',
+    archivedSuccess: 'Property archived.', primaryError: 'Unable to set primary property.', similarJobError: 'Unable to create a similar job.',
+    properties: 'Properties', loading: 'Loading properties…', add: 'Add property', intro: (name: string) => `Homes, rentals, offices, and other service locations for ${name}.`,
+    empty: 'No properties yet.', noAddress: 'No address', primary: 'Primary', archived: 'Archived', property: 'Property',
+    newJob: 'New job', creating: 'Creating…', bookAgain: 'Book again', nextJob: 'Next job', noneScheduled: 'None scheduled',
+    lastCompleted: 'Last completed', noneYet: 'None yet', defaultPrice: 'Default price', timezone: 'Timezone', edit: 'Edit',
+    setPrimary: 'Set primary', archive: 'Archive', editProperty: 'Edit property', propertyName: 'Property name',
+    propertyType: 'Property type', address: 'Address', accessCodes: 'Access codes and instructions',
+    accessInstructions: 'Access instructions', gateCode: 'Gate code', lockboxCode: 'Lockbox code', primaryProperty: 'Primary property',
+    saving: 'Saving…', save: 'Save property', cancel: 'Cancel'
+  },
+  es: {
+    archiveConfirm: '¿Archivar esta propiedad? Los trabajos existentes conservarán la dirección guardada.', loadError: 'No se pudieron cargar las propiedades.',
+    nameRequired: 'El nombre de la propiedad es obligatorio.', saveError: 'No se pudo guardar la propiedad.', archiveError: 'No se pudo archivar la propiedad.',
+    archivedSuccess: 'Propiedad archivada.', primaryError: 'No se pudo establecer la propiedad principal.', similarJobError: 'No se pudo crear un trabajo similar.',
+    properties: 'Propiedades', loading: 'Cargando propiedades…', add: 'Agregar propiedad', intro: (name: string) => `Casas, alquileres, oficinas y otros lugares de servicio de ${name}.`,
+    empty: 'Aún no hay propiedades.', noAddress: 'Sin dirección', primary: 'Principal', archived: 'Archivada', property: 'Propiedad',
+    newJob: 'Nuevo trabajo', creating: 'Creando…', bookAgain: 'Reservar de nuevo', nextJob: 'Próximo trabajo', noneScheduled: 'Ninguno programado',
+    lastCompleted: 'Último completado', noneYet: 'Aún ninguno', defaultPrice: 'Precio predeterminado', timezone: 'Zona horaria', edit: 'Editar',
+    setPrimary: 'Establecer como principal', archive: 'Archivar', editProperty: 'Editar propiedad', propertyName: 'Nombre de la propiedad',
+    propertyType: 'Tipo de propiedad', address: 'Dirección', accessCodes: 'Códigos e instrucciones de acceso',
+    accessInstructions: 'Instrucciones de acceso', gateCode: 'Código de puerta', lockboxCode: 'Código de caja', primaryProperty: 'Propiedad principal',
+    saving: 'Guardando…', save: 'Guardar propiedad', cancel: 'Cancelar'
+  },
+  vi: {
+    archiveConfirm: 'Lưu trữ địa điểm này? Các công việc hiện có vẫn giữ bản sao địa chỉ đã lưu.', loadError: 'Không thể tải bất động sản.',
+    nameRequired: 'Tên bất động sản là bắt buộc.', saveError: 'Không thể lưu bất động sản.', archiveError: 'Không thể lưu trữ bất động sản.',
+    archivedSuccess: 'Đã lưu trữ bất động sản.', primaryError: 'Không thể đặt bất động sản chính.', similarJobError: 'Không thể tạo công việc tương tự.',
+    properties: 'Bất động sản', loading: 'Đang tải bất động sản…', add: 'Thêm bất động sản', intro: (name: string) => `Nhà ở, nơi cho thuê, văn phòng và các địa điểm dịch vụ khác của ${name}.`,
+    empty: 'Chưa có bất động sản.', noAddress: 'Chưa có địa chỉ', primary: 'Chính', archived: 'Đã lưu trữ', property: 'Bất động sản',
+    newJob: 'Công việc mới', creating: 'Đang tạo…', bookAgain: 'Đặt lại', nextJob: 'Công việc tiếp theo', noneScheduled: 'Chưa lên lịch',
+    lastCompleted: 'Hoàn thành gần nhất', noneYet: 'Chưa có', defaultPrice: 'Giá mặc định', timezone: 'Múi giờ', edit: 'Sửa',
+    setPrimary: 'Đặt làm chính', archive: 'Lưu trữ', editProperty: 'Sửa bất động sản', propertyName: 'Tên bất động sản',
+    propertyType: 'Loại bất động sản', address: 'Địa chỉ', accessCodes: 'Mã và hướng dẫn ra vào',
+    accessInstructions: 'Hướng dẫn ra vào', gateCode: 'Mã cổng', lockboxCode: 'Mã hộp khóa', primaryProperty: 'Bất động sản chính',
+    saving: 'Đang lưu…', save: 'Lưu bất động sản', cancel: 'Hủy'
+  }
 } as const;
 
 export function CustomerPropertiesPanel({ customerId, customerName, canEdit, jobs }: CustomerPropertiesPanelProps) {
@@ -80,7 +116,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
     const res = await fetch(`/api/customers/${customerId}/properties?includeArchived=1`);
     const json = (await res.json().catch(() => ({}))) as { properties?: CustomerPropertyRecord[]; error?: string };
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load properties.');
+      appFeedback.error(json.error || c.loadError);
       setLoading(false);
       return;
     }
@@ -141,7 +177,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
 
   async function saveProperty() {
     if (!draft.name.trim()) {
-      appFeedback.error('Property name is required.');
+      appFeedback.error(c.nameRequired);
       return;
     }
     setSaving(true);
@@ -190,7 +226,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSaving(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save property.');
+      appFeedback.error(json.error || c.saveError);
       return;
     }
     appFeedback.saved();
@@ -205,10 +241,10 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
     const res = await fetch(`/api/customers/${customerId}/properties/${propertyId}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to archive property.');
+      appFeedback.error(json.error || c.archiveError);
       return;
     }
-    appFeedback.success('Property archived.');
+    appFeedback.success(c.archivedSuccess);
     void load();
   }
 
@@ -220,7 +256,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to set primary property.');
+      appFeedback.error(json.error || c.primaryError);
       return;
     }
     appFeedback.saved();
@@ -233,7 +269,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
     const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
     setDuplicatingJobId(null);
     if (!res.ok || !json.job?.id) {
-      appFeedback.error(json.error || 'Unable to create a similar job.');
+      appFeedback.error(json.error || c.similarJobError);
       return;
     }
     window.location.href = json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`;
@@ -242,8 +278,8 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
   if (loading) {
     return (
       <div className="card" style={{ marginBottom: 18 }}>
-        <h3>Properties</h3>
-        <p className="muted">Loading properties…</p>
+        <h3>{c.properties}</h3>
+        <p className="muted">{c.loading}</p>
       </div>
     );
   }
@@ -251,22 +287,22 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
   return (
     <div className="card" style={{ marginBottom: 18 }}>
       <div className="dashboard-section-head">
-        <h3>Properties</h3>
+        <h3>{c.properties}</h3>
         {canEdit ? (
           <button type="button" className="dashboard-section-link btn" onClick={beginCreate}>
-            Add property
+            {c.add}
           </button>
         ) : null}
       </div>
-      <p className="muted">Homes, Airbnbs, rentals, offices, and other service locations for {customerName}.</p>
+      <p className="muted">{c.intro(customerName)}</p>
 
-      {properties.length === 0 ? <p className="muted">No properties yet.</p> : null}
+      {properties.length === 0 ? <p className="muted">{c.empty}</p> : null}
 
       <div className="stack" style={{ display: 'grid', gap: 12, marginTop: 12 }}>
         {properties.map((property) => {
           const upcoming = nextJob(property.id);
           const completed = lastCompleted(property.id);
-          const address = property.formatted_address || property.address || 'No address';
+          const address = property.formatted_address || property.address || c.noAddress;
           const type = (property.property_type || 'home') as PropertyType;
           return (
             <article
@@ -282,11 +318,11 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
                 <div>
                   <h4 style={{ margin: 0 }}>
                     {property.name}
-                    {property.is_primary ? <span className="muted"> · Primary</span> : null}
-                    {property.is_archived ? <span className="muted"> · Archived</span> : null}
+                    {property.is_primary ? <span className="muted"> · {c.primary}</span> : null}
+                    {property.is_archived ? <span className="muted"> · {c.archived}</span> : null}
                   </h4>
                   <p className="muted" style={{ margin: '4px 0' }}>
-                    {PROPERTY_TYPE_LABELS[type] || 'Property'} · {customerName}
+                    {PROPERTY_TYPE_LABELS[type] || c.property} · {customerName}
                   </p>
                   <p style={{ margin: 0 }}>{address}</p>
                 </div>
@@ -296,7 +332,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
                       className="btn btn-primary"
                       href={`/jobs/new?customerId=${customerId}&propertyId=${property.id}`}
                     >
-                      New job
+                      {c.newJob}
                     </Link>
                   ) : null}
                   {completed ? (
@@ -306,40 +342,40 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
                       disabled={duplicatingJobId === completed.id}
                       onClick={() => void bookAgain(completed.id)}
                     >
-                      {duplicatingJobId === completed.id ? 'Creating…' : 'Book again'}
+                      {duplicatingJobId === completed.id ? c.creating : c.bookAgain}
                     </button>
                   ) : null}
                 </div>
               </div>
               <div className="grid-2" style={{ marginTop: 10, gap: 8 }}>
                 <p className="muted" style={{ margin: 0 }}>
-                  Next job:{' '}
-                  {upcoming ? <Link href={`/jobs/${upcoming.id}`}>{upcoming.title}</Link> : 'None scheduled'}
+                  {c.nextJob}:{' '}
+                  {upcoming ? <Link href={`/jobs/${upcoming.id}`}>{upcoming.title}</Link> : c.noneScheduled}
                 </p>
                 <p className="muted" style={{ margin: 0 }}>
-                  Last completed:{' '}
-                  {completed ? <Link href={`/jobs/${completed.id}`}>{completed.title}</Link> : 'None yet'}
+                  {c.lastCompleted}:{' '}
+                  {completed ? <Link href={`/jobs/${completed.id}`}>{completed.title}</Link> : c.noneYet}
                 </p>
                 <p className="muted" style={{ margin: 0 }}>
-                  Default price: {property.default_price != null ? `$${Number(property.default_price).toFixed(2)}` : '—'}
+                  {c.defaultPrice}: {property.default_price != null ? `$${Number(property.default_price).toFixed(2)}` : '—'}
                 </p>
                 <p className="muted" style={{ margin: 0 }}>
-                  Timezone: {property.timezone || '—'}
+                  {c.timezone}: {property.timezone || '—'}
                 </p>
               </div>
               {canEdit ? (
                 <div className="button-row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
                   <button type="button" className="btn" onClick={() => beginEdit(property)}>
-                    Edit
+                    {c.edit}
                   </button>
                   {!property.is_primary && !property.is_archived ? (
                     <button type="button" className="btn" onClick={() => void setPrimary(property.id)}>
-                      Set primary
+                      {c.setPrimary}
                     </button>
                   ) : null}
                   {!property.is_archived ? (
                     <button type="button" className="btn" onClick={() => void archiveProperty(property.id)}>
-                      Archive
+                      {c.archive}
                     </button>
                   ) : null}
                 </div>
@@ -351,10 +387,10 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
 
       {showForm && canEdit ? (
         <div className="form" style={{ marginTop: 16, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
-          <h4>{editingId ? 'Edit property' : 'Add property'}</h4>
-          <label>Property name</label>
+          <h4>{editingId ? c.editProperty : c.add}</h4>
+          <label>{c.propertyName}</label>
           <input className="input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-          <label>Property type</label>
+          <label>{c.propertyType}</label>
           <select
             className="input"
             value={draft.property_type}
@@ -367,7 +403,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
             ))}
           </select>
           <AddressAutocomplete
-            label="Address"
+            label={c.address}
             value={draft.address}
             onChange={(formatted, structured) => setDraft((d) => ({ ...d, address: formatted, structured }))}
             onSelect={(suggestion) => {
@@ -379,9 +415,9 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
                 .catch(() => undefined);
             }}
           />
-          <label>Timezone</label>
+          <label>{c.timezone}</label>
           <input className="input" value={draft.timezone} onChange={(e) => setDraft((d) => ({ ...d, timezone: e.target.value }))} placeholder="America/Chicago" />
-          <label>Default price</label>
+          <label>{c.defaultPrice}</label>
           <input
             className="input"
             type="number"
@@ -391,17 +427,17 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
             onChange={(e) => setDraft((d) => ({ ...d, default_price: e.target.value }))}
           />
           <details>
-            <summary>Access codes and instructions</summary>
-            <label style={{ marginTop: 8 }}>Access instructions</label>
+            <summary>{c.accessCodes}</summary>
+            <label style={{ marginTop: 8 }}>{c.accessInstructions}</label>
             <textarea
               className="input"
               rows={3}
               value={draft.access_instructions}
               onChange={(e) => setDraft((d) => ({ ...d, access_instructions: e.target.value }))}
             />
-            <label>Gate code</label>
+            <label>{c.gateCode}</label>
             <input className="input" value={draft.gate_code} onChange={(e) => setDraft((d) => ({ ...d, gate_code: e.target.value }))} />
-            <label>Lockbox code</label>
+            <label>{c.lockboxCode}</label>
             <input className="input" value={draft.lockbox_code} onChange={(e) => setDraft((d) => ({ ...d, lockbox_code: e.target.value }))} />
           </details>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
@@ -410,11 +446,11 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
               checked={draft.is_primary}
               onChange={(e) => setDraft((d) => ({ ...d, is_primary: e.target.checked }))}
             />
-            Primary property
+            {c.primaryProperty}
           </label>
           <div className="button-row" style={{ marginTop: 12 }}>
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveProperty()}>
-              {saving ? 'Saving…' : 'Save property'}
+              {saving ? c.saving : c.save}
             </button>
             <button
               type="button"
@@ -424,7 +460,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
                 setEditingId(null);
               }}
             >
-              Cancel
+              {c.cancel}
             </button>
           </div>
         </div>
