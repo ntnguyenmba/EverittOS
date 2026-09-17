@@ -32,9 +32,9 @@ function CustomersPageContent() {
   const stageFilter = searchParams.get('stage') || searchParams.get('status');
   const { t, locale } = useTranslation();
   const copy = {
-    en: { edit: 'Edit', openJobs: 'Open jobs', showMore: 'Show 10 more', showing: 'Showing', importCsv: 'Import CSV', addCustomer: 'Add customer' },
-    es: { edit: 'Editar', openJobs: 'Trabajos abiertos', showMore: 'Mostrar 10 más', showing: 'Mostrando', importCsv: 'Importar CSV', addCustomer: 'Agregar cliente' },
-    vi: { edit: 'Sửa', openJobs: 'Công việc đang mở', showMore: 'Hiển thị thêm 10', showing: 'Đang hiển thị', importCsv: 'Nhập CSV', addCustomer: 'Thêm khách hàng' }
+    en: { edit: 'Edit', open: 'Open', openJobs: 'Open jobs', showMore: 'Show 10 more', showing: 'Showing', importCsv: 'Import CSV', addCustomer: 'Add customer', loading: 'Loading customers…', noAddress: 'No address', removeConfirm: 'Remove {name}?', removeError: 'Unable to remove customer.' },
+    es: { edit: 'Editar', open: 'Abrir', openJobs: 'Trabajos abiertos', showMore: 'Mostrar 10 más', showing: 'Mostrando', importCsv: 'Importar CSV', addCustomer: 'Agregar cliente', loading: 'Cargando clientes…', noAddress: 'Sin dirección', removeConfirm: '¿Eliminar {name}?', removeError: 'No se pudo eliminar el cliente.' },
+    vi: { edit: 'Sửa', open: 'Mở', openJobs: 'Công việc đang mở', showMore: 'Hiển thị thêm 10', showing: 'Đang hiển thị', importCsv: 'Nhập CSV', addCustomer: 'Thêm khách hàng', loading: 'Đang tải khách hàng…', noAddress: 'Chưa có địa chỉ', removeConfirm: 'Xóa {name}?', removeError: 'Không thể xóa khách hàng.' }
   }[locale];
   const lifecycle = getCustomerLifecycleCopy(locale);
   const exportCopy = getExportCopy(locale);
@@ -52,8 +52,10 @@ function CustomersPageContent() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const org = await fetchOrganizationContext(user.id);
+    const [{ data: profile }, org] = await Promise.all([
+      supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+      fetchOrganizationContext(user.id)
+    ]);
     const workspaceRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan)); setRole(workspaceRole); setCanManage(isManagerRole(workspaceRole));
     let query = supabase.from('customers').select(CUSTOMER_LIST_SELECT).order('created_at', { ascending: false });
@@ -97,7 +99,7 @@ function CustomersPageContent() {
         {([{id:'customers',label:lifecycle.filters.customers,href:'/customers'},{id:'leads',label:lifecycle.filters.leads,href:'/customers?stage=leads'},{id:'archived',label:lifecycle.filters.archived,href:'/customers?stage=archived'}] as const).map((filter)=>{const active=filter.id==='customers'?!stageFilter||stageFilter==='customers':stageFilter===filter.id||(filter.id==='leads'&&(stageFilter==='lead'||stageFilter==='leads'));return <Link key={filter.id} className={active?'btn btn-primary':'btn'} href={filter.href}>{filter.label}</Link>;})}
       </div>
       <div className="customers-list">
-        {loading && <p className="loading-state" role="status">Loading customers...</p>}
+        {loading && <p className="loading-state" role="status">{copy.loading}</p>}
         {!loading && customers.length===0 && <LocalizedEmptyState emptyKey="customers" icon="none" showAction={false} />}
         {!loading && visibleCustomers.map((customer)=>(
           <div key={customer.id} className="list-row customer-card-row">
@@ -107,8 +109,8 @@ function CustomersPageContent() {
               <p style={{fontWeight:700}}>{copy.openJobs}: {openJobCounts[customer.id]||0}</p>
               <p><ContactLink type="phone" value={customer.phone}/></p>
               <p><ContactLink type="email" value={customer.email}/></p>
-              <p>{customerDisplayAddress(customer,'No address')}</p>
-              <RecordActions viewHref={`/customers/${customer.id}`} viewLabel="Open" editHref={canManage?`/customers/${customer.id}`:undefined} editLabel={copy.edit} onRemove={canManage?async()=>{if(removingId)return;if(!window.confirm(`Remove ${customerDisplayName(customer)}?`))return;setRemovingId(customer.id);const res=await fetch(`/api/customers/${customer.id}`,{method:'DELETE'});const json=(await res.json().catch(()=>({}))) as {error?:string};setRemovingId(null);if(!res.ok){appFeedback.error(json.error||'Unable to remove customer.');return;}appFeedback.label('removed');void load();}:undefined}/>
+              <p>{customerDisplayAddress(customer,copy.noAddress)}</p>
+              <RecordActions viewHref={`/customers/${customer.id}`} viewLabel={copy.open} editHref={canManage?`/customers/${customer.id}`:undefined} editLabel={copy.edit} onRemove={canManage?async()=>{if(removingId)return;if(!window.confirm(copy.removeConfirm.replace('{name}',customerDisplayName(customer))))return;setRemovingId(customer.id);const res=await fetch(`/api/customers/${customer.id}`,{method:'DELETE'});const json=(await res.json().catch(()=>({}))) as {error?:string};setRemovingId(null);if(!res.ok){appFeedback.error(json.error||copy.removeError);return;}appFeedback.label('removed');void load();}:undefined}/>
             </div>
           </div>
         ))}
