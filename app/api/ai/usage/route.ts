@@ -6,23 +6,26 @@ import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getAiApiCopy } from '@/lib/i18n/ai-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const c = getAiApiCopy(localeFromRequest(request));
   const supabase = await createServerSupabase();
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: c.unauthorized }, { status: 401 });
   }
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+    return NextResponse.json({ error: c.serverUnavailable }, { status: 503 });
   }
 
   const orgCtx = await fetchOrganizationContextForUser(supabase, user.id);
