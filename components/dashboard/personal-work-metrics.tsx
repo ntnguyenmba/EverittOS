@@ -58,9 +58,9 @@ const EMPTY_METRICS: PersonalMetrics = {
 };
 
 const copy = {
-  en: { activeJobs: 'Active jobs', jobsToday: 'Jobs today', overdue: 'Overdue' },
-  es: { activeJobs: 'Trabajos activos', jobsToday: 'Trabajos de hoy', overdue: 'Atrasados' },
-  vi: { activeJobs: 'Công việc đang hoạt động', jobsToday: 'Công việc hôm nay', overdue: 'Quá hạn' }
+  en: { activeJobs: 'Active jobs', jobsToday: 'Jobs today', overdue: 'Overdue', managerMoney: 'Money this month', workerPay: 'Pay this month', myWork: 'My work', viewAll: 'View all', loading: 'Loading…', waitingForPay: 'Waiting for pay', paid: 'Paid' },
+  es: { activeJobs: 'Trabajos activos', jobsToday: 'Trabajos de hoy', overdue: 'Atrasados', managerMoney: 'Dinero este mes', workerPay: 'Pago este mes', myWork: 'Mi trabajo', viewAll: 'Ver todo', loading: 'Cargando…', waitingForPay: 'Pago pendiente', paid: 'Pagado' },
+  vi: { activeJobs: 'Công việc đang hoạt động', jobsToday: 'Công việc hôm nay', overdue: 'Quá hạn', managerMoney: 'Doanh thu tháng này', workerPay: 'Tiền công tháng này', myWork: 'Công việc của tôi', viewAll: 'Xem tất cả', loading: 'Đang tải…', waitingForPay: 'Đang chờ trả', paid: 'Đã trả' }
 } as const;
 
 function money(value: number) {
@@ -192,8 +192,8 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
 
   const cards = useMemo(() => {
     const moneyCard = isManager
-      ? { label: 'Money this month', value: money(metrics.jobRevenueThisMonth), href: '/jobs?mine=true' }
-      : { label: 'Pay this month', value: money(metrics.earningsThisMonth), href: '/my-work' };
+      ? { label: c.managerMoney, value: money(metrics.jobRevenueThisMonth), href: '/jobs?mine=true' }
+      : { label: c.workerPay, value: money(metrics.earningsThisMonth), href: '/my-work' };
 
     return [
       { label: c.activeJobs, value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
@@ -201,19 +201,19 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       { label: c.overdue, value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
       moneyCard
     ];
-  }, [c.activeJobs, c.jobsToday, c.overdue, isManager, metrics]);
+  }, [c, isManager, metrics]);
 
   if (!visible) return null;
 
   return (
-    <section className="card" aria-label="My work">
+    <section className="card" aria-label={c.myWork}>
       <div className="dashboard-section-head">
-        <h2>My work</h2>
+        <h2>{c.myWork}</h2>
         <Link href="/my-work" className="dashboard-section-link">
-          View all
+          {c.viewAll}
         </Link>
       </div>
-      {loading ? <p className="loading-state">Loading...</p> : null}
+      {loading ? <p className="loading-state">{c.loading}</p> : null}
       {!loading ? (
         <div className="stats-grid">
           {cards.map((card) => (
@@ -226,7 +226,7 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       ) : null}
       {!isManager && !loading && metrics.pendingPayout > 0 ? (
         <p className="muted" style={{ marginTop: 12 }}>
-          Waiting for pay: {money(metrics.pendingPayout)} · Paid: {money(metrics.paidEarnings)}
+          {c.waitingForPay}: {money(metrics.pendingPayout)} · {c.paid}: {money(metrics.paidEarnings)}
         </p>
       ) : null}
     </section>
