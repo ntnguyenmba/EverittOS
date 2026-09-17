@@ -21,22 +21,40 @@ type RequestFilter = 'open' | 'closed' | 'archived';
 
 const copy = {
   en: {
+    title: 'Requests', subtitle: 'Keep track of people who may book work.', add: 'Add request',
     filterTitles: { open: 'Open requests', closed: 'Not booked', archived: 'Archived' },
-    archived: 'Archived',
-    archive: 'Archive',
-    archiveConfirm: 'Archive {name}? You can reopen it later.'
+    open: 'Open', notBooked: 'Not booked', archived: 'Archived', archive: 'Archive',
+    search: 'Search', searchPlaceholder: 'Name, phone, or email', loading: 'Loading…',
+    updateError: 'Unable to update request.', updated: 'Request updated.',
+    archiveError: 'Unable to archive request.', archivedSuccess: 'Request archived.',
+    reopenError: 'Unable to reopen request.', reopenedSuccess: 'Request reopened.',
+    archiveConfirm: 'Archive {name}? You can reopen it later.', openRecord: 'Open {name} in a new tab',
+    statusFor: 'Status for {name}', new: 'New', contacted: 'Contacted', interested: 'Interested',
+    quoteSent: 'Quote sent', followingUp: 'Following up', reopened: 'Reopened', reopen: 'Reopen'
   },
   es: {
+    title: 'Solicitudes', subtitle: 'Lleve un registro de las personas que podrían reservar trabajo.', add: 'Agregar solicitud',
     filterTitles: { open: 'Solicitudes abiertas', closed: 'No reservado', archived: 'Archivadas' },
-    archived: 'Archivadas',
-    archive: 'Archivar',
-    archiveConfirm: '¿Archivar {name}? Puede reabrirlo más tarde.'
+    open: 'Abrir', notBooked: 'No reservado', archived: 'Archivadas', archive: 'Archivar',
+    search: 'Buscar', searchPlaceholder: 'Nombre, teléfono o correo', loading: 'Cargando…',
+    updateError: 'No se pudo actualizar la solicitud.', updated: 'Solicitud actualizada.',
+    archiveError: 'No se pudo archivar la solicitud.', archivedSuccess: 'Solicitud archivada.',
+    reopenError: 'No se pudo reabrir la solicitud.', reopenedSuccess: 'Solicitud reabierta.',
+    archiveConfirm: '¿Archivar {name}? Puede reabrirlo más tarde.', openRecord: 'Abrir {name} en una pestaña nueva',
+    statusFor: 'Estado de {name}', new: 'Nueva', contacted: 'Contactada', interested: 'Interesada',
+    quoteSent: 'Cotización enviada', followingUp: 'En seguimiento', reopened: 'Reabierta', reopen: 'Reabrir'
   },
   vi: {
+    title: 'Yêu cầu', subtitle: 'Theo dõi những người có thể đặt công việc.', add: 'Thêm yêu cầu',
     filterTitles: { open: 'Yêu cầu đang mở', closed: 'Chưa đặt', archived: 'Đã lưu trữ' },
-    archived: 'Đã lưu trữ',
-    archive: 'Lưu trữ',
-    archiveConfirm: 'Lưu trữ {name}? Bạn có thể mở lại sau.'
+    open: 'Mở', notBooked: 'Chưa đặt', archived: 'Đã lưu trữ', archive: 'Lưu trữ',
+    search: 'Tìm kiếm', searchPlaceholder: 'Tên, điện thoại hoặc email', loading: 'Đang tải…',
+    updateError: 'Không thể cập nhật yêu cầu.', updated: 'Đã cập nhật yêu cầu.',
+    archiveError: 'Không thể lưu trữ yêu cầu.', archivedSuccess: 'Đã lưu trữ yêu cầu.',
+    reopenError: 'Không thể mở lại yêu cầu.', reopenedSuccess: 'Đã mở lại yêu cầu.',
+    archiveConfirm: 'Lưu trữ {name}? Bạn có thể mở lại sau.', openRecord: 'Mở {name} trong thẻ mới',
+    statusFor: 'Trạng thái của {name}', new: 'Mới', contacted: 'Đã liên hệ', interested: 'Quan tâm',
+    quoteSent: 'Đã gửi báo giá', followingUp: 'Đang theo dõi', reopened: 'Đã mở lại', reopen: 'Mở lại'
   }
 } as const;
 
@@ -66,8 +84,10 @@ export default function LeadsPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const org = await fetchOrganizationContext(user.id);
+    const [{ data: profile }, org] = await Promise.all([
+      supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+      fetchOrganizationContext(user.id)
+    ]);
     const userRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan));
     setRole(userRole);
@@ -145,11 +165,11 @@ export default function LeadsPage() {
       setLeads((current) =>
         current.map((lead) => (lead.id === id ? { ...lead, pipeline_stage: previousLead.pipeline_stage } : lead))
       );
-      appFeedback.error(json.error || 'Unable to update request.');
+      appFeedback.error(json.error || c.updateError);
       return;
     }
 
-    appFeedback.success('Request updated.');
+    appFeedback.success(c.updated);
     void load();
   }
 
@@ -162,11 +182,11 @@ export default function LeadsPage() {
     setRemovingId(null);
 
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to archive request.');
+      appFeedback.error(json.error || c.archiveError);
       return;
     }
 
-    appFeedback.success('Request archived.');
+    appFeedback.success(c.archivedSuccess);
     void load();
   }
 
@@ -182,11 +202,11 @@ export default function LeadsPage() {
     setReopeningId(null);
 
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to reopen request.');
+      appFeedback.error(json.error || c.reopenError);
       return;
     }
 
-    appFeedback.success('Request reopened.');
+    appFeedback.success(c.reopenedSuccess);
     setFilter('open');
     void load();
   }
@@ -195,13 +215,13 @@ export default function LeadsPage() {
     <AppShell plan={plan} role={role}>
       <header className="page-header">
         <div className="page-header-text">
-          <h1>Requests</h1>
-          <p className="page-subtitle">Keep track of people who may book work.</p>
+          <h1>{c.title}</h1>
+          <p className="page-subtitle">{c.subtitle}</p>
         </div>
         {canManage ? (
           <div className="page-header-action">
             <Link className="btn btn-primary" href="/leads/new">
-              Add request
+              {c.add}
             </Link>
           </div>
         ) : null}
@@ -212,10 +232,10 @@ export default function LeadsPage() {
           <h3>{c.filterTitles[filter]}</h3>
           <div className="inline-actions">
             <button type="button" className={`btn btn-sm ${filter === 'open' ? 'btn-primary' : ''}`} onClick={() => setFilter('open')}>
-              Open
+              {c.open}
             </button>
             <button type="button" className={`btn btn-sm ${filter === 'closed' ? 'btn-primary' : ''}`} onClick={() => setFilter('closed')}>
-              Not booked
+              {c.notBooked}
             </button>
             <button type="button" className={`btn btn-sm ${filter === 'archived' ? 'btn-primary' : ''}`} onClick={() => setFilter('archived')}>
               {c.archived}
@@ -224,16 +244,16 @@ export default function LeadsPage() {
         </div>
 
         <label style={{ display: 'block', marginBottom: 16 }}>
-          <span className="field-label">Search</span>
+          <span className="field-label">{c.search}</span>
           <input
             className="input"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Name, phone, or email"
+            placeholder={c.searchPlaceholder}
           />
         </label>
 
-        {loading ? <p className="muted">Loading...</p> : null}
+        {loading ? <p className="muted">{c.loading}</p> : null}
 
         {!loading && visibleLeads.length === 0 ? (
           <LocalizedEmptyState emptyKey="leads" compact />
@@ -251,7 +271,7 @@ export default function LeadsPage() {
                 className="dashboard-today-row open-in-new-tab-card"
                 style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
               >
-                <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${customerDisplayName(lead)} in a new tab`}><span className="record-card-overlay-label">Open {customerDisplayName(lead)} in a new tab</span></Link>
+                <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={c.openRecord.replace('{name}', customerDisplayName(lead))}><span className="record-card-overlay-label">{c.openRecord.replace('{name}', customerDisplayName(lead))}</span></Link>
                 <div style={{ flex: '1 1 220px' }}>
                   <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(lead)}</Link>
                   <div className="muted" style={{ marginTop: 3 }}>
@@ -262,33 +282,33 @@ export default function LeadsPage() {
                 {canManage && isOpen ? (
                   <select
                     className="input"
-                    aria-label={`Status for ${customerDisplayName(lead)}`}
+                    aria-label={c.statusFor.replace('{name}', customerDisplayName(lead))}
                     value={stage}
                     disabled={busy}
                     onChange={(event) => void updateLeadStage(lead.id, event.target.value)}
                     style={{ width: 'auto', minWidth: 140, paddingTop: 6, paddingBottom: 6 }}
                   >
-                    <option value="open">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="qualified">Interested</option>
-                    <option value="proposal_sent">Quote sent</option>
-                    <option value="negotiation">Following up</option>
-                    <option value="reopened">Reopened</option>
-                    <option value="closed_lost">Not booked</option>
+                    <option value="open">{c.new}</option>
+                    <option value="contacted">{c.contacted}</option>
+                    <option value="qualified">{c.interested}</option>
+                    <option value="proposal_sent">{c.quoteSent}</option>
+                    <option value="negotiation">{c.followingUp}</option>
+                    <option value="reopened">{c.reopened}</option>
+                    <option value="closed_lost">{c.notBooked}</option>
                   </select>
                 ) : (
-                  <span className="muted">{isClosed ? 'Not booked' : leadPipelineLabel(lead.pipeline_stage)}</span>
+                  <span className="muted">{isClosed ? c.notBooked : leadPipelineLabel(lead.pipeline_stage)}</span>
                 )}
 
                 {updatingStageId === lead.id ? <span className="muted">{FEEDBACK.loading}</span> : null}
 
                 <Link className="btn btn-sm" href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer">
-                  Open
+                  {c.open}
                 </Link>
 
                 {canManage && (isArchived || isClosed) ? (
                   <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void reopenLead(lead.id)}>
-                    {reopeningId === lead.id ? FEEDBACK.loading : 'Reopen'}
+                    {reopeningId === lead.id ? FEEDBACK.loading : c.reopen}
                   </button>
                 ) : null}
 
