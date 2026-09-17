@@ -5,13 +5,16 @@ import { fetchJobPhotosWithUrls } from '@/lib/job-photos-client';
 import { isValidUuid } from '@/lib/input-validation';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getJobPhotosApiCopy } from '@/lib/i18n/job-photos-api-copy';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: RouteParams) {
+export async function GET(request: Request, { params }: RouteParams) {
+  const c = getJobPhotosApiCopy(localeFromRequest(request));
   const { id: jobId } = await params;
   if (!isValidUuid(jobId)) {
-    return NextResponse.json({ error: 'Invalid job id' }, { status: 400 });
+    return NextResponse.json({ error: c.invalidJobId }, { status: 400 });
   }
 
   const supabase = await createServerSupabase();
@@ -20,22 +23,23 @@ export async function GET(_request: Request, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: c.unauthorized }, { status: 401 });
   }
 
   const { photos, error } = await fetchJobPhotosWithUrls(supabase, jobId);
 
   if (error) {
-    return NextResponse.json({ error }, { status: 400 });
+    return NextResponse.json({ error: c.loadError }, { status: 400 });
   }
 
   return NextResponse.json({ photos });
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const c = getJobPhotosApiCopy(localeFromRequest(request));
   const { id: jobId } = await params;
   if (!isValidUuid(jobId)) {
-    return NextResponse.json({ error: 'Invalid job id' }, { status: 400 });
+    return NextResponse.json({ error: c.invalidJobId }, { status: 400 });
   }
   const supabase = await createServerSupabase();
   const {
@@ -43,12 +47,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: c.unauthorized }, { status: 401 });
   }
 
   const photoId = new URL(request.url).searchParams.get('photoId');
   if (!photoId || !isValidUuid(photoId)) {
-    return NextResponse.json({ error: 'photoId is required' }, { status: 400 });
+    return NextResponse.json({ error: c.photoIdRequired }, { status: 400 });
   }
 
   const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
@@ -56,12 +60,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     userMetadata: user.user_metadata || undefined
   });
   if (!org) {
-    return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    return NextResponse.json({ error: c.organizationNotFound }, { status: 404 });
   }
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+    return NextResponse.json({ error: c.serverUnavailable }, { status: 503 });
   }
 
   const { data: job } = await admin
@@ -71,7 +75,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     .maybeSingle();
 
   if (!job || job.organization_id !== org.organizationId) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    return NextResponse.json({ error: c.jobNotFound }, { status: 404 });
   }
 
   const { data: photo } = await admin
@@ -82,7 +86,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     .maybeSingle();
 
   if (!photo) {
-    return NextResponse.json({ error: 'Photo not found' }, { status: 404 });
+    return NextResponse.json({ error: c.photoNotFound }, { status: 404 });
   }
 
   const role = normalizeRole(org.role);
@@ -90,19 +94,22 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const canDelete = isUploader || isManagerRole(role);
 
   if (!canDelete) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+    return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
   }
 
-  await admin.storage.from('job-photos').remove([photo.storage_path]);
+  const { error: storageError } = await admin.storage.from('job-photos').remove([photo.storage_path]);
+  if (storageError) {
+    return NextResponse.json({ error: c.deleteError }, { status: 400 });
+  }
 
   const { error } = await admin.from('job_photos').delete().eq('id', photoId).eq('job_id', jobId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: c.deleteError }, { status: 400 });
   }
 
   const { data: profile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
-  const actorName = profile?.full_name || profile?.email || user.email || 'Team member';
+  const actorName = profile?.full_name || profile?.email || user.email || c.teamMember;
 
   await admin.from('activity_logs').insert({
     organization_id: org.organizationId,
