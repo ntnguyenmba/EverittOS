@@ -6,6 +6,7 @@ import { PlanLockedMessage } from '@/components/plan-locked-message';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { type UserRole } from '@/lib/roles';
 import { useWorkspacePlan } from '@/components/workspace-plan-provider';
+import { useTranslation } from '@/components/locale-provider';
 
  type OsModulePageProps = {
   title: string;
@@ -27,6 +28,7 @@ export function OsModulePage({
   actions = []
 }: OsModulePageProps) {
   const workspacePlan = useWorkspacePlan();
+  const { t } = useTranslation();
   const plan = workspacePlan.plan || 'free';
   const role: UserRole = workspacePlan.role || 'owner';
   const loading = workspacePlan.loading;
@@ -36,7 +38,7 @@ export function OsModulePage({
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p>Loading...</p>
+        <p>{t('feedback.loading')}</p>
       </AppShell>
     );
   }
