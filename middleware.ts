@@ -76,8 +76,8 @@ export async function middleware(request: NextRequest) {
   }) }) as any;
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (pathname === '/') { if (user) { const profileRead = await fetchProfileByUserId(supabase, user.id); const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null; const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); } return supabaseResponse; }
-  if (user && isLoggedOutOnlyPath(pathname)) { const profileRead = await fetchProfileByUserId(supabase, user.id); const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null; const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); }
+  if (pathname === '/') { if (user) { const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const [profileRead, activeOrg] = await Promise.all([fetchProfileByUserId(supabase, user.id), activeOrgId ? fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : Promise.resolve(null)]); const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); } return supabaseResponse; }
+  if (user && isLoggedOutOnlyPath(pathname)) { const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null; const [profileRead, activeOrg] = await Promise.all([fetchProfileByUserId(supabase, user.id), activeOrgId ? fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : Promise.resolve(null)]); const activeRole = activeOrg?.role || profileRead.profile?.role; const onboarding = await resolveOnboardingAccessState(supabase, activeOrg?.organizationId || profileRead.profile?.organization_id); const destination = postAuthRedirectPath(activeRole, '/dashboard', onboarding.completed, onboarding.skipped); return redirectWithCookies(new URL(destination, request.url), supabaseResponse); }
 
   if (isSessionApiPath(pathname)) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -91,9 +91,12 @@ export async function middleware(request: NextRequest) {
   if (!isProtectedPath(pathname)) return supabaseResponse;
   if (!user) { const login = new URL('/login', request.url); login.searchParams.set('next', pathname); login.searchParams.set('reason', 'session'); login.searchParams.set('detail', mapAccessError('session').message); return redirectWithCookies(login, supabaseResponse); }
   const idleRedirect = await enforceIdleSession(request, supabase, supabaseResponse); if (idleRedirect) return idleRedirect;
-  const profileRead = await fetchProfileByUserId(supabase, user.id); const profile = profileRead.profile;
   const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value || null;
-  const activeOrg = activeOrgId ? await fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : null;
+  const [profileRead, activeOrg] = await Promise.all([
+    fetchProfileByUserId(supabase, user.id),
+    activeOrgId ? fetchOrganizationContextForUser(supabase, user.id, activeOrgId) : Promise.resolve(null)
+  ]);
+  const profile = profileRead.profile;
   const contextOrgId = activeOrg?.organizationId || profile?.organization_id;
   const contextRole = activeOrg?.role || profile?.role;
   const onboarding = await resolveOnboardingAccessState(supabase, contextOrgId);
@@ -104,8 +107,15 @@ export async function middleware(request: NextRequest) {
   const workspace = await resolveWorkspaceDeletionState(supabase, user.id, contextOrgId);
   if (workspace.blocked && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) { await supabase.auth.signOut(); const login = new URL('/login', request.url); login.searchParams.set('reason', 'workspace_deleted'); login.searchParams.set('detail', 'This workspace is scheduled for deletion and is no longer available.'); return redirectWithCookies(login, supabaseResponse); }
   let role = normalizeRole(contextRole || 'owner');
-  const userPlan = activeOrg ? normalizePlan((await resolveOrganizationPlan(supabase, user.id, activeOrg.organizationId)).plan) : profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
-  const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
+  const [resolvedUserPlan, subscriptionStatus] = await Promise.all([
+    activeOrg
+      ? resolveOrganizationPlan(supabase, user.id, activeOrg.organizationId).then(({ plan }) => normalizePlan(plan))
+      : profile
+        ? resolveProfilePlan(supabase, user.id, profile).then((plan) => normalizePlan(plan))
+        : Promise.resolve('free' as const),
+    profile ? resolveProfileSubscriptionStatus(supabase, user.id, profile) : Promise.resolve('free')
+  ]);
+  const userPlan = resolvedUserPlan;
   if (isTeamInviteAcceptPath(pathname)) return supabaseResponse;
   // A valid selected workspace is authoritative. Legacy client repair is only for accounts
   // that do not yet have an explicit active workspace selection.
