@@ -4,6 +4,7 @@ import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+const MAX_CSV_BYTES = 2 * 1024 * 1024;
 
 export async function GET() {
   const ctx = await requireWorkspaceSession({ requireManager: true });
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { csv?: string; preview?: boolean; decisions?: Record<string, BookkeepingImportDecision> };
   const csv = String(body.csv || '');
   if (!csv.trim()) return NextResponse.json({ error: 'csv_required' }, { status: 400 });
+  if (Buffer.byteLength(csv, 'utf8') > MAX_CSV_BYTES) return NextResponse.json({ error: 'csv_too_large' }, { status: 413 });
   const parsed = parseBookkeepingImportCsv(csv);
   if (parsed.fatalError) return NextResponse.json({ error: parsed.fatalError }, { status: 400 });
   const { data: existing, error: existingError } = await ctx.supabase.from('bookkeeping_entries').select('entry_type, entry_date, amount, title, counterparty').eq('organization_id', ctx.workspace.organizationId).limit(10000);
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
   const failed: Array<{ rowNumber: number; error: string }> = [];
   for (const row of rows) {
     if (row.errors.length) { failed.push({ rowNumber: row.rowNumber, error: row.errors[0] }); continue; }
-    const decision: BookkeepingImportDecision = row.duplicateKind ? decisions[String(row.rowNumber)] || 'skip' : 'create';
+    const decision: BookkeepingImportDecision = row.duplicateKind && decisions[String(row.rowNumber)] === 'create' ? 'create' : 'skip';
     if (row.duplicateKind && decision === 'skip') { skipped += 1; continue; }
     const { error } = await ctx.supabase.from('bookkeeping_entries').insert({ organization_id: ctx.workspace.organizationId, entry_type: row.entryType, entry_date: row.entryDate, amount: row.amount, title: row.title || null, counterparty: row.counterparty || null, category: row.category || null, payment_method: row.paymentMethod || null, notes: row.notes || null, created_by: ctx.userId });
     if (error) failed.push({ rowNumber: row.rowNumber, error: error.message }); else imported += 1;
