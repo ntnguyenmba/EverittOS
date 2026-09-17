@@ -16,7 +16,7 @@ export async function exportGetResponse(request: Request, resource: ExportResour
   const copy = getExportCopy(locale);
 
   if (!format) {
-    return NextResponse.json({ error: 'format must be csv or pdf.', code: 'export_failed' }, { status: 400 });
+    return NextResponse.json({ error: copy.invalidFormat, code: 'export_failed' }, { status: 400 });
   }
 
   const searchParams = sanitizeExportQuery(resource, url.searchParams);
