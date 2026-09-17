@@ -23,9 +23,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 const analyticsPageCopy = {
-  en: { title: 'Business numbers', subtitle: 'Understand revenue, activity, growth, and the work that needs attention.' },
-  es: { title: 'Números del negocio', subtitle: 'Comprende los ingresos, la actividad, el crecimiento y el trabajo que requiere atención.' },
-  vi: { title: 'Số liệu kinh doanh', subtitle: 'Theo dõi doanh thu, hoạt động, tăng trưởng và công việc cần chú ý.' }
+  en: { title: 'Business numbers', subtitle: 'Understand revenue, activity, growth, and the work that needs attention.', loading: 'Loading…', noAccess: 'You do not have access to business numbers.', loadError: 'Unable to load analytics.', completionTitle: 'Some completed jobs need a completion date.', fixJobs: 'Fix jobs', moreReports: 'More reports' },
+  es: { title: 'Números del negocio', subtitle: 'Comprende los ingresos, la actividad, el crecimiento y el trabajo que requiere atención.', loading: 'Cargando…', noAccess: 'No tiene acceso a los números del negocio.', loadError: 'No se pudieron cargar los análisis.', completionTitle: 'Algunos trabajos completados necesitan una fecha de finalización.', fixJobs: 'Corregir trabajos', moreReports: 'Más informes' },
+  vi: { title: 'Số liệu kinh doanh', subtitle: 'Theo dõi doanh thu, hoạt động, tăng trưởng và công việc cần chú ý.', loading: 'Đang tải…', noAccess: 'Bạn không có quyền xem số liệu kinh doanh.', loadError: 'Không thể tải dữ liệu phân tích.', completionTitle: 'Một số công việc đã hoàn thành cần ngày hoàn thành.', fixJobs: 'Sửa công việc', moreReports: 'Thêm báo cáo' }
 } as const;
 
 type AnalyticsSummary = {
@@ -63,8 +63,10 @@ export default function AnalyticsPage() {
         return;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-      const org = await fetchOrganizationContext(user.id);
+      const [{ data: profile }, org] = await Promise.all([
+        supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+        fetchOrganizationContext(user.id)
+      ]);
       const nextPlan = normalizePlan(profile?.plan);
       const nextRole = normalizeRole(org?.role || profile?.role);
       setPlan(nextPlan);
@@ -72,7 +74,7 @@ export default function AnalyticsPage() {
 
       if (!canSeeOrgWideData(nextRole)) {
         setLoading(false);
-        setError('You do not have access to business numbers.');
+        setError(pageCopy.noAccess);
         return;
       }
 
@@ -84,14 +86,14 @@ export default function AnalyticsPage() {
       if (limitsForPlan(nextPlan).advancedReporting) {
         const res = await fetch('/api/analytics/summary');
         const json = await res.json();
-        if (!res.ok) setError(json.error || 'Unable to load analytics.');
+        if (!res.ok) setError(json.error || pageCopy.loadError);
         else setSummary(json);
       }
       setLoading(false);
     }
 
     void load();
-  }, [router]);
+  }, [pageCopy.loadError, pageCopy.noAccess, router]);
 
   const hasData = useMemo(() => metricsHaveData(summary), [summary]);
 
@@ -116,17 +118,17 @@ export default function AnalyticsPage() {
         }
       />
 
-      {loading ? <p className="loading-state">Loading...</p> : null}
+      {loading ? <p className="loading-state">{pageCopy.loading}</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       {!loading && !error && isAdminRole(role) && missingCompletionCount > 0 ? (
         <div className="card" style={{ marginBottom: 18 }}>
-          <strong>Some completed jobs need a completion date.</strong>
+          <strong>{pageCopy.completionTitle}</strong>
           <p className="muted" style={{ margin: '6px 0 12px' }}>
             {formatDashboardCopy(copy.overview.missingCompletedAtWarning, { count: missingCompletionCount })}
           </p>
           <Link className="btn btn-sm" href="/jobs?filter=missing_completion_date">
-            Fix jobs
+            {pageCopy.fixJobs}
           </Link>
         </div>
       ) : null}
@@ -141,7 +143,7 @@ export default function AnalyticsPage() {
 
       {limitsForPlan(plan).advancedReporting && summary && hasData ? (
         <details className="card" style={{ marginTop: 18 }}>
-          <summary><strong>More reports</strong></summary>
+          <summary><strong>{pageCopy.moreReports}</strong></summary>
           <div className="charts-grid" style={{ marginTop: 18 }}>
             <SimpleBarChart title={t('analytics.adoption')} points={summary.adoptionMetrics} />
             <SimpleBarChart title={t('analytics.growth')} points={summary.growthMetrics} />
