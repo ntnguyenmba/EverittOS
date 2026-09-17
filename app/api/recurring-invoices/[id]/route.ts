@@ -3,6 +3,8 @@ import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { isRecurringCadence } from '@/lib/recurring-invoices';
 import { isValidUuid } from '@/lib/input-validation';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getRecurringInvoiceApiCopy } from '@/lib/i18n/recurring-invoice-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,49 +12,51 @@ export const dynamic = 'force-dynamic';
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const ctx = await requireFinanceApiAccess();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-  }
-  if (!ctx.canManage) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
+  const locale = localeFromRequest(request);
+  const c = getRecurringInvoiceApiCopy(locale);
+  const ctx = await requireFinanceApiAccess(locale);
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  if (!ctx.canManage) return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
 
   const { id } = await context.params;
-  if (!isValidUuid(id)) {
-    return NextResponse.json({ error: 'Invalid template id.' }, { status: 400 });
-  }
+  if (!isValidUuid(id)) return NextResponse.json({ error: c.invalidTemplateId }, { status: 400 });
 
-  const body = (await request.json()) as Record<string, unknown>;
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body) return NextResponse.json({ error: c.saveError }, { status: 400 });
+
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-  if (body.title !== undefined) patch.title = String(body.title).trim() || 'Recurring invoice';
+  if (body.title !== undefined) patch.title = String(body.title).trim() || c.defaultTitle;
   if (body.amount !== undefined) {
     const amount = Number(body.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Enter a valid invoice amount.' }, { status: 400 });
+      return NextResponse.json({ error: c.validAmount }, { status: 400 });
     }
     patch.amount = amount;
   }
   if (body.cadence !== undefined) {
     const cadence = String(body.cadence);
     if (!isRecurringCadence(cadence)) {
-      return NextResponse.json({ error: 'Invalid cadence.' }, { status: 400 });
+      return NextResponse.json({ error: c.invalidCadence }, { status: 400 });
     }
     patch.cadence = cadence;
   }
   if (body.customer_id !== undefined) {
-    const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id as string | null);
-    if (customerError) {
-      return NextResponse.json({ error: customerError }, { status: 400 });
-    }
+    const customerError = await assertCustomerInOrganization(
+      ctx.supabase,
+      ctx.organizationId,
+      body.customer_id as string | null
+    );
+    if (customerError) return NextResponse.json({ error: customerError }, { status: 400 });
     patch.customer_id = body.customer_id || null;
   }
   if (body.job_id !== undefined) {
-    const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id as string | null);
-    if (jobError) {
-      return NextResponse.json({ error: jobError }, { status: 400 });
-    }
+    const jobError = await assertJobInOrganization(
+      ctx.supabase,
+      ctx.organizationId,
+      body.job_id as string | null
+    );
+    if (jobError) return NextResponse.json({ error: jobError }, { status: 400 });
     patch.job_id = body.job_id || null;
   }
   if (body.next_run_on !== undefined) patch.next_run_on = body.next_run_on || null;
@@ -64,59 +68,61 @@ export async function PATCH(request: Request, context: RouteContext) {
     .eq('id', id)
     .eq('organization_id', ctx.organizationId)
     .select('*')
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-  if (!data) {
-    return NextResponse.json({ error: 'Template not found.' }, { status: 404 });
-  }
+  if (error) return NextResponse.json({ error: c.saveError }, { status: 400 });
+  if (!data) return NextResponse.json({ error: c.templateNotFound }, { status: 404 });
 
   return NextResponse.json({ template: data });
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
-  const ctx = await requireFinanceApiAccess();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-  }
-  if (!ctx.canManage) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
+export async function DELETE(request: Request, context: RouteContext) {
+  const locale = localeFromRequest(request);
+  const c = getRecurringInvoiceApiCopy(locale);
+  const ctx = await requireFinanceApiAccess(locale);
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  if (!ctx.canManage) return NextResponse.json({ error: c.permissionDenied }, { status: 403 });
 
   const { id } = await context.params;
-  if (!isValidUuid(id)) {
-    return NextResponse.json({ error: 'Invalid template id.' }, { status: 400 });
-  }
+  if (!isValidUuid(id)) return NextResponse.json({ error: c.invalidTemplateId }, { status: 400 });
 
-  const { count } = await ctx.supabase
+  const { count, error: countError } = await ctx.supabase
     .from('recurring_invoice_runs')
     .select('id', { count: 'exact', head: true })
     .eq('template_id', id)
     .eq('organization_id', ctx.organizationId);
 
+  if (countError) return NextResponse.json({ error: c.deleteError }, { status: 400 });
+
   if ((count || 0) > 0) {
-    const { error: deactivateError } = await ctx.supabase
+    const { data, error: deactivateError } = await ctx.supabase
       .from('recurring_invoice_templates')
       .update({ active: false, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('organization_id', ctx.organizationId);
-    if (deactivateError) {
-      return NextResponse.json({ error: deactivateError.message }, { status: 400 });
-    }
-    return NextResponse.json({ ok: true, deactivated: true, message: 'Template has run history and was paused instead of deleted.' });
+      .eq('organization_id', ctx.organizationId)
+      .select('id')
+      .maybeSingle();
+
+    if (deactivateError) return NextResponse.json({ error: c.deleteError }, { status: 400 });
+    if (!data) return NextResponse.json({ error: c.templateNotFound }, { status: 404 });
+
+    return NextResponse.json({
+      ok: true,
+      deactivated: true,
+      message: c.pausedInsteadOfDeleted
+    });
   }
 
-  const { error } = await ctx.supabase
+  const { data, error } = await ctx.supabase
     .from('recurring_invoice_templates')
     .delete()
     .eq('id', id)
-    .eq('organization_id', ctx.organizationId);
+    .eq('organization_id', ctx.organizationId)
+    .select('id')
+    .maybeSingle();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
+  if (error) return NextResponse.json({ error: c.deleteError }, { status: 400 });
+  if (!data) return NextResponse.json({ error: c.templateNotFound }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }
