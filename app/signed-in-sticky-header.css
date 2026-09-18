@@ -1,12 +1,11 @@
 /* Final signed-in header authority for every dashboard role and page. */
 
-/* Menu selection and hover must always keep readable contrast on every viewport. */
+/* Only the current route is selected on touch devices. iOS keeps :hover
+   sticky after taps, which previously made two menu items look selected. */
 html body .mobile-nav-drawer-link.active,
 html body .mobile-nav-drawer-link[aria-current='page'],
 html body .mobile-nav-drawer .nav-item.active,
-html body .mobile-nav-drawer .nav-item[aria-current='page'],
-html body .mobile-nav-drawer-link:hover,
-html body .mobile-nav-drawer .nav-item:hover {
+html body .mobile-nav-drawer .nav-item[aria-current='page'] {
   background: #eaf2ff !important;
   color: #172033 !important;
   box-shadow: inset 3px 0 0 #4f7cc4 !important;
@@ -15,10 +14,22 @@ html body .mobile-nav-drawer .nav-item:hover {
 html body .mobile-nav-drawer-link.active *,
 html body .mobile-nav-drawer-link[aria-current='page'] *,
 html body .mobile-nav-drawer .nav-item.active *,
-html body .mobile-nav-drawer .nav-item[aria-current='page'] *,
-html body .mobile-nav-drawer-link:hover *,
-html body .mobile-nav-drawer .nav-item:hover * {
+html body .mobile-nav-drawer .nav-item[aria-current='page'] * {
   color: #172033 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html body .mobile-nav-drawer-link:hover,
+  html body .mobile-nav-drawer .nav-item:hover {
+    background: #eaf2ff !important;
+    color: #172033 !important;
+    box-shadow: inset 3px 0 0 #4f7cc4 !important;
+  }
+
+  html body .mobile-nav-drawer-link:hover *,
+  html body .mobile-nav-drawer .nav-item:hover * {
+    color: #172033 !important;
+  }
 }
 
 @media (max-width: 1024px) {
