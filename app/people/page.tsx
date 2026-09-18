@@ -217,7 +217,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
       {!loading && contractors.length === 0 ? <p className="muted">{canManage ? c.noRecordsManage : c.noRecords}</p> : null}
 
       {visibleContractors.length > 0 ? (
-        <div className="team-member-list">
+        <div className="team-member-list" data-native-pagination="true">
           {visibleContractors.map((contractor) => {
             const contact = contractor.phone || contractor.email;
             const summary = summaries[contractor.id] || { openJobs: 0, unpaid: 0 };
