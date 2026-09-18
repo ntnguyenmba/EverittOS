@@ -395,7 +395,7 @@ export function JobsList() {
         {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
           <>
-            <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
+            <div className="card jobs-table-card" data-native-pagination="true"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
               {visibleRows.map((job) => {
                 const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
                 const needsWorker = jobNeedsWorker(job);
