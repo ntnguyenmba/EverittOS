@@ -37,9 +37,17 @@ function hardReloadOnce() {
     // sessionStorage can be unavailable in strict/private browser contexts.
   }
 
-  const url = new URL(window.location.href);
-  url.searchParams.set('__everitt_reload', String(Date.now()));
-  window.location.replace(url.toString());
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('__everitt_reload', String(Date.now()));
+    window.location.replace(url.toString());
+  } catch {
+    try {
+      window.location.reload();
+    } catch {
+      /* last resort — never throw from the recovery listener */
+    }
+  }
 }
 
 export function RuntimeRecovery() {
