@@ -54,6 +54,15 @@ function applyLimit(parent: HTMLElement) {
     ? document.querySelector<HTMLElement>(`[data-universal-list-control="${existingId}"]`)
     : null;
 
+  const hasNativePagination = parent.matches('[data-native-pagination="true"]') || Boolean(parent.closest('[data-native-pagination="true"]'));
+  if (hasNativePagination) {
+    items.forEach((item) => setItemVisible(item, true));
+    control?.remove();
+    delete parent.dataset.universalListExpanded;
+    managedParents.delete(parent);
+    return;
+  }
+
   if (items.length <= SUMMARY_LIST_LIMIT) {
     items.forEach((item) => setItemVisible(item, true));
     control?.remove();
