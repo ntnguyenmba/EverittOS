@@ -35,6 +35,24 @@ const PLAN_REQUEST_TIMEOUT_MS = 3500;
 const MIN_BACKGROUND_REFRESH_MS = 60_000;
 const STRIPE_RECOVERY_SESSION_KEY = 'everittos_stripe_recovery_checked';
 
+function safeSessionGet(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionSet(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    // iOS WebView/private storage must never take down the shared app shell.
+  }
+}
+
 type WorkspacePlanResponse = {
   profilePlan?: string;
   subscriptionStatus?: string;
@@ -148,8 +166,8 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (state.loading || state.plan !== 'free' || typeof window === 'undefined') return;
-    if (window.sessionStorage.getItem(STRIPE_RECOVERY_SESSION_KEY)) return;
-    window.sessionStorage.setItem(STRIPE_RECOVERY_SESSION_KEY, '1');
+    if (safeSessionGet(STRIPE_RECOVERY_SESSION_KEY)) return;
+    safeSessionSet(STRIPE_RECOVERY_SESSION_KEY, '1');
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), PLAN_REQUEST_TIMEOUT_MS);
     void fetch('/api/stripe/sync-current-user', { method:'POST', credentials:'same-origin', signal:controller.signal })
