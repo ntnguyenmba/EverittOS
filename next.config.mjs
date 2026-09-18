@@ -90,10 +90,19 @@ const nextConfig = {
     NEXT_PUBLIC_VERCEL_ENV: vercelEnv,
     NEXT_PUBLIC_BILLING_UI_BUILD: 'billing-v3-client-checkout',
     NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES: process.env.SESSION_IDLE_TIMEOUT_MINUTES || '30',
-    NEXT_PUBLIC_SESSION_IDLE_WARNING_MINUTES: process.env.SESSION_IDLE_WARNING_MINUTES || '5'
+    NEXT_PUBLIC_SESSION_IDLE_WARNING_MINUTES: process.env.SESSION_IDLE_WARNING_MINUTES || '5',
+    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA || 'local'
   },
   async headers() {
     return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' }
+        ]
+      },
       {
         source: '/.well-known/apple-app-site-association',
         headers: [{ key: 'Content-Type', value: 'application/json' }]
