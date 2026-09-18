@@ -138,3 +138,41 @@
     overflow-y: auto;
   }
 }
+
+
+/* Central interaction guard for native form controls across every signed-in view.
+   Keep selects above decorative overlays and let iOS/Safari own the picker UI. */
+.dashboard-shell select,
+.role-portal-shell select,
+.modal-panel select,
+.dialog-panel select {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+.dashboard-shell label:has(> select),
+.role-portal-shell label:has(> select) {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto !important;
+}
+
+.dashboard-shell select:disabled,
+.role-portal-shell select:disabled,
+.modal-panel select:disabled,
+.dialog-panel select:disabled {
+  pointer-events: none !important;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-shell select,
+  .role-portal-shell select,
+  .modal-panel select,
+  .dialog-panel select {
+    min-height: 44px;
+  }
+}
