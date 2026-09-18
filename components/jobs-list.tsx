@@ -149,6 +149,9 @@ export function JobsList() {
   const createdFromFilter = searchParams.get('from');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
+  const [directoryWorkers, setDirectoryWorkers] = useState<Array<[string, string]>>([]);
+  const [directoryClients, setDirectoryClients] = useState<string[]>([]);
+  const [directoryProperties, setDirectoryProperties] = useState<string[]>([]);
   const [ownerFinancials, setOwnerFinancials] = useState<Record<string, OwnerJobFinancials>>({});
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -223,16 +226,53 @@ export function JobsList() {
       }
 
       let workersQuery = supabase.from('workers').select('id, name, auth_user_id, email');
-      if (org?.organizationId) workersQuery = workersQuery.eq('organization_id', org.organizationId);
-      else workersQuery = workersQuery.eq('user_id', user.id);
-      const { data: workers } = await workersQuery;
+      let customersQuery = supabase.from('customers').select('id, company_name, contact_name, email');
+      let propertiesQuery = supabase.from('customer_properties').select('id, name, formatted_address, address, is_archived');
+      if (org?.organizationId) {
+        workersQuery = workersQuery.eq('organization_id', org.organizationId);
+        customersQuery = customersQuery.eq('organization_id', org.organizationId);
+        propertiesQuery = propertiesQuery.eq('organization_id', org.organizationId);
+      } else {
+        workersQuery = workersQuery.eq('user_id', user.id);
+        customersQuery = customersQuery.eq('user_id', user.id);
+        propertiesQuery = propertiesQuery.limit(0);
+      }
+      const [workersResult, customersResult, propertiesResult] = await Promise.all([
+        workersQuery,
+        customersQuery,
+        propertiesQuery
+      ]);
+      const workers = workersResult.data || [];
+      const customers = customersResult.data || [];
+      const properties = propertiesResult.data || [];
+
       const names: Record<string, string> = {};
-      (workers || []).forEach((worker: { id: string; name: string; auth_user_id?: string | null; email?: string | null }) => {
+      const workerDirectory = new Map<string, string>();
+      (workers as Array<{ id: string; name: string | null; auth_user_id?: string | null; email?: string | null }>).forEach((worker) => {
         const label = displayPersonName(worker.name, worker.email);
-        if (worker.id && label) names[worker.id] = label;
+        if (worker.id && label) {
+          names[worker.id] = label;
+          workerDirectory.set(worker.id, label);
+        }
         if (worker.auth_user_id && label) names[worker.auth_user_id] = label;
       });
       setWorkerNames(names);
+      setDirectoryWorkers([...workerDirectory.entries()].sort((a, b) => a[1].localeCompare(b[1], localeCode)));
+
+      const clients = new Set<string>();
+      (customers as Array<{ company_name?: string | null; contact_name?: string | null; email?: string | null }>).forEach((customer) => {
+        const label = String(customer.company_name || customer.contact_name || customer.email || '').trim();
+        if (label) clients.add(label);
+      });
+      setDirectoryClients([...clients].sort((a, b) => a.localeCompare(b, localeCode)));
+
+      const propertyLabels = new Set<string>();
+      (properties as Array<{ name?: string | null; formatted_address?: string | null; address?: string | null; is_archived?: boolean | null }>).forEach((property) => {
+        if (property.is_archived) return;
+        const label = String(property.formatted_address || property.address || property.name || '').trim();
+        if (label) propertyLabels.add(label);
+      });
+      setDirectoryProperties([...propertyLabels].sort((a, b) => a.localeCompare(b, localeCode)));
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -297,16 +337,31 @@ export function JobsList() {
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
 
   const workerOptions = useMemo(() => {
-    const options = new Map<string, string>();
+    const options = new Map<string, string>(directoryWorkers);
     jobs.forEach((job) => {
       if (job.assigned_to) options.set(job.assigned_to, workerNames[job.assigned_to] || job.assigned_email || job.assigned_to);
       else if (job.assigned_email) options.set(`email:${job.assigned_email}`, displayPersonName(null, job.assigned_email));
     });
     return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1], localeCode));
-  }, [jobs, workerNames, localeCode]);
+  }, [directoryWorkers, jobs, workerNames, localeCode]);
 
-  const clientOptions = useMemo(() => [...new Set(jobs.map((job) => String(job.customer_name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, localeCode)), [jobs, localeCode]);
-  const propertyOptions = useMemo(() => [...new Set(jobs.map((job) => jobListAddress(job)).filter(Boolean))].sort((a, b) => a.localeCompare(b, localeCode)), [jobs, localeCode]);
+  const clientOptions = useMemo(() => {
+    const options = new Set(directoryClients);
+    jobs.forEach((job) => {
+      const name = String(job.customer_name || '').trim();
+      if (name) options.add(name);
+    });
+    return [...options].sort((a, b) => a.localeCompare(b, localeCode));
+  }, [directoryClients, jobs, localeCode]);
+
+  const propertyOptions = useMemo(() => {
+    const options = new Set(directoryProperties);
+    jobs.forEach((job) => {
+      const property = jobListAddress(job);
+      if (property) options.add(property);
+    });
+    return [...options].sort((a, b) => a.localeCompare(b, localeCode));
+  }, [directoryProperties, jobs, localeCode]);
   const yearOptions = useMemo(() => [...new Set(jobs.map(jobDateValue).filter((d): d is Date => Boolean(d)).map((date) => String(date.getFullYear())))].sort((a, b) => Number(b) - Number(a)), [jobs]);
 
   const filteredJobs = useMemo(() => jobs.filter((job) => {
