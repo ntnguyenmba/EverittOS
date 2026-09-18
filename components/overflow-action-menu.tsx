@@ -28,6 +28,11 @@ export function OverflowActionMenu({ label, open, onOpenChange, children }: Over
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<MenuPosition | null>(null);
+  const onOpenChangeRef = useRef(onOpenChange);
+
+  useLayoutEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -67,12 +72,12 @@ export function OverflowActionMenu({ label, open, onOpenChange, children }: Over
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node | null;
       if (target && (triggerRef.current?.contains(target) || panelRef.current?.contains(target))) return;
-      onOpenChange(false);
+      onOpenChangeRef.current(false);
     }
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
-      onOpenChange(false);
+      onOpenChangeRef.current(false);
       triggerRef.current?.focus();
     }
 
@@ -93,7 +98,7 @@ export function OverflowActionMenu({ label, open, onOpenChange, children }: Over
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   const panelStyle: CSSProperties | undefined = position ? {
     position: 'fixed',
