@@ -30,9 +30,19 @@ function roleBannerKind(role: UserRole): RoleBannerKind {
 
 function RoleContextBanner({ role }: { role: UserRole }) {
   const { locale } = useTranslation();
-  const copy = ROLE_BANNER_COPY[locale];
+  // Never index ROLE_BANNER_COPY with an unexpected locale — that threw on every
+  // owner / worker / client shell and surfaced as the global error page.
+  const copy = ROLE_BANNER_COPY[locale as keyof typeof ROLE_BANNER_COPY] ?? ROLE_BANNER_COPY.en;
   const kind = roleBannerKind(role);
-  return <section className={`app-role-banner app-role-banner-${kind}`} aria-label={`${copy.context}: ${copy[kind]}`}><span className="app-role-banner-context">{copy.context}</span><strong className="app-role-banner-name">{copy[kind]}</strong></section>;
+  return (
+    <section
+      className={`app-role-banner app-role-banner-${kind}`}
+      aria-label={`${copy.context}: ${copy[kind]}`}
+    >
+      <span className="app-role-banner-context">{copy.context}</span>
+      <strong className="app-role-banner-name">{copy[kind]}</strong>
+    </section>
+  );
 }
 
 type AppShellProps = { plan?: EverittosPlan | string | null; role?: UserRole | string | null; showBackButton?: boolean; className?: string; children: React.ReactNode };
