@@ -96,7 +96,7 @@ function CustomersPageContent() {
       <div className="job-detail-actions" style={{ marginBottom:16, flexWrap:'wrap', gap:8 }}>
         {([{id:'customers',label:lifecycle.filters.customers,href:'/customers'},{id:'leads',label:lifecycle.filters.leads,href:'/customers?stage=leads'},{id:'archived',label:lifecycle.filters.archived,href:'/customers?stage=archived'}] as const).map((filter)=>{const active=filter.id==='customers'?!stageFilter||stageFilter==='customers':stageFilter===filter.id||(filter.id==='leads'&&(stageFilter==='lead'||stageFilter==='leads'));return <Link key={filter.id} className={active?'btn btn-primary':'btn'} href={filter.href}>{filter.label}</Link>;})}
       </div>
-      <div className="customers-list">
+      <div className="customers-list" data-native-pagination="true">
         {loading && <p className="loading-state" role="status">Loading customers...</p>}
         {!loading && customers.length===0 && <LocalizedEmptyState emptyKey="customers" icon="none" showAction={false} />}
         {!loading && visibleCustomers.map((customer)=>(
