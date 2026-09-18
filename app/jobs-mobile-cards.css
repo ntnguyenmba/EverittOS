@@ -190,3 +190,14 @@
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table .record-card-overlay-link { position: absolute !important; inset: 0 !important; z-index: 0 !important; }
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td > :not(.record-card-overlay-link) { position: relative !important; z-index: 1 !important; }
 }
+
+
+/* Keep action menus for the final jobs inside the scroll viewport. */
+html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tbody > .jobs-operations-row:nth-last-child(-n + 2) {
+  z-index: 62 !important;
+}
+
+html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table tbody > .jobs-operations-row:nth-last-child(-n + 2) .jobs-more-panel {
+  top: auto !important;
+  bottom: calc(100% + 8px) !important;
+}
