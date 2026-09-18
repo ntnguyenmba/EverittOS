@@ -259,7 +259,7 @@ export function TeamDirectory() {
     const visible = list.slice(0, visibleCount);
     return (
       <>
-        <div className="customer-list team-member-list">{visible.map(renderMember)}</div>
+        <div className="customer-list team-member-list" data-native-pagination="true">{visible.map(renderMember)}</div>
         {list.length > PAGE_SIZE ? (
           <div className="team-directory-list-toggle" style={{ marginTop: 16 }}>
             {visibleCount < list.length ? (
