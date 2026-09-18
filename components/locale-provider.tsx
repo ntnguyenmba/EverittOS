@@ -28,9 +28,16 @@ function readStoredLocale(fallback: Locale): Locale {
 
 function applyDocumentLocale(locale: Locale) {
   if (typeof document === 'undefined') return;
-  document.documentElement.lang = locale;
-  document.documentElement.dataset.locale = locale;
-  document.body.dataset.locale = locale;
+  try {
+    document.documentElement.lang = locale;
+    document.documentElement.dataset.locale = locale;
+    // body may be missing during early hydration / error recovery — never throw
+    if (document.body) {
+      document.body.dataset.locale = locale;
+    }
+  } catch {
+    /* locale is non-critical; a blocked DOM must not take down every view */
+  }
 }
 
 async function persistLocale(locale: Locale) {
