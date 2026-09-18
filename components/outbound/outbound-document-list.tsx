@@ -214,7 +214,7 @@ export function OutboundDocumentList({ documents, tab, loading, canManage, payme
   if (!visibleDocuments.length) return <p className="muted">{billingCopy.noInvoicesMatchFilter}</p>;
 
   return (
-    <div className="outbound-document-list">
+    <div className="outbound-document-list" data-native-pagination="true">
       {tab === 'sent' ? <p className="muted" style={{ marginBottom: 12 }}>{billingCopy.sentHistoryHint}</p> : null}
       {tab === 'failed' ? <p className="muted" style={{ marginBottom: 12 }}>{billingCopy.failedHistoryHint}</p> : null}
       {pagedDocuments.map((doc) => {
