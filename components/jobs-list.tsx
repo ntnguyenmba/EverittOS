@@ -7,6 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
+import { OverflowActionMenu } from '@/components/overflow-action-menu';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { canAccessFinancials } from '@/lib/finance-access';
@@ -252,17 +253,6 @@ export function JobsList() {
   }, [load]);
 
   useEffect(() => {
-    if (!openMenuId) return;
-    function onPointerDown(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest(`[data-jobs-menu="${openMenuId}"]`)) return;
-      setOpenMenuId('');
-    }
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [openMenuId]);
-
-  useEffect(() => {
     setVisibleCount(JOBS_PAGE_SIZE);
   }, [customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter, workerFilter, clientFilter, propertyFilter, monthFilter, yearFilter, sortMode]);
 
@@ -417,7 +407,7 @@ export function JobsList() {
                       </>
                     ) : null}
                     <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
-                    <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={jobDetailHref(role, job.id)} target="_blank" rel="noopener noreferrer" className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
+                    <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><OverflowActionMenu label={c.more} open={menuOpen} onOpenChange={(nextOpen) => setOpenMenuId(nextOpen ? job.id : '')}><Link href={jobDetailHref(role, job.id)} target="_blank" rel="noopener noreferrer" className="jobs-menu-item" role="menuitem" onClick={() => setOpenMenuId('')}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={() => setOpenMenuId('')}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={() => void bookAgain(job)}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={() => setOpenMenuId('')}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={() => void removeJob(job)}>{removingId === job.id ? c.removing : c.remove}</button> : null}</OverflowActionMenu></td>
                   </tr>
                 );
               })}
