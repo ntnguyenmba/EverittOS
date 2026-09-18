@@ -1,84 +1,36 @@
-const SW_VERSION = 'everittos-mobile-v2';
-const STATIC_CACHE = `${SW_VERSION}-static`;
+/* EverittOS service-worker kill switch.
+   The signed-in app changes frequently and must never be trapped behind an old
+   cached shell. This worker removes legacy EverittOS caches, releases clients,
+   and unregisters itself. */
+const CACHE_PREFIX = 'everittos-mobile-';
 
-const STATIC_ASSETS = ['/offline.html', '/manifest.webmanifest', '/favicon.ico'];
-
-const NEVER_CACHE_PREFIXES = [
-  '/api/',
-  '/auth/',
-  '/confirm-email',
-  '/reset-password',
-  '/login',
-  '/signup',
-  '/forgot-password',
-  '/settings/billing'
-];
-
-const NEVER_CACHE_HOSTS = ['supabase.co', 'stripe.com', 'google-analytics.com', 'googletagmanager.com'];
-
-function shouldNeverCache(url) {
-  if (!url) return true;
-
-  try {
-    const parsed = new URL(url);
-    if (parsed.pathname.startsWith('/api/')) return true;
-    if (NEVER_CACHE_PREFIXES.some((prefix) => parsed.pathname.startsWith(prefix))) return true;
-    if (NEVER_CACHE_HOSTS.some((host) => parsed.hostname.includes(host))) return true;
-    if (parsed.search.includes('token=') || parsed.search.includes('code=')) return true;
-  } catch {
-    return true;
-  }
-
-  return false;
+async function cleanEverittCaches() {
+  const keys = await caches.keys();
+  await Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX)).map((key) => caches.delete(key)));
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((key) => key.startsWith('everittos-mobile-') && key !== STATIC_CACHE).map((key) => caches.delete(key)))
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      await cleanEverittCaches();
+      await self.clients.claim();
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of clients) {
+        client.postMessage({ type: 'EVERITTOS_SW_REMOVED' });
+      }
+    })()
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
-
-  const url = request.url;
-  if (shouldNeverCache(url)) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => response)
-        .catch(async () => {
-          const cache = await caches.open(STATIC_CACHE);
-          const offline = await cache.match('/offline.html');
-          return offline || Response.error();
-        })
-    );
-    return;
-  }
-
-  /* Next build assets are immutable and uniquely hashed. Let the browser/CDN own
-     them so a service-worker cache can never pin a signed-in UI to an old deploy. */
-  if (url.includes('/_next/static/')) return;
+self.addEventListener('fetch', () => {
+  // Intentionally do not intercept requests.
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data === 'SKIP_WAITING') void self.skipWaiting();
 });
