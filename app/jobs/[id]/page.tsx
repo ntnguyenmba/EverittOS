@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { JobChecklist } from '@/components/job-checklist';
 import { ClientAccessPanel } from '@/components/client-access-panel';
 import { JobWorkflow } from '@/components/job-workflow';
@@ -37,7 +37,6 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { getJobDetailCopy } from '@/lib/i18n/job-detail-copy';
 import { supabase } from '@/lib/supabase';
 
-type PageProps = { params: Promise<{ id: string }> };
 
 type Job = {
   id: string;
@@ -99,10 +98,11 @@ function isActiveStatus(status: string | null | undefined) {
   return status === 'active' || status === 'in_progress';
 }
 
-export default function JobDetailPage({ params }: PageProps) {
+export default function JobDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const [confirmSchedule, setConfirmSchedule] = useState(false);
-  const [jobId, setJobId] = useState('');
+  const jobId = typeof params?.id === 'string' ? params.id : '';
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -128,9 +128,6 @@ export default function JobDetailPage({ params }: PageProps) {
   const copy = getJobDetailCopy(locale);
   const billingCopy = getBillingOpsCopy(locale);
 
-  useEffect(() => {
-    params.then((p) => setJobId(p.id));
-  }, [params]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
