@@ -8,16 +8,16 @@ export const SESSION_ISSUED_COOKIE = 'everittos_session_issued';
 /** Server-side idle expiry. This is separate from the native device lock. */
 export function sessionIdleTimeoutMs(): number {
   const raw = process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES || process.env.SESSION_IDLE_TIMEOUT_MINUTES;
-  const minutes = raw ? parseInt(raw, 10) : 15;
-  if (!Number.isFinite(minutes) || minutes < 1) return 15 * 60 * 1000;
+  const minutes = raw ? parseInt(raw, 10) : 480;
+  if (!Number.isFinite(minutes) || minutes < 1) return 480 * 60 * 1000;
   return minutes * 60 * 1000;
 }
 
 /** Hard login lifetime, regardless of activity. */
 export function sessionAbsoluteTimeoutMs(): number {
   const raw = process.env.NEXT_PUBLIC_SESSION_ABSOLUTE_HOURS || process.env.SESSION_ABSOLUTE_HOURS;
-  const hours = raw ? parseInt(raw, 10) : 12;
-  if (!Number.isFinite(hours) || hours < 1) return 12 * 60 * 60 * 1000;
+  const hours = raw ? parseInt(raw, 10) : 168;
+  if (!Number.isFinite(hours) || hours < 1) return 168 * 60 * 60 * 1000;
   return hours * 60 * 60 * 1000;
 }
 
