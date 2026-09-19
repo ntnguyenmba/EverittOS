@@ -31,11 +31,11 @@ async function expireSession(request: NextRequest, supabase: SupabaseClient, res
 export async function enforceIdleSession(request: NextRequest, supabase: SupabaseClient, response: NextResponse): Promise<NextResponse | null> {
   const issuedAt = request.cookies.get(SESSION_ISSUED_COOKIE)?.value;
   if (issuedAt && isSessionAbsoluteExpired(issuedAt)) {
-    return expireSession(request, supabase, response, 'session', 'Your 12-hour session ended. Sign in again to continue.');
+    return expireSession(request, supabase, response, 'session', 'Your 7-day session ended. Sign in again to continue.');
   }
   const lastActivity = readLastActivity(request);
   if (lastActivity && isSessionIdle(lastActivity)) {
-    return expireSession(request, supabase, response, 'idle', 'Your server session expired after 15 minutes of inactivity. Sign in again to continue.');
+    return expireSession(request, supabase, response, 'idle', 'Your session expired after 8 hours of inactivity. Sign in again to continue.');
   }
   touchSessionActivity(response);
   return null;
