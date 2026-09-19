@@ -11,7 +11,9 @@ type CookieInput = { name: string; value: string; options?: Record<string, unkno
 
 export function sanitizeAuthCookieOptions(options?: Record<string, unknown>): Record<string, unknown> {
   const secure = process.env.NODE_ENV === 'production';
-  return { ...options, path: '/', sameSite: 'lax', secure, httpOnly: options?.httpOnly !== false };
+  // Supabase SSR auth cookies must remain readable by the browser client so it can
+  // refresh access tokens. Preserve Supabase's httpOnly choice instead of forcing it.
+  return { ...options, path: '/', sameSite: 'lax', secure };
 }
 
 export function wrapSupabaseCookieSetAll(setAll: (cookies: CookieInput[]) => void): (cookies: CookieInput[]) => void {
