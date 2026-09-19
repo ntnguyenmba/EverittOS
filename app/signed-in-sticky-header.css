@@ -18,17 +18,30 @@ html body .mobile-nav-drawer .nav-item[aria-current='page'] * {
   color: #172033 !important;
 }
 
+/* Hover and keyboard focus must never look like the selected route.
+   This applies to owner, client, and contractor/worker drawers because they all
+   render the shared AppNavItems component. */
+html body .mobile-nav-drawer .nav-item:not([aria-current='page']) {
+  background: transparent !important;
+  color: #f4f7f9 !important;
+  box-shadow: none !important;
+}
+
+html body .mobile-nav-drawer .nav-item:not([aria-current='page']) * {
+  color: inherit !important;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  html body .mobile-nav-drawer-link:hover,
-  html body .mobile-nav-drawer .nav-item:hover {
-    background: #eaf2ff !important;
-    color: #172033 !important;
-    box-shadow: inset 3px 0 0 #4f7cc4 !important;
+  html body .mobile-nav-drawer-link:not([aria-current='page']):hover,
+  html body .mobile-nav-drawer .nav-item:not([aria-current='page']):hover {
+    background: rgba(255,255,255,.06) !important;
+    color: #f4f7f9 !important;
+    box-shadow: none !important;
   }
 
-  html body .mobile-nav-drawer-link:hover *,
-  html body .mobile-nav-drawer .nav-item:hover * {
-    color: #172033 !important;
+  html body .mobile-nav-drawer-link:not([aria-current='page']):hover *,
+  html body .mobile-nav-drawer .nav-item:not([aria-current='page']):hover * {
+    color: inherit !important;
   }
 }
 
