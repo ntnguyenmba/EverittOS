@@ -10,8 +10,8 @@ test('session policy keeps device lock separate from server session', async () =
   const policy = await import('../lib/session-policy');
   assert.equal(policy.deviceIdleLockMs('/portal/contractor/jobs/123'), 10 * 60 * 1000);
   assert.equal(policy.deviceIdleLockMs('/payments'), 5 * 60 * 1000);
-  assert.equal(policy.sessionIdleTimeoutMs(), 15 * 60 * 1000);
-  assert.equal(policy.sessionAbsoluteTimeoutMs(), 12 * 60 * 60 * 1000);
+  assert.equal(policy.sessionIdleTimeoutMs(), 8 * 60 * 60 * 1000);
+  assert.equal(policy.sessionAbsoluteTimeoutMs(), 7 * 24 * 60 * 60 * 1000);
   assert.equal(policy.SYSTEM_HANDOFF_GRACE_MS, 90 * 1000);
 });
 
