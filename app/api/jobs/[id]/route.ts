@@ -212,8 +212,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   const nextStatus = String(payload.status ?? existing.status ?? '').toLowerCase();
   const cancelledChanged = ['cancelled','canceled'].includes(nextStatus) && !['cancelled','canceled'].includes(previousStatus);
 
-  const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id).eq('organization_id', ctx.workspace.organizationId);
+  // Authorization has already been checked above. Perform the scoped write on the
+  // server and verify that the target row was actually updated so RLS cannot turn a
+  // save into a silent no-op.
+  const writeClient = createAdminSupabase() || ctx.supabase;
+  const { data: savedJob, error } = await writeClient
+    .from('jobs')
+    .update(payload)
+    .eq('id', id)
+    .eq('organization_id', ctx.workspace.organizationId)
+    .select('id')
+    .maybeSingle();
   if (error) return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  if (!savedJob?.id) return NextResponse.json({ error: 'Job changes were not saved. Refresh the page and try again.' }, { status: 409 });
 
   if (scheduleChanged) {
     const admin = createAdminSupabase();
