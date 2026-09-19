@@ -138,16 +138,12 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
     scheduleIdleTimers();
     void touchSession();
   }, [scheduleIdleTimers, touchSession]);
-  const checkIdleBeforeResume = useCallback(() => {
-    const persisted = readLastActivity();
-    lastActivityRef.current = persisted;
-    if (Date.now() - persisted >= sessionIdleTimeoutMs()) {
-      void signOutToLogin('idle', 'You were signed out after a period of inactivity. Sign in again to continue.');
-      return false;
-    }
-    scheduleIdleTimers();
-    return true;
-  }, [scheduleIdleTimers]);
+  const resumeActiveSession = useCallback(() => {
+    // The server's session cookie is authoritative for expiry. Do not force a logout
+    // from a stale localStorage timestamp after reload, sleep, browser restore, or
+    // another tab being active.
+    recordActivity();
+  }, [recordActivity]);
   const handleStaySignedIn = useCallback(() => {
     recordActivity();
   }, [recordActivity]);
@@ -168,14 +164,7 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
         return;
       }
       if (cancelled) return;
-      let hasPersistedActivity = false;
-      try {
-        hasPersistedActivity = Boolean(window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY));
-      } catch {
-        /* Continue with the current in-memory activity time when storage is blocked. */
-      }
-      if (hasPersistedActivity && !checkIdleBeforeResume()) return;
-      recordActivity();
+      resumeActiveSession();
     }
     void initializeIdleSession();
 
@@ -188,10 +177,10 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
       recordActivity();
     };
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && readTabSessionId() && checkIdleBeforeResume()) recordActivity();
+      if (document.visibilityState === 'visible' && readTabSessionId()) resumeActiveSession();
     };
     const onPageShow = () => {
-      if (readTabSessionId() && checkIdleBeforeResume()) recordActivity();
+      if (readTabSessionId()) resumeActiveSession();
     };
     ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity, { passive: true }));
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -204,7 +193,7 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
       clearTimers();
       closeWarning();
     };
-  }, [pathname, recordActivity, clearTimers, closeWarning, checkIdleBeforeResume]);
+  }, [pathname, recordActivity, clearTimers, closeWarning, resumeActiveSession]);
 
   return (
     <>
