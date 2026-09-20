@@ -1,6 +1,8 @@
 /**
  * Google Play Developer API purchase verification.
- * Service-account JSON must remain server-only (env GOOGLE_PLAY_SERVICE_ACCOUNT_JSON).
+ * Production prefers Vercel OIDC -> Google Workload Identity Federation so no
+ * long-lived Google service-account private key is stored in Vercel.
+ * GOOGLE_PLAY_SERVICE_ACCOUNT_JSON remains as an optional legacy/local fallback.
  */
 import { createSign, createPrivateKey } from 'node:crypto';
 import {
@@ -43,7 +45,87 @@ function loadServiceAccount(): ServiceAccount | null {
   }
 }
 
-async function getGoogleAccessToken(): Promise<string> {
+type GoogleAuthInput = {
+  oidcToken?: string | null;
+};
+
+function workloadIdentityConfig(): {
+  projectNumber: string;
+  poolId: string;
+  providerId: string;
+  serviceAccountEmail: string;
+} | null {
+  const projectNumber = (process.env.GCP_PROJECT_NUMBER || '').trim();
+  const poolId = (process.env.GCP_WORKLOAD_IDENTITY_POOL_ID || '').trim();
+  const providerId = (process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID || '').trim();
+  const serviceAccountEmail = (process.env.GCP_SERVICE_ACCOUNT_EMAIL || '').trim();
+
+  if (!projectNumber || !poolId || !providerId || !serviceAccountEmail) return null;
+  return { projectNumber, poolId, providerId, serviceAccountEmail };
+}
+
+async function getWorkloadIdentityAccessToken(oidcToken: string): Promise<string> {
+  const config = workloadIdentityConfig();
+  if (!config) {
+    throw new Error('Google Workload Identity Federation is not fully configured.');
+  }
+
+  const audience =
+    `//iam.googleapis.com/projects/${config.projectNumber}/locations/global/workloadIdentityPools/${config.poolId}/providers/${config.providerId}`;
+
+  const stsRes = await fetch('https://sts.googleapis.com/v1/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audience,
+      grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
+      subjectToken: oidcToken
+    }),
+    cache: 'no-store'
+  });
+
+  if (!stsRes.ok) {
+    throw new Error('Unable to exchange Vercel OIDC token with Google STS.');
+  }
+
+  const sts = (await stsRes.json()) as { access_token?: string };
+  if (!sts.access_token) {
+    throw new Error('Google STS access token missing.');
+  }
+
+  const impersonationUrl =
+    `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(config.serviceAccountEmail)}:generateAccessToken`;
+
+  const impersonationRes = await fetch(impersonationUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sts.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      delegates: [],
+      scope: ['https://www.googleapis.com/auth/androidpublisher'],
+      lifetime: '3600s'
+    }),
+    cache: 'no-store'
+  });
+
+  if (!impersonationRes.ok) {
+    throw new Error('Unable to impersonate Google Play service account.');
+  }
+
+  const impersonated = (await impersonationRes.json()) as { accessToken?: string };
+  if (!impersonated.accessToken) {
+    throw new Error('Google service-account access token missing.');
+  }
+
+  return impersonated.accessToken;
+}
+
+async function getLegacyServiceAccountAccessToken(): Promise<string> {
   const sa = loadServiceAccount();
   if (!sa) throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not configured.');
 
@@ -82,6 +164,25 @@ async function getGoogleAccessToken(): Promise<string> {
   return json.access_token;
 }
 
+async function getGoogleAccessToken(input: GoogleAuthInput = {}): Promise<string> {
+  const oidcToken = (input.oidcToken || process.env.VERCEL_OIDC_TOKEN || '').trim();
+  if (oidcToken && workloadIdentityConfig()) {
+    return getWorkloadIdentityAccessToken(oidcToken);
+  }
+
+  if (loadServiceAccount()) {
+    return getLegacyServiceAccountAccessToken();
+  }
+
+  if (workloadIdentityConfig() && !oidcToken) {
+    throw new Error('Vercel OIDC token is unavailable for Google Workload Identity Federation.');
+  }
+
+  throw new Error(
+    'Google Play authentication is not configured. Configure Workload Identity Federation or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON.'
+  );
+}
+
 function msToIso(ms: string | number | undefined | null): string | null {
   if (ms === undefined || ms === null || ms === '') return null;
   const n = typeof ms === 'string' ? Number(ms) : ms;
@@ -115,6 +216,7 @@ function mapGoogleSubscriptionState(raw: Record<string, unknown>): SubscriptionS
 export async function verifyGooglePlaySubscription(input: {
   productId: string;
   purchaseToken: string;
+  oidcToken?: string | null;
 }): Promise<GoogleVerifiedPurchase> {
   const productId = input.productId.trim();
   const purchaseToken = input.purchaseToken.trim();
@@ -128,7 +230,7 @@ export async function verifyGooglePlaySubscription(input: {
   }
 
   const packageName = googlePlayPackageName();
-  const token = await getGoogleAccessToken();
+  const token = await getGoogleAccessToken({ oidcToken: input.oidcToken });
 
   // Prefer subscriptions v2 (token-based); fall back to v1 product endpoint.
   const v2Url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(
@@ -206,9 +308,10 @@ export async function verifyGooglePlaySubscription(input: {
 export async function acknowledgeGooglePlaySubscription(input: {
   productId: string;
   purchaseToken: string;
+  oidcToken?: string | null;
 }): Promise<void> {
   const packageName = googlePlayPackageName();
-  const token = await getGoogleAccessToken();
+  const token = await getGoogleAccessToken({ oidcToken: input.oidcToken });
   const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(
     packageName
   )}/purchases/subscriptions/${encodeURIComponent(input.productId)}/tokens/${encodeURIComponent(
