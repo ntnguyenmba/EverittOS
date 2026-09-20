@@ -52,6 +52,9 @@ export async function POST(request: Request) {
 
   const orgContext = await fetchOrganizationContextForUser(supabase, user.id);
   const organizationId = (body.organizationId || profile?.organization_id || orgContext?.organizationId || '').trim();
+  if (profile?.organization_id && body.organizationId && body.organizationId !== profile.organization_id) {
+    return NextResponse.json({ error: 'Organization mismatch.' }, { status: 403 });
+  }
   if (!organizationId) {
     return NextResponse.json({ error: 'Organization is required.' }, { status: 400 });
   }
