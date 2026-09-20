@@ -15,6 +15,7 @@ const manager = read('android/app/src/main/java/com/everittventures/everittos/bi
 const mainActivity = read('android/app/src/main/java/com/everittventures/everittos/MainActivity.java');
 const gradle = read('android/app/build.gradle');
 const verifyRoute = read('app/api/billing/google/verify/route.ts');
+const googleVerify = read('lib/billing/google-verify.ts');
 
 for (const id of ['everittos_pro', 'everittos_business', 'everittos_starter', 'everittos_growth', 'everittos_enterprise']) {
   assert.match(catalog, new RegExp(id));
@@ -49,6 +50,11 @@ assert.match(verifyRoute, /upsertGoogleSubscription/);
 assert.match(verifyRoute, /acknowledgeGooglePlaySubscription/);
 assert.match(verifyRoute, /claimBillingEvent/);
 assert.match(verifyRoute, /verified\.status === 'pending'/);
+assert.match(googleVerify, /VERCEL_OIDC_TOKEN/);
+assert.match(googleVerify, /workloadIdentityConfig/);
+assert.match(googleVerify, /sts\.googleapis\.com\/v1\/token/);
+assert.match(googleVerify, /iamcredentials\.googleapis\.com/);
+assert.match(googleVerify, /androidpublisher/);
 assert.doesNotMatch(nativePurchase, /RevenueCat|Purchases\.configure|@revenuecat/i);
 
 console.log('EverittOS Google Play Billing checks passed');
