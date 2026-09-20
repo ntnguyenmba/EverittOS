@@ -24,37 +24,30 @@ function isClosedJob(job: SortableJob) {
   return ['completed', 'finished', 'cancelled', 'canceled'].includes(normalizedStatus(job));
 }
 
-function attentionScore(job: SortableJob): number {
-  if (isClosedJob(job)) return 100;
-
-  let score = 0;
-  const status = normalizedStatus(job);
-  const hasWorker = Boolean(job.assigned_to || job.assigned_email);
-  const hasSchedule = Boolean(job.scheduled_start || job.start_date || job.due_date);
-
-  if (!hasWorker) score -= 30;
-  if (!hasSchedule) score -= 20;
-  if (status === 'new') score -= 10;
-  if (status === 'active' || status === 'in_progress') score -= 5;
-
-  return score;
-}
-
 export function compareJobsByDate(a: SortableJob, b: SortableJob): number {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const aValue = jobDateValue(a);
   const bValue = jobDateValue(b);
-  if (!aValue && !bValue) return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+
+  if (!aValue && !bValue) {
+    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+  }
   if (!aValue) return 1;
   if (!bValue) return -1;
+
   const aDate = aValue.slice(0, 10);
   const bDate = bValue.slice(0, 10);
   const aUpcoming = aDate >= todayKey;
   const bUpcoming = bDate >= todayKey;
+
+  // Upcoming work comes first, nearest date first.
+  // Overdue work follows, with the most recently overdue first.
   if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+
   const byDate = aUpcoming ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
   if (byDate !== 0) return byDate;
+
   return String(b.created_at || '').localeCompare(String(a.created_at || ''));
 }
 
@@ -84,8 +77,12 @@ export function sortJobs<T extends SortableJob>(
       return compareJobsByDate(a, b);
     }
 
-    const attentionDifference = attentionScore(a) - attentionScore(b);
-    if (attentionDifference !== 0) return attentionDifference;
+    const aClosed = isClosedJob(a);
+    const bClosed = isClosedJob(b);
+
+    // In the default All jobs view, all open work is shown before completed/cancelled work.
+    if (aClosed !== bClosed) return aClosed ? 1 : -1;
+
     return compareJobsByDate(a, b);
   });
 }
