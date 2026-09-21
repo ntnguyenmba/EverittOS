@@ -177,3 +177,31 @@
     grid-row: auto;
   }
 }
+
+
+/* Public quote uses the same centralized EverittOS tokens and primitives. */
+.eo-public-quote {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(var(--eo-space-5), env(safe-area-inset-top)) var(--eo-space-4) max(var(--eo-space-5), env(safe-area-inset-bottom));
+  background: var(--eo-color-page);
+  color: var(--eo-color-text);
+}
+.eo-public-quote-card { width: min(100%, 620px); }
+.eo-public-quote-brand { color: var(--eo-color-brand); font-weight: 800; letter-spacing: -0.02em; }
+.eo-public-quote-kicker { margin-top: var(--eo-space-6); color: var(--eo-color-muted); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.eo-public-quote-card h1 { margin: var(--eo-space-2) 0 0; font-size: clamp(26px, 7vw, 38px); line-height: 1.1; }
+.eo-public-quote-customer { margin: var(--eo-space-3) 0 0; color: var(--eo-color-text-secondary); }
+.eo-public-quote-price { margin: var(--eo-space-6) 0; font-size: clamp(36px, 10vw, 54px); line-height: 1; font-weight: 800; letter-spacing: -0.04em; color: var(--eo-color-text); }
+.eo-public-quote-note, .eo-public-quote-meta { padding-top: var(--eo-space-4); border-top: 1px solid var(--eo-color-border); }
+.eo-public-quote-note span, .eo-public-quote-meta span { display: block; color: var(--eo-color-muted); font-size: 13px; font-weight: 700; }
+.eo-public-quote-note p { margin: var(--eo-space-2) 0 var(--eo-space-4); color: var(--eo-color-text-secondary); }
+.eo-public-quote-meta { display: flex; justify-content: space-between; gap: var(--eo-space-4); padding-bottom: var(--eo-space-4); }
+.eo-public-quote-status { margin: var(--eo-space-4) 0; }
+.eo-public-quote-feedback, .eo-public-quote-change { color: var(--eo-color-text-secondary); font-size: 14px; }
+.eo-public-quote-actions { margin-top: var(--eo-space-5); }
+@media (max-width: 520px) {
+  .eo-public-quote { place-items: start center; padding-inline: var(--eo-space-3); }
+  .eo-public-quote-card { padding: var(--eo-space-4); }
+}
