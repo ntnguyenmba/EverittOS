@@ -164,7 +164,7 @@ async function getLegacyServiceAccountAccessToken(): Promise<string> {
   return json.access_token;
 }
 
-async function getGoogleAccessToken(input: GoogleAuthInput = {}): Promise<string> {
+export async function getGooglePublisherAccessToken(input: GoogleAuthInput = {}): Promise<string> {
   const oidcToken = (input.oidcToken || process.env.VERCEL_OIDC_TOKEN || '').trim();
   if (oidcToken && workloadIdentityConfig()) {
     return getWorkloadIdentityAccessToken(oidcToken);
@@ -230,7 +230,7 @@ export async function verifyGooglePlaySubscription(input: {
   }
 
   const packageName = googlePlayPackageName();
-  const token = await getGoogleAccessToken({ oidcToken: input.oidcToken });
+  const token = await getGooglePublisherAccessToken({ oidcToken: input.oidcToken });
 
   // Prefer subscriptions v2 (token-based); fall back to v1 product endpoint.
   const v2Url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(
@@ -311,7 +311,7 @@ export async function acknowledgeGooglePlaySubscription(input: {
   oidcToken?: string | null;
 }): Promise<void> {
   const packageName = googlePlayPackageName();
-  const token = await getGoogleAccessToken({ oidcToken: input.oidcToken });
+  const token = await getGooglePublisherAccessToken({ oidcToken: input.oidcToken });
   const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(
     packageName
   )}/purchases/subscriptions/${encodeURIComponent(input.productId)}/tokens/${encodeURIComponent(
