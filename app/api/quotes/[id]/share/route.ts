@@ -5,6 +5,8 @@ import { isAdminRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { meetsMinimumPlan } from '@/lib/plan-access';
 import { normalizeLocale } from '@/lib/i18n/config';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
 import { getQuoteShareCopy, fillQuoteCopy } from '@/lib/i18n/quote-share-copy';
 import { absoluteQuoteUrl, formatQuoteMoney, safeHtml } from '@/lib/quote-sharing';
 import { sendTransactionalEmail } from '@/lib/email-provider';
@@ -17,9 +19,10 @@ function canUseQuotes(role: string | null | undefined) {
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const apiCopy=getResourceApiCopy(localeFromRequest(request));
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
-  if (!canUseQuotes(ctx.workspace.role)) return NextResponse.json({ error: 'Permission denied', code: 'permission_denied' }, { status: 403 });
+  if (!canUseQuotes(ctx.workspace.role)) return NextResponse.json({ error: apiCopy.permissionDenied, code: 'permission_denied' }, { status: 403 });
 
   const resolved = await resolveOrganizationPlan(ctx.supabase, ctx.userId, ctx.workspace.organizationId);
   if (!meetsMinimumPlan(resolved.plan, 'pro')) {
