@@ -4,11 +4,14 @@ import { workspaceScopedFields } from '@/lib/workspace-server';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { localeFromRequest } from '@/lib/i18n/server-request-locale';
+import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const c = getResourceApiCopy(localeFromRequest(request));
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
 
@@ -21,7 +24,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     .maybeSingle();
 
   if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 400 });
-  if (!quote) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
+  if (!quote) return NextResponse.json({ error: c.loadQuotes }, { status: 404 });
 
   if (quote.job_id) {
     return NextResponse.json({ ok: true, job: { id: quote.job_id }, reused: true });
@@ -29,7 +32,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
   const planCheck = await enforcePlanForUser(ctx.supabase, ctx.userId, 'jobs');
   if (!planCheck.allowed) {
-    return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
+    return NextResponse.json({ error: planCheck.message || c.permissionDenied }, { status: 403 });
   }
 
   const insert = {
@@ -66,9 +69,9 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
   if (jobError || !job) {
     if (jobError && isMissingSchemaError(jobError)) {
-      return NextResponse.json({ error: 'Quote-to-job fields are not ready yet.', code: 'schema_update_required' }, { status: 409 });
+      return NextResponse.json({ error: c.quoteSchema, code: 'schema_update_required' }, { status: 409 });
     }
-    return NextResponse.json({ error: jobError?.message || 'Could not create job.' }, { status: 400 });
+    return NextResponse.json({ error: jobError?.message || c.loadQuotes }, { status: 400 });
   }
 
   const now = new Date().toISOString();
@@ -80,7 +83,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
   if (updateError) {
     await ctx.supabase.from('jobs').delete().eq('id', job.id).eq('organization_id', ctx.workspace.organizationId);
-    return NextResponse.json({ error: 'Could not finish quote conversion.' }, { status: 400 });
+    return NextResponse.json({ error: c.loadQuotes }, { status: 400 });
   }
 
   await logWorkspaceActivity(
