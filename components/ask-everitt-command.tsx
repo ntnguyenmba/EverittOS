@@ -634,7 +634,7 @@ function CommandOverlay({
 
         <p className="everitt-cmd-tagline muted">{searchOnly ? searchTagline : copy.tagline}</p>
 
-        {!query && !lastMode ? (
+        {!searchOnly && !query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
             <p className="everitt-cmd-section-label">{copy.tryAsking}</p>
             {visibleSuggestions.map((s) => (
@@ -647,7 +647,7 @@ function CommandOverlay({
                     if (askAccess.shouldShowAiUpsell) setUpgradeOpen(true);
                     return;
                   }
-                  void submitAsk(s.prompt, searchOnly ? 'search' : s.mode);
+                  void submitAsk(s.prompt, s.mode);
                 }}
               >
                 {s.label}
@@ -694,7 +694,7 @@ function CommandOverlay({
           <div className="everitt-cmd-search-answer">
             <p className="everitt-cmd-summary">{searchSummary}</p>
             {searchHint ? <p className="muted everitt-cmd-hint">{searchHint}</p> : null}
-            {searchSuggestions.length > 0 ? (
+            {!searchOnly && searchSuggestions.length > 0 ? (
               <div className="everitt-cmd-suggestions everitt-cmd-smart-suggestions">
                 <p className="everitt-cmd-section-label">{copy.tryAsking}</p>
                 {searchSuggestions.map((suggestion) => (
