@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { EverittosPlan } from '@/lib/everittos-plans';
-import { isClientRole, normalizeRole } from '@/lib/roles';
+import { normalizeRole } from '@/lib/roles';
 import {
   FREE_PLAN_SEARCH_DAILY_LIMIT,
   getDailySearchCount,
@@ -9,7 +9,7 @@ import {
 
 export type AskEverittSearchAccessResult =
   | { ok: true }
-  | { ok: false; code: 'no_organization' | 'client_forbidden' | 'search_daily_limit'; message: string };
+  | { ok: false; code: 'no_organization' | 'search_daily_limit'; message: string };
 
 export async function assertAskEverittSearchAccess(
   admin: SupabaseClient,
@@ -23,9 +23,7 @@ export async function assertAskEverittSearchAccess(
   }
 
   const role = normalizeRole(roleInput);
-  if (isClientRole(role)) {
-    return { ok: false, code: 'client_forbidden', message: 'Client accounts cannot use Ask Everitt.' };
-  }
+  void role;
 
   if (plan === 'free') {
     const used = await getDailySearchCount(admin, userId);
