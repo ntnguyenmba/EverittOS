@@ -15,6 +15,11 @@ Last verified on branch `main` after the financial dashboard and mobile subscrip
 | iOS Xcode compile | Requires macOS + Xcode |
 | Android `assembleDebug` | Requires Android SDK |
 
+## Current mobile versions in the repo
+
+- iOS Capacitor target: `1.0.12` build `13`. `Info.plist` reads Xcode `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`, so update Version and Build in the Xcode target before the next upload.
+- Android Capacitor target: `1.0.15` / `versionCode 16`. Increase both in `android/app/build.gradle` before the next Play upload.
+
 ## Database migrations to apply
 
 1. `supabase/migrations/202609100001_store_billing_subscriptions.sql` (store entitlements)
