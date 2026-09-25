@@ -1767,27 +1767,3 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
 ) {
   text-align: left !important;
 }
-
-
-/* Shared signed-in horizontal alignment authority.
-   Only outer geometry lives here: page width and gutters stay token-driven,
-   while route-specific spacing, card padding, typography and controls remain untouched. */
-body :is(.dashboard-shell, .role-portal-shell) > .main > .app-page-content,
-body :is(.dashboard-shell, .role-portal-shell) > .main > .app-footer {
-  width: min(100%, var(--eo-page-max)) !important;
-  margin-inline: auto !important;
-  box-sizing: border-box !important;
-}
-
-body :is(.dashboard-shell, .role-portal-shell) .app-page-content > :is(
-  .everitt-cmd-trigger,
-  .ask-everitt,
-  .ask-everitt-command,
-  .app-page-stage
-),
-body :is(.dashboard-shell, .role-portal-shell) .app-page-stage > .app-role-banner {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin-inline: 0 !important;
-  box-sizing: border-box !important;
-}
