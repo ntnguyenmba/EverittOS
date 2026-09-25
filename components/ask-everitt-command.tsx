@@ -255,14 +255,15 @@ type SearchResponse = {
 };
 
 type AiResponse = { mode: 'ai'; reply: string; action?: ProposedAiAction | null };
-type AskEverittCommandProps = { plan?: EverittosPlan | string | null; embedded?: boolean };
+type AskEverittCommandProps = { plan?: EverittosPlan | string | null; embedded?: boolean; showTrigger?: boolean };
 
-export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEverittCommandProps) {
+export function AskEverittCommand({ plan: _planProp, embedded = false, showTrigger = true }: AskEverittCommandProps) {
   const router = useRouter();
   const { locale } = useTranslation();
   const askLocale = normalizeAskLocale(locale);
   const copy = COPY[askLocale];
   const [open, setOpen] = useState(false);
+  const [searchOnly, setSearchOnly] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchSummary, setSearchSummary] = useState('');
@@ -335,6 +336,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
   }, [open, loadStatus]);
 
   const openCommand = useCallback(() => {
+    setSearchOnly(false);
     setOpen(true);
     setNotice('');
     setAiReply('');
@@ -365,6 +367,25 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [openCommand]);
 
+  useEffect(() => {
+    function openSearch() {
+      setSearchOnly(true);
+      setOpen(true);
+      setNotice('');
+      setAiReply('');
+      setSearchSummary('');
+      setSearchResults([]);
+      setSearchGroups([]);
+      setSearchMetrics([]);
+      setSearchHint(null);
+      setSearchSuggestions([]);
+      setPendingAction(null);
+      setLastMode(null);
+    }
+    window.addEventListener('everittos:open-search', openSearch);
+    return () => window.removeEventListener('everittos:open-search', openSearch);
+  }, []);
+
   async function submitAsk(text?: string, forceMode?: 'search' | 'ai') {
     const value = (text ?? query).trim();
     if (!value || busy) return;
@@ -383,7 +404,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     const res = await fetch('/api/ask-everitt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: value, forceMode, locale: askLocale })
+      body: JSON.stringify({ prompt: value, forceMode: searchOnly ? 'search' : forceMode, locale: askLocale })
     });
     const json = await res.json();
     setBusy(false);
@@ -475,6 +496,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
       askAccess={askAccess}
       onClose={() => setOpen(false)}
       copy={copy}
+      searchOnly={searchOnly}
     />
   ) : null;
 
@@ -490,7 +512,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
         </div>
         <p className="muted">{copy.embeddedDescription}</p>
         <button type="button" className="btn btn-primary" onClick={openCommand}>{copy.embeddedButton}</button>
-        {askAccess.shouldShowAiUpsell ? (
+        {!searchOnly && askAccess.shouldShowAiUpsell ? (
           <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
         ) : null}
         {overlay}
@@ -500,10 +522,12 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
 
   return (
     <>
-      <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label={copy.title}>
-        <span className="everitt-cmd-placeholder">{copy.trigger}</span>
-        {kbd ? <span className="everitt-cmd-kbd">{kbd}</span> : null}
-      </button>
+      {showTrigger ? (
+        <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label={copy.title}>
+          <span className="everitt-cmd-placeholder">{copy.trigger}</span>
+          {kbd ? <span className="everitt-cmd-kbd">{kbd}</span> : null}
+        </button>
+      ) : null}
       {overlay}
       {askAccess.shouldShowAiUpsell ? (
         <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
@@ -538,6 +562,7 @@ type OverlayProps = {
   askAccess: AskEverittUiAccess;
   onClose: () => void;
   copy: AskCopy;
+  searchOnly: boolean;
 };
 
 function CommandOverlay({
@@ -565,11 +590,18 @@ function CommandOverlay({
   setUpgradeOpen,
   askAccess,
   onClose,
-  copy
+  copy,
+  searchOnly
 }: OverlayProps) {
-  const visibleSuggestions = askAccess.shouldShowAiSuggestions
-    ? copy.suggestions
-    : copy.suggestions.filter((s) => s.mode !== 'ai');
+  const visibleSuggestions = searchOnly
+    ? copy.suggestions.filter((s) => s.mode !== 'ai')
+    : askAccess.shouldShowAiSuggestions
+      ? copy.suggestions
+      : copy.suggestions.filter((s) => s.mode !== 'ai');
+
+  const searchTitle = copy === COPY.es ? 'Buscar' : copy === COPY.vi ? 'Tìm kiếm' : 'Search';
+  const searchPlaceholder = copy === COPY.es ? 'Buscar trabajos, clientes, equipo, facturas y más…' : copy === COPY.vi ? 'Tìm công việc, khách hàng, nhân sự, hóa đơn và hơn thế nữa…' : 'Search jobs, customers, team members, invoices, and more…';
+  const searchTagline = copy === COPY.es ? 'Solo muestra datos permitidos para su cuenta.' : copy === COPY.vi ? 'Chỉ hiển thị dữ liệu tài khoản của bạn được phép xem.' : 'Only shows data your account is allowed to see.';
 
   const touchControls = !kbd;
 
@@ -578,7 +610,7 @@ function CommandOverlay({
       <div
         className={touchControls ? 'everitt-cmd-palette everitt-cmd-palette-touch' : 'everitt-cmd-palette'}
         role="dialog"
-        aria-label={copy.title}
+        aria-label={searchOnly ? searchTitle : copy.title}
         onClick={(e) => e.stopPropagation()}
       >
         {touchControls ? (
@@ -590,17 +622,17 @@ function CommandOverlay({
           <input
             ref={inputRef}
             className="everitt-cmd-input"
-            placeholder={copy.placeholder}
+            placeholder={searchOnly ? searchPlaceholder : copy.placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void submitAsk();
+              if (e.key === 'Enter') void submitAsk(undefined, searchOnly ? 'search' : undefined);
             }}
           />
           {kbd ? <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span> : null}
         </div>
 
-        <p className="everitt-cmd-tagline muted">{copy.tagline}</p>
+        <p className="everitt-cmd-tagline muted">{searchOnly ? searchTagline : copy.tagline}</p>
 
         {!query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
@@ -615,7 +647,7 @@ function CommandOverlay({
                     if (askAccess.shouldShowAiUpsell) setUpgradeOpen(true);
                     return;
                   }
-                  void submitAsk(s.prompt, s.mode);
+                  void submitAsk(s.prompt, searchOnly ? 'search' : s.mode);
                 }}
               >
                 {s.label}
@@ -627,7 +659,7 @@ function CommandOverlay({
           </div>
         ) : null}
 
-        {status?.staffAi && askAccess.shouldShowAiControls ? (
+        {!searchOnly && status?.staffAi && askAccess.shouldShowAiControls ? (
           <p className="muted everitt-cmd-usage">
             {fill(copy.staffUsage, {
               dailyUsed: status.staffAi.dailyUsed,
@@ -636,20 +668,20 @@ function CommandOverlay({
               monthlyCap: status.staffAi.monthlyCap
             })}
           </p>
-        ) : status?.usage && askAccess.shouldShowAiControls ? (
+        ) : !searchOnly && status?.usage && askAccess.shouldShowAiControls ? (
           <p className="muted everitt-cmd-usage">
             {status.usage.unlimited ? copy.unlimited : fill(copy.monthlyUsage, { used: status.usage.monthlyUsed, cap: status.usage.monthlyCap })}
           </p>
         ) : null}
 
-        {status?.aiLocked && status.planLocked && askAccess.shouldShowAiUpsell ? (
+        {!searchOnly && status?.aiLocked && status.planLocked && askAccess.shouldShowAiUpsell ? (
           <p className="everitt-cmd-hint muted">
             {copy.aiLocked}{' '}
             <button type="button" className="link-button" onClick={() => setUpgradeOpen(true)}>{copy.viewPlans}</button>
           </p>
         ) : null}
 
-        {askAccess.isNative && !askAccess.canUseAi && !askAccess.canUseWorkspaceSearch ? (
+        {!searchOnly && askAccess.isNative && !askAccess.canUseAi && !askAccess.canUseWorkspaceSearch ? (
           <div className="everitt-cmd-hint">
             <p>{askAccess.unavailableMessage}</p>
             <button type="button" className="btn" onClick={onClose}>{copy.cancel || 'Close'}</button>
@@ -701,14 +733,14 @@ function CommandOverlay({
           </div>
         ) : null}
 
-        {aiReply && askAccess.shouldShowAiControls ? (
+        {!searchOnly && aiReply && askAccess.shouldShowAiControls ? (
           <div className="everitt-cmd-ai-block">
             <p className="everitt-cmd-section-label">Everitt AI</p>
             <div className="everitt-cmd-reply">{aiReply}</div>
           </div>
         ) : null}
 
-        {pendingAction && askAccess.shouldShowAiControls ? (
+        {!searchOnly && pendingAction && askAccess.shouldShowAiControls ? (
           <div className="everitt-cmd-action">
             <p><strong>{copy.confirmAction}</strong> {pendingAction.label}</p>
             <div className="settings-actions">
@@ -721,7 +753,11 @@ function CommandOverlay({
         ) : null}
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
-        {askAccess.shouldShowAiUpsell ? (
+        {searchOnly ? (
+          <p className="muted everitt-cmd-footer">
+            {searchTagline}{kbd ? ` · ${copy.escapeHint}` : null}
+          </p>
+        ) : askAccess.shouldShowAiUpsell ? (
           <p className="muted everitt-cmd-footer">
             {copy.footerPrefix}
             {kbd ? ` ${copy.escapeHint} ·` : null}{' '}
