@@ -7,8 +7,7 @@ import { ClientSendMessage } from '@/components/client-send-message';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PhotoGallery } from '@/components/photo-gallery';
-import { PortalClientNav } from '@/components/portal/portal-client-nav';
-import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
+import { RoleHomeCard } from '@/components/role-home-card';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
 import { isClientRole, normalizeRole } from '@/lib/roles';
@@ -34,15 +33,15 @@ type ClientJob = {
 
 const copy = {
   en: {
-    nextVisit: 'Next visit', upcoming: 'Upcoming visits', completed: 'Past visits', noUpcoming: 'No appointments yet.', noCompleted: 'No completed appointments yet.', balanceDue: 'Balance due', dateNotSet: 'Schedule pending', viewVisit: 'View visit', photos: 'Visit photos', more: 'More', exportHistory: 'Export visit history',
+    appointmentsTitle: 'Your appointments', nextVisit: 'Next visit', upcoming: 'Upcoming visits', completed: 'Past visits', noUpcoming: 'No appointments yet.', noCompleted: 'No completed appointments yet.', balanceDue: 'Balance due', dateNotSet: 'Schedule pending', viewVisit: 'View visit', photos: 'Visit photos', more: 'More', exportHistory: 'Export visit history',
     statuses: { scheduled: 'scheduled', completed: 'completed', complete: 'completed', finished: 'completed', done: 'completed', cancelled: 'cancelled', canceled: 'cancelled' }
   },
   es: {
-    nextVisit: 'Próxima visita', upcoming: 'Próximas visitas', completed: 'Visitas anteriores', noUpcoming: 'Aún no hay citas.', noCompleted: 'Aún no hay citas terminadas.', balanceDue: 'Saldo pendiente', dateNotSet: 'Horario pendiente', viewVisit: 'Ver visita', photos: 'Fotos de la visita', more: 'Más', exportHistory: 'Exportar historial de visitas',
+    appointmentsTitle: 'Tus citas', nextVisit: 'Próxima visita', upcoming: 'Próximas visitas', completed: 'Visitas anteriores', noUpcoming: 'Aún no hay citas.', noCompleted: 'Aún no hay citas terminadas.', balanceDue: 'Saldo pendiente', dateNotSet: 'Horario pendiente', viewVisit: 'Ver visita', photos: 'Fotos de la visita', more: 'Más', exportHistory: 'Exportar historial de visitas',
     statuses: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', finished: 'terminado', done: 'terminado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
-    nextVisit: 'Lịch hẹn tiếp theo', upcoming: 'Lịch hẹn sắp tới', completed: 'Lịch hẹn trước', noUpcoming: 'Chưa có lịch hẹn.', noCompleted: 'Chưa có lịch hẹn đã hoàn thành.', balanceDue: 'Số còn lại', dateNotSet: 'Lịch đang chờ', viewVisit: 'Xem lịch hẹn', photos: 'Ảnh lịch hẹn', more: 'Thêm', exportHistory: 'Xuất lịch sử lịch hẹn',
+    appointmentsTitle: 'Lịch hẹn của bạn', nextVisit: 'Lịch hẹn tiếp theo', upcoming: 'Lịch hẹn sắp tới', completed: 'Lịch hẹn trước', noUpcoming: 'Chưa có lịch hẹn.', noCompleted: 'Chưa có lịch hẹn đã hoàn thành.', balanceDue: 'Số còn lại', dateNotSet: 'Lịch đang chờ', viewVisit: 'Xem lịch hẹn', photos: 'Ảnh lịch hẹn', more: 'Thêm', exportHistory: 'Xuất lịch sử lịch hẹn',
     statuses: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', finished: 'đã xong', done: 'đã xong', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
 } as const;
@@ -165,20 +164,19 @@ export default function ClientPortalJobsPage() {
 
   return (
     <div className="client-portal-jobs role-dashboard-minimal">
-      <PortalClientNav active="appointments" overviewHref={CLIENT_PORTAL_HOME} appointmentsHref={clientPortalJobsPath()} accountHref={CLIENT_SETTINGS_PATH} />
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
-      {empty ? <div className="card client-empty-state" role="status"><p>{c.noUpcoming}</p></div> : message ? <div className="card" role="alert"><p>{message}</p></div> : <>
+      {empty ? <RoleHomeCard className="client-empty-state" title={c.appointmentsTitle} subtitle={c.noUpcoming} /> : message ? <div className="card" role="alert"><p>{message}</p></div> : <>
         {messageJob ? <ClientSendMessage jobId={messageJob.id} /> : null}
-        {nextVisit ? <section className="client-next-visit client-next-visit-paper">
+        {nextVisit ? <RoleHomeCard className="client-next-visit client-next-visit-paper" title={c.appointmentsTitle}>
           <div className="client-next-visit-copy eo-upcoming-content">
-            <p className="eyebrow">{c.nextVisit}</p><h1>{nextVisit.title}</h1>
+            <p className="eyebrow">{c.nextVisit}</p><h2>{nextVisit.title}</h2>
             <p className="client-next-visit-time">{[jobDate(nextVisit, localeCode), jobTime(nextVisit, localeCode)].filter(Boolean).join(' · ') || c.dateNotSet}</p>
             {nextVisit.address ? <p className="muted">{nextVisit.address}</p> : null}
             {Number(nextVisit.balanceDue || 0) > 0 ? <p className="client-next-balance"><span>{c.balanceDue}</span><strong>{formatMoney(nextVisit.balanceDue, localeCode)}</strong></p> : null}
             <Link className="btn btn-primary eo-upcoming-actions" href={clientPortalJobsPath(nextVisit.id)}>{c.viewVisit}</Link>
           </div>
           <div className="client-next-visit-photos"><h2>{c.photos}</h2><PhotoGallery jobId={nextVisit.id} refreshKey={0} canView customerOnly /></div>
-        </section> : null}
+        </RoleHomeCard> : null}
         {upcomingVisits.length > 0 ? <section className="client-upcoming-simple" aria-labelledby="client-upcoming-title"><div className="client-section-heading"><h2 id="client-upcoming-title">{c.upcoming}</h2><span>{upcomingVisits.length}</span></div><div className="client-job-card-list">{upcomingVisits.map(renderVisit)}</div></section> : null}
         <details className="card client-more"><summary><strong>{c.more}</strong></summary><div className="client-more-body"><section aria-labelledby="client-history-title"><div className="client-section-heading"><h2 id="client-history-title">{c.completed}</h2><span>{pastVisits.length}</span></div>{pastVisits.length === 0 ? <p className="muted">{c.noCompleted}</p> : <div className="client-job-card-list">{pastVisits.map(renderVisit)}</div>}</section><div className="client-export-row"><span>{c.exportHistory}</span><ExportMenu endpoint="/api/exports/portal/client/jobs" locale={locale} labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }} disabled={loading || Boolean(message) || empty} onError={(error) => setExportError(error || exportCopy.exportFailed)} onSuccess={() => setExportError('')} /></div></div></details>
       </>}
