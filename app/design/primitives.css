@@ -224,8 +224,8 @@ body:has(main.eo-document) .eo-backdrop {
 .eo-btn {
   min-width: 0;
   max-width: 100%;
-  min-height: var(--eo-tap);
-  padding: 10px 14px;
+  min-height: var(--eo-control-height);
+  padding: 10px 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -237,6 +237,24 @@ body:has(main.eo-document) .eo-backdrop {
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  button:not(.unstyled-button):not(.icon-button):not(.menu-icon-button),
+  a.btn,
+  .btn,
+  .primary-button,
+  .secondary-button,
+  .ghost-button,
+  .danger-button
+) {
+  min-height: var(--eo-control-height);
+  height: auto;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
 .eo-btn-primary {
@@ -373,7 +391,7 @@ body:has(main.eo-document) .eo-backdrop {
   .modal-actions,
   .photo-capture-actions
 ) > :is(button, a.btn, .btn, .status, .status-pill, .status-badge, .badge) {
-  min-height: var(--eo-tap);
+  min-height: var(--eo-control-height);
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
