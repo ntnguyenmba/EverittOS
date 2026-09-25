@@ -13,7 +13,7 @@ import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OPTIONS, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
 import { fetchWithTimeout, requestFailureMessage } from '@/lib/fetch-with-timeout';
-import { formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
+import { expenseCategoryLabel, formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -28,8 +28,14 @@ type WorkerOption = { id: string; name: string };
 
 type ExpenseView = ExpenseRecord & { receipt_signed_url?: string | null };
 
+function localIsoDate(date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 const EMPTY_FORM = {
-  date: new Date().toISOString().slice(0, 10),
+  date: '',
   category: 'Other' as ExpenseCategory,
   vendor: '',
   description: '',
@@ -60,7 +66,7 @@ function ExpensesContent() {
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, date: localIsoDate() }));
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -94,11 +100,11 @@ function ExpensesContent() {
     const res = await fetch(`/api/expenses?${params.toString()}`);
     const json = await res.json();
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load expenses.');
+      appFeedback.error(json.error || copy.loadError);
       return;
     }
     setExpenses(json.expenses || []);
-  }, [appFeedback, filterCategory, filterCustomerId, filterFrom, filterJobId, filterSearch, filterTo, filterWorkerId]);
+  }, [appFeedback, copy.loadError, filterCategory, filterCustomerId, filterFrom, filterJobId, filterSearch, filterTo, filterWorkerId]);
 
   useEffect(() => {
     async function init() {
@@ -122,7 +128,7 @@ function ExpensesContent() {
         setLoading(false);
         if (userRole !== 'owner' && userRole !== 'admin') {
           setRoleDenied(true);
-          appFeedback.error('Your role cannot access expenses.');
+          appFeedback.error(copy.roleDenied);
         }
         return;
       }
@@ -149,7 +155,7 @@ function ExpensesContent() {
   }, [hasAccess, loadExpenses]);
 
   function resetForm() {
-    setForm({ ...EMPTY_FORM, job_id: filterJobId });
+    setForm({ ...EMPTY_FORM, date: localIsoDate(), job_id: filterJobId });
     setReceiptFile(null);
     setEditingId(null);
     setShowForm(false);
@@ -164,7 +170,7 @@ function ExpensesContent() {
 
   function startEdit(expense: ExpenseView) {
     if (expense.source === 'quickbooks') {
-      appFeedback.error('This expense is managed in QuickBooks and cannot be edited here.');
+      appFeedback.error(copy.quickbooksLocked);
       return;
     }
     setEditingId(expense.id);
@@ -215,7 +221,7 @@ function ExpensesContent() {
     if (saving) return;
     const amount = Number.parseFloat(form.amount);
     if (!Number.isFinite(amount) || amount === 0) {
-      appFeedback.error('Enter an amount other than zero. Use a negative amount for a refund or credit.');
+      appFeedback.error(copy.amountRequired);
       return;
     }
 
@@ -248,7 +254,7 @@ function ExpensesContent() {
 
       const json = (await res.json().catch(() => ({}))) as { expense?: { id?: string }; error?: string };
       if (!res.ok) {
-        appFeedback.error(json.error || 'Unable to save expense.');
+        appFeedback.error(json.error || copy.saveError);
         return;
       }
 
@@ -259,7 +265,7 @@ function ExpensesContent() {
         const receiptRes = await fetchWithTimeout(`/api/expenses/${expenseId}/receipt`, { method: 'POST', body: fd }, 30_000);
         if (!receiptRes.ok) {
           const receiptJson = (await receiptRes.json().catch(() => ({}))) as { error?: string };
-          appFeedback.error(receiptJson.error || 'Expense saved but receipt upload failed.');
+          appFeedback.error(receiptJson.error || copy.receiptError);
           resetForm();
           await loadExpenses();
           return;
@@ -271,7 +277,7 @@ function ExpensesContent() {
       resetForm();
       await loadExpenses();
     } catch (error) {
-      appFeedback.error(requestFailureMessage(error, 'Unable to save expense.'));
+      appFeedback.error(requestFailureMessage(error, copy.saveError));
     } finally {
       setSaving(false);
     }
@@ -285,7 +291,7 @@ function ExpensesContent() {
     const json = await res.json();
     setDeletingId(null);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to delete expense.');
+      appFeedback.error(json.error || copy.deleteError);
       return;
     }
     appFeedback.deleted();
@@ -297,10 +303,10 @@ function ExpensesContent() {
   if (roleDenied) {
     return (
       <AppShell plan={plan} role={role}>
-        <PageHeader title="Expenses" subtitle="Track business spending without full bookkeeping." />
+        <PageHeader title={copy.title} subtitle={copy.subtitle} />
         <div className="card plan-gate-card">
-          <h3>Expenses are limited to owners, admins, and managers</h3>
-          <p className="muted">Your workspace role cannot access business expenses, revenue, or profit tracking.</p>
+          <h3>{copy.roleGateTitle}</h3>
+          <p className="muted">{copy.roleGateBody}</p>
         </div>
       </AppShell>
     );
@@ -329,6 +335,9 @@ function ExpensesContent() {
         subtitle={copy.subtitle}
         action={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Link className="btn" href="/bookkeeping">
+              {copy.bookkeeping}
+            </Link>
             <ExportMenu
               endpoint="/api/exports/expenses"
               query={{
@@ -367,47 +376,47 @@ function ExpensesContent() {
 
       {showFilters ? (
         <div className="card finance-filter-panel">
-          <label>Search</label>
+          <label>{copy.search}</label>
           <input
             className="input"
-            placeholder="Vendor, description, or notes"
+            placeholder={copy.searchPlaceholder}
             value={filterSearch}
             onChange={(e) => setFilterSearch(e.target.value)}
           />
-          <label>From date</label>
+          <label>{copy.fromDate}</label>
           <input className="input" type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
-          <label>To date</label>
+          <label>{copy.toDate}</label>
           <input className="input" type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
-          <label>Category</label>
+          <label>{copy.category}</label>
           <select className="input" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-            <option value="">All categories</option>
+            <option value="">{copy.allCategories}</option>
             {EXPENSE_CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
-                {cat}
+                {expenseCategoryLabel(copy, cat)}
               </option>
             ))}
           </select>
-          <label>Job</label>
+          <label>{copy.job}</label>
           <select className="input" value={filterJobId} onChange={(e) => setFilterJobId(e.target.value)}>
-            <option value="">All jobs</option>
+            <option value="">{copy.allJobs}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
                 {job.title}
               </option>
             ))}
           </select>
-          <label>Customer</label>
+          <label>{copy.customer}</label>
           <select className="input" value={filterCustomerId} onChange={(e) => setFilterCustomerId(e.target.value)}>
-            <option value="">All customers</option>
+            <option value="">{copy.allCustomers}</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.company_name}
               </option>
             ))}
           </select>
-          <label>Team member</label>
+          <label>{copy.teamMember}</label>
           <select className="input" value={filterWorkerId} onChange={(e) => setFilterWorkerId(e.target.value)}>
-            <option value="">All team members</option>
+            <option value="">{copy.allTeamMembers}</option>
             {workers.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
@@ -415,17 +424,17 @@ function ExpensesContent() {
             ))}
           </select>
           <button type="button" className="btn btn-primary" onClick={() => void loadExpenses()}>
-            Apply filters
+            {copy.applyFilters}
           </button>
         </div>
       ) : null}
 
       {showForm && canManage ? (
         <div className="card form finance-form-block">
-          <h3>{editingId ? 'Edit expense' : 'Add expense'}</h3>
-          <label>Date</label>
+          <h3>{editingId ? copy.editExpense : copy.addExpense}</h3>
+          <label>{copy.date}</label>
           <input className="input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          <label>Category</label>
+          <label>{copy.category}</label>
           <select
             className="input"
             value={form.category}
@@ -433,22 +442,22 @@ function ExpensesContent() {
           >
             {EXPENSE_CATEGORY_OPTIONS.map((cat) => (
               <option key={cat} value={cat}>
-                {cat}
+                {expenseCategoryLabel(copy, cat)}
               </option>
             ))}
             {editingId && !EXPENSE_CATEGORY_OPTIONS.includes(form.category) ? (
-              <option value={form.category}>{form.category} (legacy)</option>
+              <option value={form.category}>{expenseCategoryLabel(copy, form.category)} ({copy.legacy})</option>
             ) : null}
           </select>
-          <label>Vendor</label>
+          <label>{copy.vendor}</label>
           <input className="input" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
-          <label>Description</label>
+          <label>{copy.description}</label>
           <input
             className="input"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
-          <label>Amount</label>
+          <label>{copy.amount}</label>
           <input
             className="input"
             type="number"
@@ -456,59 +465,59 @@ function ExpensesContent() {
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
           />
-          <small className="muted">Enter a negative amount for a refund or credit, for example -12.47.</small>
-          <label>Related job (optional)</label>
+          <small className="muted">{copy.amountHint}</small>
+          <label>{copy.relatedJob}</label>
           <select className="input" value={form.job_id} onChange={(e) => setForm({ ...form, job_id: e.target.value })}>
-            <option value="">None</option>
+            <option value="">{copy.none}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
                 {job.title}
               </option>
             ))}
           </select>
-          <label>Related customer (optional)</label>
+          <label>{copy.relatedCustomer}</label>
           <select
             className="input"
             value={form.customer_id}
             onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
           >
-            <option value="">None</option>
+            <option value="">{copy.none}</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.company_name}
               </option>
             ))}
           </select>
-          <label>Team member (optional)</label>
+          <label>{copy.teamMemberOptional}</label>
           <select
             className="input"
             value={form.worker_id}
             onChange={(e) => setForm({ ...form, worker_id: e.target.value })}
           >
-            <option value="">None</option>
+            <option value="">{copy.none}</option>
             {workers.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
               </option>
             ))}
           </select>
-          <label>Payment method (optional)</label>
+          <label>{copy.paymentMethod}</label>
           <input
             className="input"
-            placeholder="Cash, card, check..."
+            placeholder={copy.paymentPlaceholder}
             value={form.payment_method}
             onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
           />
-          <label>Receipt photo (optional)</label>
+          <label>{copy.receiptPhoto}</label>
           <input className="input" type="file" accept="image/*,application/pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
-          <label>Notes (optional)</label>
+          <label>{copy.notes}</label>
           <textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           <div className="finance-actions">
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveExpense()}>
               {saving ? FEEDBACK.loading : editingId ? copy.saveChanges : copy.addExpense}
             </button>
             <button type="button" className="btn" onClick={resetForm}>
-              Cancel
+              {copy.cancel}
             </button>
           </div>
         </div>
@@ -518,9 +527,9 @@ function ExpensesContent() {
         {loading ? <PageLoading /> : null}
         {!loading && expenses.length === 0 ? (
           <div className="empty-state">
-            <h3>No business expenses recorded yet</h3>
+            <h3>{copy.emptyTitle}</h3>
             <p className="muted">
-              Add supplies, software, fuel, advertising, and other operating costs to improve profit reporting.
+              {copy.emptyBody}
             </p>
             {canManage ? (
               <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
@@ -539,40 +548,41 @@ function ExpensesContent() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="record-card-overlay-link"
-                  aria-label={`Open ${expense.description || expense.category} in a new tab`}
+                  aria-label={formatExpensesCopy(copy.openInNewTab, { name: expense.description || expenseCategoryLabel(copy, expense.category) })}
                 >
-                  <span className="record-card-overlay-label">Open {expense.description || expense.category} in a new tab</span>
+                  <span className="record-card-overlay-label">{formatExpensesCopy(copy.openInNewTab, { name: expense.description || expenseCategoryLabel(copy, expense.category) })}</span>
                 </Link>
                 <div className="finance-list-card-main">
                   <div className="finance-list-card-head">
-                    <strong>{expense.amount < 0 ? `${expense.category} · Credit` : expense.category}</strong>
+                    <strong>{expense.amount < 0 ? `${expenseCategoryLabel(copy, expense.category)} · ${copy.credit}` : expenseCategoryLabel(copy, expense.category)}</strong>
                     <span>{formatCurrency(expense.amount)}</span>
                   </div>
                   <p className="muted">
                     {expense.date}
                     {expense.vendor ? ` · ${expense.vendor}` : ''}
-                    {` · ${expense.source === 'quickbooks' ? 'QuickBooks' : 'Manual'}`}
+                    {` · ${expense.source === 'quickbooks' ? 'QuickBooks' : copy.sourceManual}`}
                   </p>
                   {expense.description ? <p>{expense.description}</p> : null}
                   {expense.source === 'quickbooks' ? (
-                    <p className="muted">Managed in QuickBooks. Edit or delete it there to avoid duplicate totals.</p>
+                    <p className="muted">{copy.quickbooksManaged}</p>
                   ) : null}
                   <p className="muted finance-tags">
-                    {expense.job_id ? <span>Job: <Link href={`/jobs/${expense.job_id}`} target="_blank" rel="noopener noreferrer">{jobMap.get(expense.job_id) || 'Linked job'}</Link></span> : null}
-                    {expense.customer_id ? <span>Customer: <Link href={`/customers/${expense.customer_id}`} target="_blank" rel="noopener noreferrer">{customerMap.get(expense.customer_id)}</Link></span> : null}
-                    {expense.worker_id ? <span>Team member: <Link href={`/jobs?assigned_to=${encodeURIComponent(expense.worker_id)}`} target="_blank" rel="noopener noreferrer">{workerMap.get(expense.worker_id)}</Link></span> : null}
-                    {expense.created_at ? <span>Added {expense.created_at.slice(0, 10)}</span> : null}
+                    {expense.job_id ? null : <span className="eo-status eo-status-warning">{copy.notLinked}</span>}
+                    {expense.job_id ? <span>{copy.job}: <Link href={`/jobs/${expense.job_id}`} target="_blank" rel="noopener noreferrer">{jobMap.get(expense.job_id) || copy.linkedJob}</Link></span> : null}
+                    {expense.customer_id ? <span>{copy.customer}: <Link href={`/customers/${expense.customer_id}`} target="_blank" rel="noopener noreferrer">{customerMap.get(expense.customer_id)}</Link></span> : null}
+                    {expense.worker_id ? <span>{copy.teamMember}: <Link href={`/jobs?assigned_to=${encodeURIComponent(expense.worker_id)}`} target="_blank" rel="noopener noreferrer">{workerMap.get(expense.worker_id)}</Link></span> : null}
+                    {expense.created_at ? <span>{formatExpensesCopy(copy.added, { date: expense.created_at.slice(0, 10) })}</span> : null}
                   </p>
                   {expense.receipt_signed_url ? (
                     <a className="btn" href={expense.receipt_signed_url} target="_blank" rel="noreferrer">
-                      View receipt
+                      {copy.viewReceipt}
                     </a>
                   ) : null}
                 </div>
                 {canManage && expense.source !== 'quickbooks' ? (
                   <div className="finance-list-card-actions">
                     <button type="button" className="btn" onClick={() => startEdit(expense)}>
-                      Edit
+                      {copy.edit}
                     </button>
                     <button
                       type="button"

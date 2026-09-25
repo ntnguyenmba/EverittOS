@@ -268,6 +268,13 @@ body:has(main.eo-document) .eo-backdrop {
   white-space: nowrap;
 }
 
+.eo-status-warning {
+  border-color: var(--eo-color-warning-border);
+  background: var(--eo-color-warning-bg);
+  color: var(--eo-color-warning-text);
+  font-weight: 700;
+}
+
 .eo-action-grid {
   min-width: 0;
   max-width: 100%;

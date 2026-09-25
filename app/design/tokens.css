@@ -18,6 +18,9 @@
   --eo-color-focus: rgba(40, 93, 120, 0.18);
   --eo-color-focus-ring: #285d78;
   --eo-color-on-brand: #ffffff;
+  --eo-color-warning-bg: #fff9f6;
+  --eo-color-warning-border: rgba(158, 83, 58, 0.28);
+  --eo-color-warning-text: #7a4937;
 
   /* Application backdrop: the one place the EverittOS atmosphere is tuned.
      Rendered once by components/app-backdrop.tsx through .eo-backdrop. */
