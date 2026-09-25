@@ -141,7 +141,7 @@
 @media (max-width: 420px) {
   :root {
     --eo-card-padding-block: var(--eo-space-4);
-    --eo-card-padding-inline: 18px;
+    --eo-card-padding-inline: 20px;
     --eo-control-gap: 8px;
   }
 }
