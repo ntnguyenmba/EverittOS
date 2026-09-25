@@ -19,6 +19,7 @@ import { RoleHomeGuard } from '@/components/role-home-guard';
 import { AppConnectivityBanner } from '@/components/app-connectivity-banner';
 import { NetworkStatusBanner } from '@/components/network-status-banner';
 import { NativeAppProvider } from '@/components/native-app-provider';
+import { NativePinLock } from '@/components/native-pin-lock';
 import { MobileDocumentFlags } from '@/components/mobile-document-flags';
 import { PwaRegistration } from '@/components/pwa-registration';
 import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
@@ -57,5 +58,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><AppBackdrop /><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><AskEverittQuickClear /><UniversalListLimit /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><RoleHomeGuard /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><AppBackdrop /><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><AskEverittQuickClear /><UniversalListLimit /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><RoleHomeGuard /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }
