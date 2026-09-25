@@ -452,8 +452,8 @@ html body .owner-home-sheet {
   box-shadow: none !important;
 }
 
-html body .card:not(.customer-card-row),
-html body .panel,
+html body .card:not(.customer-card-row):not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
+html body .panel:not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
 html body .settings-card,
 html body .contractor-next-job,
 html body .client-next-visit-paper,
@@ -1309,8 +1309,8 @@ html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.
 
 /* Standard information surfaces. */
 body :is(.dashboard-shell, .role-portal-shell) :is(
-  .card:not(.jobs-table-card):not(.contractor-portal-hero),
-  .panel,
+  .card:not(.jobs-table-card):not(.contractor-portal-hero):not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
+  .panel:not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
   .settings-card,
   .client-job-card,
   .customer-card-row,
