@@ -65,7 +65,7 @@
   /* Sizing */
   --eo-view-max: 760px;
   --eo-page-max: var(--eo-view-max);
-  --eo-gutter: clamp(16px, 3vw, 32px);
+  --eo-gutter: clamp(20px, 3vw, 32px);
   --eo-page-pad-top: var(--eo-space-5);
   --eo-page-pad-bottom: calc(var(--eo-space-6) + env(safe-area-inset-bottom, 0px));
   --eo-header-bg: var(--eo-color-brand);
