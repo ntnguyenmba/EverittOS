@@ -328,7 +328,9 @@ async function searchSource(
               .not('pipeline_stage', 'in', '("lead","qualified")');
 
       const { data } = await filter
-        .or(`company_name.ilike.${quoted},email.ilike.${quoted},notes.ilike.${quoted}`)
+        .or(
+          `company_name.ilike.${quoted},contact_name.ilike.${quoted},phone.ilike.${quoted},email.ilike.${quoted},notes.ilike.${quoted},address_line1.ilike.${quoted},address_line2.ilike.${quoted},city.ilike.${quoted},state.ilike.${quoted},postal_code.ilike.${quoted},country.ilike.${quoted},service_address.ilike.${quoted},property_address.ilike.${quoted},billing_address.ilike.${quoted},lead_source.ilike.${quoted}`
+        )
         .limit(8);
 
       return (data || []).map((c) =>
