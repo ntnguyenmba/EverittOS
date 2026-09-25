@@ -31,29 +31,20 @@ const labels = {
 const candidateSelector = [
   'tbody',
   '[data-compact-list]',
-  '[class*="list"]',
-  '[class*="List"]',
-  '[class*="feed"]',
-  '[class*="Feed"]',
-  '[class*="history"]',
-  '[class*="History"]',
-  '[class*="rows"]',
-  '[class*="Rows"]'
+  '[class*="list" i]',
+  '[class*="feed" i]',
+  '[class*="history" i]',
+  '[class*="rows" i]'
 ].join(',');
 
 const secondarySelector = [
   '[data-secondary-section]',
   'section',
-  '[class*="history"]',
-  '[class*="History"]',
-  '[class*="activity"]',
-  '[class*="Activity"]',
-  '[class*="completed"]',
-  '[class*="Completed"]',
-  '[class*="archive"]',
-  '[class*="Archive"]',
-  '[class*="older"]',
-  '[class*="Older"]'
+  '[class*="history" i]',
+  '[class*="activity" i]',
+  '[class*="completed" i]',
+  '[class*="archive" i]',
+  '[class*="older" i]'
 ].join(',');
 
 const blockedClassPattern = /(nav|menu|filter|tabs?|toolbar|button|metrics?|stats?|summary|kpi|quick|header|footer|form|fields?|plans?|pricing|pagination|controls?)/i;
@@ -121,8 +112,9 @@ export function CompactRecordLists() {
   const copy = labels[locale];
 
   useEffect(() => {
-    const root = document.querySelector<HTMLElement>('.app-page-stage');
-    if (!root) return;
+    const stage = document.querySelector<HTMLElement>('.app-page-stage');
+    if (!stage) return;
+    const root: HTMLElement = stage;
 
     const managedLists = new Set<HTMLElement>();
     const managedSections = new Set<HTMLElement>();

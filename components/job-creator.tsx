@@ -134,7 +134,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         if (!active) return;
         setProperties(rows);
         setPropertyId((current) => {
-          if (current && rows.some((row) => row.id === current)) return current;
+          if (current && rows.some((row: Property) => row.id === current)) return current;
           if (rows.length === 1) return rows[0].id;
           return '';
         });

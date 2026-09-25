@@ -273,7 +273,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
       const res = await fetchWithTimeout('/api/team/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined }) }, 30_000);
       const json = (await res.json().catch(() => ({}))) as { error?: string; acceptUrl?: string };
       if (!res.ok) throw new Error(friendlyErrorMessage(json.error || 'Invite failed'));
-      setInviteUrl(json.acceptUrl);
+      setInviteUrl(json.acceptUrl ?? '');
       setEmail('');
       setInviteNote('');
       void load();

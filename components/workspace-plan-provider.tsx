@@ -10,10 +10,12 @@ import {
   useState,
   type ReactNode
 } from 'react';
+import { usePathname } from 'next/navigation';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { highestPlan } from '@/lib/plan-features';
 import { normalizeRole, type UserRole } from '@/lib/roles';
+import { isSessionExemptPath } from '@/lib/session-policy';
 import { supabase } from '@/lib/supabase';
 
 export type WorkspacePlanState = {
@@ -128,8 +130,15 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
     void refresh({ silent:true });
   }, [refresh]);
 
+  // Login, signup, and legal pages have no workspace; load it once the user
+  // reaches an app route (including right after sign-in).
+  const exempt = isSessionExemptPath(usePathname() || '/');
   useEffect(() => {
+    if (exempt) { setState((prev) => (prev.loading ? { ...prev, loading:false } : prev)); return; }
     void refresh();
+  }, [exempt, refresh]);
+
+  useEffect(() => {
     const { data:{ subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') void refresh({ silent:true });
     });

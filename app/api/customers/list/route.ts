@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { CUSTOMER_LIST_SELECT } from '@/lib/customer-record';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
-  let query = await ctx.supabase
+  let query: { data: Record<string, unknown>[] | null; error: PostgrestError | null } = await ctx.supabase
     .from('customers')
     .select(CUSTOMER_LIST_SELECT)
     .eq('organization_id', ctx.workspace.organizationId)

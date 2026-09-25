@@ -72,6 +72,7 @@ type Job = {
 };
 
 type Worker = { id: string; name: string };
+type AssignableWorkerRow = Worker & { worker_type?: string | null; auth_user_id?: string | null };
 type Assignment = { id: string; worker_id: string; responsibility: string | null };
 
 const SAFE_JOB_DETAIL_COLUMNS = [
@@ -196,7 +197,7 @@ export default function JobDetailPage({ params }: PageProps) {
           : Promise.resolve({ data: [] as Array<{ user_id: string; role: string }> })
       ]);
       const clientIds = clientUserIdSet(memberRoles || []);
-      setWorkers((crew || []).filter((row) => isAssignableWorkerRecord(row, clientIds)).map((row) => ({ id: row.id, name: row.name })));
+      setWorkers((crew || []).filter((row: AssignableWorkerRow) => isAssignableWorkerRecord(row, clientIds)).map((row: AssignableWorkerRow) => ({ id: row.id, name: row.name })));
     } else {
       setWorkers([]);
     }

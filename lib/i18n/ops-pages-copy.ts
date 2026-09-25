@@ -23,6 +23,6 @@ export const OPS_COPY = {
   }
 } as const;
 
-export function getOpsCopy<K extends keyof typeof OPS_COPY>(section: K, locale: Locale) {
-  return OPS_COPY[section][locale] || OPS_COPY[section].en;
+export function getOpsCopy<K extends keyof typeof OPS_COPY>(section: K, locale: Locale): (typeof OPS_COPY)[K][Locale] {
+  return (OPS_COPY[section][locale] || OPS_COPY[section].en) as (typeof OPS_COPY)[K][Locale];
 }

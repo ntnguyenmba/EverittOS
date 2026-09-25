@@ -9,7 +9,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 test('login resets the inactivity clock before redirecting', () => {
   const source = read('app/login/page.tsx');
   assert.match(source, /const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client'/);
-  assert.match(source, /window\.localStorage\.setItem\(LAST_ACTIVITY_STORAGE_KEY, String\(Date\.now\(\)\)\)/);
+  assert.match(source, /window\.localStorage\.setItem\(LAST_ACTIVITY_STORAGE_KEY, String\((?:now|Date\.now\(\))\)\)/);
   assert.match(source, /resetActivityClock\(\);\s*window\.location\.assign\(redirectTo\)/);
 });
 

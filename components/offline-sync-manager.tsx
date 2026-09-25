@@ -8,7 +8,7 @@ import { watchNetwork } from '@/lib/platform/network';
 export function OfflineSyncManager() {
   useEffect(() => {
     let disposed = false;
-    let stopWatching = () => undefined;
+    let stopWatching: () => void = () => undefined;
     let draining = false;
 
     const drain = async () => {
