@@ -191,6 +191,88 @@ body:has(main.eo-document) .eo-backdrop {
   white-space: nowrap;
 }
 
+.eo-role-home-card {
+  display: grid;
+  gap: var(--eo-section-stack-gap);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: var(--eo-card-padding);
+  box-sizing: border-box;
+  border: 1px solid var(--eo-surface-border);
+  border-radius: var(--eo-radius-card);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  box-shadow: var(--eo-shadow-card);
+}
+
+.eo-role-home-heading {
+  display: grid;
+  gap: var(--eo-label-gap);
+  min-width: 0;
+}
+
+.eo-role-home-heading > * {
+  margin: 0;
+}
+
+.eo-role-home-heading h1 {
+  color: var(--eo-color-text);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.eo-role-home-subtitle {
+  color: var(--eo-color-text-secondary);
+  line-height: 1.5;
+}
+
+.eo-role-home-body {
+  display: grid;
+  gap: var(--eo-section-stack-gap);
+  min-width: 0;
+}
+
+.eo-role-home-next {
+  display: grid;
+  gap: var(--eo-control-gap);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.contractor-next-job {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--eo-section-stack-gap);
+}
+
+.contractor-next-copy {
+  min-width: 0;
+}
+
+.contractor-next-label {
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.contractor-next-title {
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.contractor-next-meta {
+  line-height: 1.45;
+}
+
+.contractor-next-action {
+  flex: 0 0 auto;
+}
+
 .eo-upcoming-content {
   display: grid;
   justify-items: start;
@@ -339,6 +421,17 @@ body:has(main.eo-document) .eo-backdrop {
 }
 
 @media (max-width: 760px) {
+  .contractor-next-job {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--eo-section-stack-gap);
+  }
+
+  .contractor-next-action {
+    width: 100%;
+    justify-content: center;
+  }
+
   .dashboard-shell .app-page-content > .everitt-cmd-trigger {
     position: relative;
     z-index: 2;
