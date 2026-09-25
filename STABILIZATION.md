@@ -90,3 +90,6 @@ Keep healthy responsive space everywhere: no cards or controls pressed against v
 ## 2026-09-25 final stabilization follow-up
 
 `/expenses` now starts with a deterministic server/client form state and fills the local default date after mount, removing the remaining timezone-sensitive hydration path while preserving the local-date default for users.
+
+
+**Universal left-edge rule:** signed-in app surfaces use one shared left edge. Page titles, subtitles, helper copy, badges, tabs, section headings, and action rows are left-aligned inside the shared 24px surface inset. Buttons stay centered inside their own 48px control boxes, but the action row itself begins at the same left edge as the copy. Do not mix centered subtitles/actions with left-aligned titles. Keep forms and tables left-aligned. Fix this in shared primitives/tokens, not page-specific overrides.
