@@ -572,7 +572,6 @@ select:focus-visible,
   align-items: flex-start !important;
   gap: 12px 20px !important;
   margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
 }
 
 .page-header-text,
