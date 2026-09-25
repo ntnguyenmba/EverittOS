@@ -133,7 +133,7 @@
   :root {
     --eo-section-gap: var(--eo-space-4);
     --eo-card-padding-block: 24px;
-    --eo-card-padding-inline: 20px;
+    --eo-card-padding-inline: 24px;
     --eo-control-gap: 9px;
     --job-button-gap: var(--eo-space-4);
   }
@@ -142,7 +142,7 @@
 @media (max-width: 420px) {
   :root {
     --eo-card-padding-block: 24px;
-    --eo-card-padding-inline: 20px;
+    --eo-card-padding-inline: 24px;
     --eo-control-gap: 8px;
   }
 }
