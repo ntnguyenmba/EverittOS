@@ -4,6 +4,7 @@ import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { isValidUuid } from '@/lib/input-validation';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +48,7 @@ export async function GET(_request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (threadError) {
-    return NextResponse.json({ error: threadError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(threadError) }, { status: 400 });
   }
   if (!thread) {
     return NextResponse.json({ error: 'Thread not found.' }, { status: 404 });
@@ -61,7 +62,7 @@ export async function GET(_request: Request, context: RouteContext) {
     .order('created_at', { ascending: true });
 
   if (messagesError) {
-    return NextResponse.json({ error: messagesError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(messagesError) }, { status: 400 });
   }
 
   return NextResponse.json({ thread, messages: messages || [] });
@@ -95,7 +96,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   if (!data) {
     return NextResponse.json({ error: 'Thread not found.' }, { status: 404 });

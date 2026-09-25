@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: 'Quote context storage is not ready yet.', code: 'schema_update_required' }, { status: 409 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

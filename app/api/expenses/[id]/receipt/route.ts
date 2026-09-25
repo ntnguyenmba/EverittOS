@@ -3,6 +3,7 @@ import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { isValidUuid } from '@/lib/input-validation';
 import { ALLOWED_IMAGE_MIME_TYPES, MAX_UPLOAD_BYTES } from '@/lib/upload-security';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -63,7 +64,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   });
 
   if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(uploadError) }, { status: 400 });
   }
 
   const { data: updated, error } = await ctx.supabase
@@ -75,7 +76,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   const { data: signed } = await admin.storage.from('expense-receipts').createSignedUrl(storagePath, 3600);

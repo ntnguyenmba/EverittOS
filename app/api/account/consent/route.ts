@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal-versions';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     .eq('id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   const { data: profile } = await supabase

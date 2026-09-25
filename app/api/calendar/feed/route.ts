@@ -6,6 +6,7 @@ import {
   webcalFeedUrl
 } from '@/lib/calendar-feed';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -118,7 +119,7 @@ export async function DELETE() {
     .is('revoked_at', null);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

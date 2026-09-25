@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { buildLaborRow } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 const PAYMENT_STATUSES = new Set(['unpaid', 'pending', 'paid']);
 const PAYMENT_METADATA_FIELDS = ['paid_at', 'payment_method', 'payment_reference'];
@@ -126,7 +127,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .maybeSingle();
 
     if (existingError) {
-      return NextResponse.json({ error: existingError.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(existingError) }, { status: 400 });
     }
 
     if (!existing) {
@@ -232,7 +233,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     .eq('organization_id', ctx.organizationId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

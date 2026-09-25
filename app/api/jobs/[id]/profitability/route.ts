@@ -5,6 +5,7 @@ import { withTruthfulProfit } from '@/lib/finance/profit-math';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import type { JobProfitability } from '@/lib/finance-types';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -138,7 +139,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .eq('organization_id', ctx.organizationId);
 
     if (error) {
-      return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(error, 'Unable to save job financials.') }, { status: 400 });
     }
   }
 

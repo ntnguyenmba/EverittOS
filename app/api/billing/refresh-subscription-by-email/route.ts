@@ -8,6 +8,7 @@ import { resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { planFromCheckoutSession, planFromSubscription } from '@/lib/stripe-plan-mapping';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 
@@ -184,7 +185,7 @@ async function refreshByEmail(request: Request) {
     .eq('id', user.id);
 
   if (profileUpdateError) {
-    return NextResponse.json({ error: profileUpdateError.message, step: 'profile_update' }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(profileUpdateError), step: 'profile_update' }, { status: 500 });
   }
 
   if (selectedSubscription) {
@@ -204,7 +205,7 @@ async function refreshByEmail(request: Request) {
     );
 
     if (subscriptionUpsertError) {
-      return NextResponse.json({ error: subscriptionUpsertError.message, step: 'subscription_upsert' }, { status: 500 });
+      return NextResponse.json({ error: publicErrorMessage(subscriptionUpsertError), step: 'subscription_upsert' }, { status: 500 });
     }
   }
 

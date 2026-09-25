@@ -3,6 +3,7 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { canManageTeam } from '@/lib/roles';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ shares: data || [] });
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
     .in('user_id', resolvedUserIds);
 
   if (memberError) {
-    return NextResponse.json({ error: memberError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(memberError) }, { status: 400 });
   }
 
   const allowedMembers = (members || []).filter((member) => {
@@ -152,7 +153,7 @@ export async function POST(request: Request) {
     .select('id, record_type, record_id, shared_with_user_id, access_level, created_at');
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   await logWorkspaceActivity(
@@ -215,7 +216,7 @@ export async function DELETE(request: Request) {
     .eq('id', shareId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   if (share) {

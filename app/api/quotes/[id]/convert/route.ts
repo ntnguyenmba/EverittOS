@@ -6,6 +6,7 @@ import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { localeFromRequest } from '@/lib/i18n/server-request-locale';
 import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
 
-  if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 400 });
+  if (quoteError) return NextResponse.json({ error: publicErrorMessage(quoteError) }, { status: 400 });
   if (!quote) return NextResponse.json({ error: c.loadQuotes }, { status: 404 });
 
   if (quote.job_id) {

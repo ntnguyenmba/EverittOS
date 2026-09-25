@@ -8,6 +8,7 @@ import {
   SCHEMA_SETUP_HINT,
   schemaEmptyPayload
 } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json(schemaEmptyPayload('documents', { setupHint: SCHEMA_SETUP_HINT }));
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   const rows = (data || []).map((doc) =>
@@ -211,7 +212,7 @@ export async function POST(request: Request) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ document: data, reused: false });

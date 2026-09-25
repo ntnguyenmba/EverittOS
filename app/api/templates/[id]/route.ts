@@ -4,6 +4,7 @@ import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export async function GET(_request: Request, context: RouteContext) {
     .eq('organization_id', org.organizationId)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ template: data });
 }
@@ -77,7 +78,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
 
   await logActivityServer({
     organizationId: org.organizationId,
@@ -108,7 +109,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { error } = await supabase.from('template_library').delete().eq('id', id).eq('organization_id', org.organizationId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
 
   await logActivityServer({
     organizationId: org.organizationId,
@@ -163,7 +164,7 @@ export async function POST(request: Request, context: RouteContext) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
 
   await logActivityServer({
     organizationId: org.organizationId,

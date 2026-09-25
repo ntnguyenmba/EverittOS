@@ -3,6 +3,7 @@ import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { isValidUuid } from '@/lib/input-validation';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,7 +43,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   if (!data) {
     return NextResponse.json({ error: 'Item not found.' }, { status: 404 });
@@ -72,7 +73,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     .eq('organization_id', ctx.workspace.organizationId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, deactivated: true });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { resolveOccurrenceAnchorDate, selectRecurringJobsForPermanentDelete } from '@/lib/job-permanent-delete';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET(_request: Request, context: RouteContext) {
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
 
-  if (jobError) return NextResponse.json({ error: jobError.message }, { status: 400 });
+  if (jobError) return NextResponse.json({ error: publicErrorMessage(jobError) }, { status: 400 });
   if (!job) return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
 
   let targetJobIds = [job.id];
@@ -31,7 +32,7 @@ export async function GET(_request: Request, context: RouteContext) {
       .select('id, status, occurrence_date, start_date')
       .eq('organization_id', ctx.workspace.organizationId)
       .eq('recurring_series_id', job.recurring_series_id);
-    if (seriesError) return NextResponse.json({ error: seriesError.message }, { status: 400 });
+    if (seriesError) return NextResponse.json({ error: publicErrorMessage(seriesError) }, { status: 400 });
     targetJobIds = selectRecurringJobsForPermanentDelete(seriesJobs || [], job.id, anchor);
   }
 
@@ -47,7 +48,7 @@ export async function GET(_request: Request, context: RouteContext) {
   ]);
 
   const queryError = invoices.error || payments.error || labor.error || expenses.error;
-  if (queryError) return NextResponse.json({ error: queryError.message || 'Could not verify financial history.' }, { status: 500 });
+  if (queryError) return NextResponse.json({ error: publicErrorMessage(queryError, 'Could not verify financial history.') }, { status: 500 });
 
   const counts = { invoices:invoices.count || 0, payments:payments.count || 0, labor:labor.count || 0, expenses:expenses.count || 0 };
   const hasFinancialHistory = counts.invoices > 0 || counts.payments > 0;

@@ -4,6 +4,7 @@ import { isAdminRole, normalizeRole } from '@/lib/roles';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { localeFromRequest } from '@/lib/i18n/server-request-locale';
 import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   if (error) {
     if (isMissingSchemaError(error)) return NextResponse.json({ error: c.quoteSchema, code: 'schema_update_required' }, { status: 409 });
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   if (!data) return NextResponse.json({ error: c.loadQuotes }, { status: 404 });
   return NextResponse.json({ quote: data });
@@ -67,7 +68,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   if (error) {
     if (isMissingSchemaError(error)) return NextResponse.json({ error: c.quoteSchema, code: 'schema_update_required' }, { status: 409 });
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   if (!data) return NextResponse.json({ error: c.loadQuotes }, { status: 404 });
   return NextResponse.json({ quote: data });

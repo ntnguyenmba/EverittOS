@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canManageTeam } from '@/lib/roles';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export async function GET(request: Request) {
   const supabase = await createServerSupabase();
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
     .order('granted_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   const userIds = Array.from(new Set((rows || []).map((row) => row.client_user_id).filter(Boolean)));

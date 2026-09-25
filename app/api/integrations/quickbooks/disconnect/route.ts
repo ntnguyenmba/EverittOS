@@ -4,6 +4,7 @@ import { writeQuickBooksSyncLog } from '@/lib/quickbooks/logging';
 import { canManageOrganizationSettings } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,7 @@ export async function POST() {
   );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   await writeQuickBooksSyncLog(admin, {

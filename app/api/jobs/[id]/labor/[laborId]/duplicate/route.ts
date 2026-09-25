@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 type RouteParams = { params: Promise<{ id: string; laborId: string }> };
 
@@ -58,7 +59,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ labor: duplicated, message: 'Contractor pay duplicated.' });

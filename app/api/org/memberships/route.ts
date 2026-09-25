@@ -4,6 +4,7 @@ import { ACTIVE_ORG_COOKIE } from '@/lib/org-context-cookie';
 import type { OrgMembership } from '@/lib/os-types';
 import { normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   const { data: profile } = await supabase

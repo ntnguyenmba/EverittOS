@@ -7,6 +7,7 @@ import { insertJobPhotoRow } from '@/lib/job-photos-client';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,7 @@ export async function POST(request: Request, context: RouteContext) {
     cacheControl: '3600',
     upsert: false
   });
-  if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
+  if (uploadError) return NextResponse.json({ error: publicErrorMessage(uploadError) }, { status: 400 });
 
   const { data: profile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
   const uploaderName = profile?.full_name || profile?.email || user.email || 'Team member';

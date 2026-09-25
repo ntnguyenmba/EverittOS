@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,7 @@ export async function POST() {
     if (/last_seen_at/i.test(adminError.message) || /column/i.test(adminError.message)) {
       return json({ ok: true, lastSeenAt: null, deferred: true });
     }
-    return NextResponse.json({ error: adminError.message, ok: false }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(adminError), ok: false }, { status: 500 });
   }
 
   if (!updatedProfile) {

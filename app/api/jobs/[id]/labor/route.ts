@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { buildLaborRow } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -125,7 +126,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ labor: data || [] });

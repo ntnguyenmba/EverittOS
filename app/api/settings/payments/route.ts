@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function PATCH(request: Request) {
   const { error } = await ctx.supabase.from('organization_settings').upsert({ organization_id: ctx.workspace.organizationId, preferred_payment_method: method || null, payment_link: paymentLink, payment_instructions: String(body.paymentInstructions || '').trim() || null });
   if (error) {
     if (isMissingSchemaError(error)) return NextResponse.json({ error: 'Invoice payment settings need the latest database migration.' }, { status: 503 });
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }

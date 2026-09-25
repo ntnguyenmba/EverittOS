@@ -4,6 +4,7 @@ import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { isValidUuid } from '@/lib/input-validation';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,7 @@ export async function POST(request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (threadError) {
-    return NextResponse.json({ error: threadError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(threadError) }, { status: 400 });
   }
   if (!thread) {
     return NextResponse.json({ error: 'Thread not found.' }, { status: 404 });
@@ -111,7 +112,7 @@ export async function POST(request: Request, context: RouteContext) {
     .single();
 
   if (messageError) {
-    return NextResponse.json({ error: messageError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(messageError) }, { status: 400 });
   }
 
   await ctx.supabase

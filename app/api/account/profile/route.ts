@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { normalizeLocale } from '@/lib/i18n/config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,7 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   return NextResponse.json({
@@ -97,7 +98,7 @@ export async function PATCH(request: Request) {
     }
     const { error: emailError } = await supabase.auth.updateUser({ email: nextEmail });
     if (emailError) {
-      return NextResponse.json({ error: emailError.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(emailError) }, { status: 400 });
     }
     patch.email = nextEmail;
   }
@@ -108,7 +109,7 @@ export async function PATCH(request: Request) {
     }
     const { error: passwordError } = await supabase.auth.updateUser({ password: body.newPassword });
     if (passwordError) {
-      return NextResponse.json({ error: passwordError.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(passwordError) }, { status: 400 });
     }
   }
 
@@ -136,7 +137,7 @@ export async function PATCH(request: Request) {
 
   const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, message: 'Account settings saved.' });

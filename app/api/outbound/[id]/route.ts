@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import type { OutboundStatus } from '@/lib/outbound/types';
 import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
   if (!data) {
     return NextResponse.json({ error: 'Document not found' }, { status: 404 });
@@ -110,7 +111,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ document: data });
@@ -136,7 +137,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

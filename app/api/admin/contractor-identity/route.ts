@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,7 +66,7 @@ async function diagnose(email: string, repair: boolean) {
     ]);
 
   if (membershipError) {
-    return NextResponse.json({ error: membershipError.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(membershipError) }, { status: 500 });
   }
 
   const workerMap = new Map<string, Record<string, unknown>>();
@@ -104,7 +105,7 @@ async function diagnose(email: string, repair: boolean) {
   if (repair) {
     const { data, error } = await admin.rpc('repair_contractor_worker_identity', { p_email: email });
     if (error) {
-      return NextResponse.json({ error: error.message, stage: 'repair' }, { status: 500 });
+      return NextResponse.json({ error: publicErrorMessage(error), stage: 'repair' }, { status: 500 });
     }
     repairResult = data;
   }

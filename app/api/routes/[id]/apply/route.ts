@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isManagerRole } from '@/lib/roles';
 import { isValidUuid } from '@/lib/input-validation';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,7 @@ export async function POST(_request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (readError) {
-    return NextResponse.json({ error: readError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(readError) }, { status: 400 });
   }
   if (!run) {
     return NextResponse.json({ error: 'Route run not found.' }, { status: 404 });
@@ -46,7 +47,7 @@ export async function POST(_request: Request, context: RouteContext) {
     .single();
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(updateError) }, { status: 400 });
   }
 
   return NextResponse.json({

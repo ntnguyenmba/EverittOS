@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { normalizeLocale } from '@/lib/i18n/config';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 
@@ -35,7 +36,7 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   return NextResponse.json(data || {});
@@ -83,7 +84,7 @@ export async function PATCH(request: Request) {
   const { data, error } = await supabase.from('profiles').update(patch).eq('id', user.id).select().maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   return NextResponse.json(data);

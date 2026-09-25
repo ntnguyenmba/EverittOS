@@ -64,3 +64,23 @@ export function safeErrorMessage(err: unknown, fallback = 'Something went wrong.
   }
   return fallback;
 }
+
+const DATABASE_ERROR_CODE = /^(PGRST\d{3}|[0-9A-Z]{5})$/;
+const DATABASE_ERROR_TEXT =
+  /(relation "|column "|violates|JSON object requested|syntax error|permission denied for|duplicate key|invalid input syntax|schema cache|null value in column|foreign key|row-level security|could not find the)/i;
+
+/**
+ * Message for an API error response. Application and auth messages pass
+ * through; database internals (PostgREST/Postgres codes, SQL text) are logged
+ * server-side and replaced with a generic message.
+ */
+export function publicErrorMessage(error: unknown, fallback = 'Something went wrong. Try again.'): string {
+  if (!error) return fallback;
+  const record = typeof error === 'object' ? (error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown }) : null;
+  const message = typeof error === 'string' ? error : typeof record?.message === 'string' ? record.message : '';
+  const code = typeof record?.code === 'string' ? record.code : '';
+  const isDatabaseError = DATABASE_ERROR_CODE.test(code) || DATABASE_ERROR_TEXT.test(message) || (record !== null && ('details' in record || 'hint' in record));
+  if (!isDatabaseError) return message || fallback;
+  console.error(`[everittos-api] ${JSON.stringify({ event: 'database_error_hidden', code: code || null, message })}`);
+  return fallback;
+}

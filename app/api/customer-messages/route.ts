@@ -5,6 +5,7 @@ import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,7 +45,7 @@ export async function GET() {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ threads: [], schemaReady: false, setupHint: SCHEMA_SETUP_HINT });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ threads: data || [], schemaReady: true });
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
     .single();
 
   if (messageError) {
-    return NextResponse.json({ error: messageError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(messageError) }, { status: 400 });
   }
 
   return NextResponse.json({

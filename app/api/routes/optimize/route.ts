@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { buildHeuristicRoute } from '@/lib/route-optimization';
 import { isManagerRole } from '@/lib/roles';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function GET() {
     .limit(30);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ runs: data || [] });
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     .neq('status', 'cancelled');
 
   if (jobsError) {
-    return NextResponse.json({ error: jobsError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(jobsError) }, { status: 400 });
   }
 
   const scheduledJobs = (jobs || []).filter((j) => j.status !== 'completed');
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
     .single();
 
   if (runError) {
-    return NextResponse.json({ error: runError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(runError) }, { status: 400 });
   }
 
   return NextResponse.json({

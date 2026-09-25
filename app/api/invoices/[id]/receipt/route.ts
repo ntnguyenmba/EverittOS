@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   let outboundInvoice: Record<string, unknown> | null = null;
   if (invoiceError) {
-    return NextResponse.json({ error: invoiceError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(invoiceError) }, { status: 400 });
   }
 
   if (!invoice) {
@@ -215,7 +216,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     .single();
 
   if (receiptError) {
-    return NextResponse.json({ error: receiptError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(receiptError) }, { status: 400 });
   }
 
   return NextResponse.json({ receipt, existing: false });

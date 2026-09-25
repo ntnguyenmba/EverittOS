@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export async function POST() {
   const supabase = await createServerSupabase();
@@ -23,7 +24,7 @@ export async function POST() {
     .eq('id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   await supabase.auth.signOut();

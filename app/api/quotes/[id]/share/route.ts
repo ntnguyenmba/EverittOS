@@ -10,6 +10,7 @@ import { getResourceApiCopy } from '@/lib/i18n/resource-api-copy';
 import { getQuoteShareCopy, fillQuoteCopy } from '@/lib/i18n/quote-share-copy';
 import { absoluteQuoteUrl, formatQuoteMoney, safeHtml } from '@/lib/quote-sharing';
 import { sendTransactionalEmail } from '@/lib/email-provider';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const locale = normalizeLocale(body.locale);
   const c = getQuoteShareCopy(locale);
   const { data: quote, error } = await ctx.supabase.from('quotes').select('*').eq('id', id).eq('organization_id', ctx.workspace.organizationId).maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   if (!quote) return NextResponse.json({ error: 'quote_not_found', code: 'quote_not_found' }, { status: 404 });
 
   const token = quote.public_token || randomBytes(24).toString('base64url');
@@ -46,7 +47,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     shared_at: quote.shared_at || now,
     updated_at: now
   }).eq('id', quote.id).eq('organization_id', ctx.workspace.organizationId);
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
+  if (updateError) return NextResponse.json({ error: publicErrorMessage(updateError) }, { status: 400 });
 
   const url = absoluteQuoteUrl(new URL(request.url).origin, token, locale);
   const mode = String(body.mode || 'link');

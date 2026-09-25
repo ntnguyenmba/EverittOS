@@ -8,6 +8,7 @@ import {
   calculateBalanceDue,
   calculateInvoicePaymentStatus
 } from '@/lib/outbound/invoice-payment';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -118,7 +119,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         .eq('organization_id', ctx.organizationId)
         .select('*')
         .single();
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
       return NextResponse.json({ invoice: data });
     }
 
@@ -188,7 +189,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   return NextResponse.json({ invoice: data });

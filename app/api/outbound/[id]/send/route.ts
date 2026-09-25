@@ -3,6 +3,7 @@ import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { sendOutboundDocument } from '@/lib/outbound/send-document';
 import type { OutboundDocument } from '@/lib/outbound/types';
 import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,7 @@ export async function POST(_request: Request, context: RouteContext) {
     if (isMissingSchemaError(error)) {
       return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
     }
-    return NextResponse.json({ error: error.message }, { status: 404 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 404 });
   }
   if (!document) {
     return NextResponse.json({ error: 'Document not found' }, { status: 404 });

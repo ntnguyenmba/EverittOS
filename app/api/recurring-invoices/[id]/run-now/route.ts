@@ -3,6 +3,7 @@ import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { isValidUuid } from '@/lib/input-validation';
 import { runRecurringInvoiceTemplate } from '@/lib/recurring-invoice-run';
 import type { RecurringInvoiceTemplate } from '@/lib/recurring-invoices';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export async function POST(request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (readError) {
-    return NextResponse.json({ error: readError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(readError) }, { status: 400 });
   }
   if (!template) {
     return NextResponse.json({ error: 'Template not found.' }, { status: 404 });

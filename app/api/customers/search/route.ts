@@ -3,6 +3,7 @@ import { CUSTOMER_LIST_SELECT, customerDisplayName } from '@/lib/customer-record
 import { propertyDisplayAddress } from '@/lib/customer-property';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -152,7 +153,7 @@ export async function GET(request: Request) {
   }
 
   if (customerError) {
-    return NextResponse.json({ error: customerError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(customerError) }, { status: 400 });
   }
 
   const matchedCustomerIds = new Set(customers.map((customer) => customer.id));
@@ -212,7 +213,7 @@ export async function GET(request: Request) {
       .in('id', missingIds);
 
     if (moreError) {
-      return NextResponse.json({ error: moreError.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(moreError) }, { status: 400 });
     }
 
     allCustomers = [...allCustomers, ...(more || [])];

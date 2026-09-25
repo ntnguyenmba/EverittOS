@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { isOwner } from '@/lib/roles';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
     .eq('user_id', user.id);
 
   if (demoteError) {
-    return NextResponse.json({ error: demoteError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(demoteError) }, { status: 400 });
   }
 
   const { error: promoteError } = await admin
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
 
   if (promoteError) {
     await admin.from('organization_members').update({ role: 'owner' }).eq('organization_id', org.organizationId).eq('user_id', user.id);
-    return NextResponse.json({ error: promoteError.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(promoteError) }, { status: 400 });
   }
 
   await admin.from('profiles').update({ role: 'admin' }).eq('id', user.id);

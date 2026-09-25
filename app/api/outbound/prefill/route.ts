@@ -10,6 +10,7 @@ import { normalizeLocale } from '@/lib/i18n/config';
 import { formatDateLocale, formatMoneyUsd } from '@/lib/i18n/locale-format';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { isValidUuid } from '@/lib/input-validation';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
     }
     if (!data) {
       return NextResponse.json(
@@ -101,7 +102,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
     }
     customer = data;
   }
@@ -181,7 +182,7 @@ async function prefillReceipt(
       .eq('id', input.paymentId)
       .eq('organization_id', ctx.organizationId)
       .maybeSingle();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
     if (!data) {
       return NextResponse.json(
         { error: billingCopy.paymentNotFound, code: 'payment_not_found' },

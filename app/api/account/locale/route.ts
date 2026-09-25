@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { DEFAULT_LOCALE, LOCALE_COOKIE_NAME, normalizeLocale, type Locale } from '@/lib/i18n/config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 
@@ -36,7 +37,7 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   const locale = normalizeLocale(data?.locale || data?.preferred_locale || cookieLocale || DEFAULT_LOCALE);
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
       .eq('id', user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
     }
   }
 

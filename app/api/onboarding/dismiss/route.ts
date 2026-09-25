@@ -7,6 +7,7 @@ import {
 import { ONBOARDING_STEP_COUNT } from '@/lib/onboarding/constants';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export const runtime = 'nodejs';
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 500 });
   }
 
   if (action === 'cancel') {

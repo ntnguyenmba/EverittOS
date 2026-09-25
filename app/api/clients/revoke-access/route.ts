@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canManageTeam } from '@/lib/roles';
+import { publicErrorMessage } from '@/lib/safe-api-error';
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     .eq('client_user_id', body.clientUserId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: publicErrorMessage(error) }, { status: 400 });
   }
 
   const { data: clientProfile } = await admin
