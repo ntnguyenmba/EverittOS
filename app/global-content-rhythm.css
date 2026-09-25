@@ -1325,6 +1325,38 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   padding: var(--eo-card-block-padding) var(--eo-card-inline-padding) !important;
 }
 
+/* Boxed headings and record headers need the same safe text inset as cards.
+   This prevents titles, addresses, status chips, and action rows from sitting
+   against rounded borders at any viewport width. Keep this centralized here,
+   never as page-specific padding patches. */
+body .dashboard-shell .job-detail-shell > .page-head,
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .boxed-header,
+  .surface-header,
+  [data-boxed-header='true']
+) {
+  box-sizing: border-box !important;
+  padding: var(--eo-card-block-padding) var(--eo-card-inline-padding) !important;
+}
+
+/* No standard card/surface may reduce its horizontal content inset below the
+   shared token. Nested layout wrappers may stay unpadded, but actual visual
+   surfaces always keep text and controls away from their edges. */
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .card:not(.jobs-table-card):not(.contractor-portal-hero):not(:has(> .customer-card-row)):not(:has(> .team-member-list)):not(:has(> .client-job-card-list)):not(:has(> .finance-expense-list)),
+  .panel,
+  .settings-card,
+  .billing-card,
+  .schedule-card,
+  .booking-card,
+  .report-card,
+  .job-financials-card,
+  .finance-section,
+  .record-card
+) {
+  padding-inline: max(var(--eo-card-inline-padding), 20px) !important;
+}
+
 /* Main page stacks should breathe consistently without giant dead zones. */
 body :is(.dashboard-shell, .role-portal-shell) :is(
   .app-page-content,
