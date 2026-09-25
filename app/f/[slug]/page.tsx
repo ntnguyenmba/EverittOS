@@ -78,7 +78,7 @@ export default function PublicFormPage() {
       const res = await fetch(`/api/forms/public/${slug}`);
       const json = await res.json();
       setLoading(false);
-      if (!res.ok) { setError(json.error || c.formNotFound); return; }
+      if (!res.ok) { setError(c.formNotFound); return; }
       setForm(json.form);
       setFields(json.fields || []);
     }
@@ -97,9 +97,8 @@ export default function PublicFormPage() {
     setSubmitting(true); setError('');
     const submission = estimate ? { ...values, 'Estimated range': formatEstimateRange(estimate), 'Estimate midpoint': String(estimate.midpoint), 'Estimate currency': estimate.currency } : values;
     const res = await fetch(`/api/forms/public/${slug}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submission) });
-    const json = await res.json();
     setSubmitting(false);
-    if (!res.ok) { setError(json.error || c.failed); return; }
+    if (!res.ok) { setError(c.failed); return; }
     setDone(true);
   }
 

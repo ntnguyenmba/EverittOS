@@ -39,6 +39,12 @@
   background: var(--eo-shell-overlay);
 }
 
+/* Document variant: legal, help, and pricing pages render as main.section on
+   the plain page color, so text written for white stays readable. */
+body:has(main.section) .eo-backdrop {
+  display: none;
+}
+
 @media print {
   .eo-backdrop { display: none; }
 }
@@ -81,8 +87,9 @@
 }
 
 .dashboard-shell > .main {
+  /* No z-index: main must not form a stacking context, or modals and the
+     Ask Everitt overlay rendered inside it could never rise above the header. */
   position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   width: 100%;

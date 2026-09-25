@@ -980,7 +980,9 @@ html body .dashboard-shell table.jobs-operations-table th,
 html body .dashboard-shell table.jobs-operations-table td {
   min-width: 0 !important;
   padding: 12px 10px !important;
-  overflow-wrap: anywhere !important;
+  /* Break long values only when a whole word cannot fit; never split headers mid-word. */
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
   vertical-align: top !important;
   box-sizing: border-box !important;
 }

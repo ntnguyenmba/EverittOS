@@ -66,7 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
     })
   }).select('id').single();
 
-  if (customerError) return NextResponse.json({ error: customerError.message }, { status: 400 });
+  if (customerError) return NextResponse.json({ error: 'Submission could not be saved.' }, { status: 400 });
 
   await admin.from('everitt_form_submissions').insert({ form_id: form.id, organization_id: form.organization_id, payload, source: form.form_type === 'estimate' ? 'estimate' : 'public', customer_id: customer?.id || null });
 
