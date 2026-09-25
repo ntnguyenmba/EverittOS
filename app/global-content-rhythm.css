@@ -396,10 +396,6 @@ body {
   position: relative;
   touch-action: pan-y;
 }
-
-.dashboard-shell,
-.role-portal-shell,
-.shared-hamburger-shell,
 .app-shell,
 .portal-shell {
   width: 100% !important;
@@ -408,12 +404,8 @@ body {
   overflow-x: clip !important;
   box-sizing: border-box !important;
 }
-
-.dashboard-shell-header,
 .mobile-nav,
-.mobile-nav-bar,
-.dashboard-shell > .main,
-.app-page-content {
+.mobile-nav-bar {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -431,18 +423,6 @@ body {
   transform: none !important;
 }
 
-.dashboard-shell > .main,
-.app-page-content,
-.app-page-content > * {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.app-page-content {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
 .ask-everitt,
 .ask-everitt-command,
 .app-role-banner,
@@ -458,13 +438,6 @@ svg,
 video,
 canvas {
   max-width: 100%;
-}
-
-@media (max-width: 900px) {
-  .dashboard-shell,
-  .role-portal-shell {
-    overflow-x: clip !important;
-  }
 }
 
 /* CONSOLIDATED FROM control-breathing.css */
@@ -513,7 +486,8 @@ html body .dashboard-shell .jobs-table-card {
   border: 1px solid var(--eo-color-border) !important;
   border-radius: var(--eo-radius-card) !important;
   box-shadow: var(--eo-shadow-card) !important;
-  padding: 8px 18px !important;
+  /* Rows carry the card's inline padding, so the list only pads vertically. */
+  padding: 8px 0 !important;
 }
 
 html body .team-directory-card .team-member-list,
@@ -604,10 +578,15 @@ html body .dashboard-shell .record-actions .btn {
   min-height: var(--eo-tap) !important;
 }
 
+html body .page-head,
+html body .page-header {
+  display: grid !important;
+  gap: 8px !important;
+  margin-bottom: 0 !important;
+}
+
 html body .contractor-portal-hero,
 html body .contractor-content-card,
-html body .page-head,
-html body .page-header,
 html body .owner-home-primary,
 html body .client-next-visit-copy {
   display: grid !important;
@@ -617,11 +596,6 @@ html body .client-next-visit-copy {
   box-shadow: none !important;
   padding: 0 !important;
   margin-bottom: 0 !important;
-}
-
-html body .dashboard-shell .app-page-stage > * + *,
-html body .role-portal-shell .app-page-stage > * + * {
-  margin-top: 10px !important;
 }
 
 html body .dashboard-shell :is(.page-header, .page-head, .quote-page-head) + *,
@@ -753,28 +727,12 @@ html body .mobile-nav-drawer .nav-item:not([aria-current='page']) * {
 }
 
 @media (max-width: 1024px) {
-  html body .dashboard-shell > .dashboard-shell-header,
-  html[data-native-app='true'] body .dashboard-shell > .dashboard-shell-header,
-  html[data-standalone='true'] body .dashboard-shell > .dashboard-shell-header,
-  body.native-app .dashboard-shell > .dashboard-shell-header,
-  body.capacitor-app .dashboard-shell > .dashboard-shell-header {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left)) !important;
-    box-sizing: border-box !important;
-    background: #243f53 !important;
-    border-bottom: 1px solid rgba(255,255,255,.10) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    pointer-events: auto !important;
-  }
+html body .dashboard-shell > .dashboard-shell-header,
+html[data-native-app='true'] body .dashboard-shell > .dashboard-shell-header,
+html[data-standalone='true'] body .dashboard-shell > .dashboard-shell-header,
+body.native-app .dashboard-shell > .dashboard-shell-header,
+body.capacitor-app .dashboard-shell > .dashboard-shell-header {
+    pointer-events: auto !important;}
 
   html body .dashboard-shell > .dashboard-shell-header .mobile-nav,
   html body .dashboard-shell > .dashboard-shell-header .mobile-nav-bar {
@@ -839,45 +797,6 @@ html body .mobile-nav-drawer .nav-item:not([aria-current='page']) * {
     align-self: center !important;
   }
 
-  html body .dashboard-shell > .main {
-    padding-top: 92px !important;
-  }
-
-  html body .dashboard-shell .app-page-content {
-    margin-bottom: 24px !important;
-  }
-
-  html body .dashboard-shell > .main > footer {
-    margin-top: 0 !important;
-  }
-
-  html[data-native-app='true'] body .dashboard-shell,
-  html[data-standalone='true'] body .dashboard-shell,
-  body.native-app .dashboard-shell,
-  body.capacitor-app .dashboard-shell {
-    min-height: 100dvh !important;
-    height: auto !important;
-  }
-
-  html[data-native-app='true'] body .dashboard-shell > .main,
-  html[data-standalone='true'] body .dashboard-shell > .main,
-  body.native-app .dashboard-shell > .main,
-  body.capacitor-app .dashboard-shell > .main {
-    min-height: 100dvh !important;
-    padding-top: calc(84px + env(safe-area-inset-top)) !important;
-    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  html[data-native-app='true'] body .dashboard-shell > .main > footer,
-  html[data-standalone='true'] body .dashboard-shell > .main > footer,
-  body.native-app .dashboard-shell > .main > footer,
-  body.capacitor-app .dashboard-shell > .main > footer {
-    margin-top: auto !important;
-  }
-
   html body .dashboard-shell .app-page-content > .everitt-cmd-trigger {
     position: relative !important;
     top: auto !important;
@@ -890,16 +809,6 @@ html body .mobile-nav-drawer .nav-item:not([aria-current='page']) * {
   }
 }
 
-@media (min-width: 1025px) {
-  html body .dashboard-shell .app-page-content {
-    margin-bottom: 28px !important;
-  }
-
-  html body .dashboard-shell > .main > footer {
-    margin-top: 0 !important;
-  }
-}
-
 /* CONSOLIDATED FROM signed-in-layout-alignment.css */
 /* Central signed-in alignment authority for owner, client, and worker views. */
 
@@ -908,30 +817,10 @@ html body .mobile-nav-drawer .nav-item:not([aria-current='page']) * {
   --signed-in-desktop-gutter: 48px;
   --signed-in-mobile-gutter: 24px;
 }
-
-html body .dashboard-shell .app-page-content,
-html body .role-portal-shell .app-page-content,
-html body .contractor-main .app-page-content,
-html body .client-main .app-page-content,
-html body .dashboard-shell .app-page-stage,
-html body .role-portal-shell .app-page-stage {
-  width: min(var(--signed-in-max-width), calc(100% - var(--signed-in-desktop-gutter))) !important;
-  max-width: var(--signed-in-max-width) !important;
-  min-width: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  box-sizing: border-box !important;
-}
-
 html body .dashboard-shell .app-page-stage > *,
 html body .role-portal-shell .app-page-stage > *,
 html body .contractor-main .app-page-stage > *,
 html body .client-main .app-page-stage > * {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
   box-sizing: border-box !important;
 }
 
@@ -1179,26 +1068,7 @@ html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.
   box-sizing: border-box !important;
 }
 
-html body .dashboard-shell > .main > footer,
-html body .role-portal-shell > .main > footer {
-  width: min(var(--signed-in-max-width), calc(100% - var(--signed-in-desktop-gutter))) !important;
-  max-width: var(--signed-in-max-width) !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
 @media (max-width: 760px) {
-  html body .dashboard-shell .app-page-content,
-  html body .role-portal-shell .app-page-content,
-  html body .contractor-main .app-page-content,
-  html body .client-main .app-page-content,
-  html body .dashboard-shell .app-page-stage,
-  html body .role-portal-shell .app-page-stage,
-  html body .dashboard-shell > .main > footer,
-  html body .role-portal-shell > .main > footer {
-    width: calc(100% - var(--signed-in-mobile-gutter)) !important;
-    max-width: none !important;
-  }
 
   html body .customer-card-row .record-actions {
     margin-top: 10px !important;
@@ -1428,13 +1298,9 @@ html body .role-portal-shell > .main > footer {
    one moderate rhythm instead of page-by-page spacing overrides. */
 
 :root {
-  --eo-card-inline-padding: 24px;
-  --eo-card-block-padding: 20px;
   --eo-page-stack-gap: 20px;
   --eo-section-stack-gap: 16px;
   --eo-content-gap: 10px;
-  --eo-control-gap: 10px;
-  --eo-label-gap: 7px;
   --eo-actions-top-gap: 12px;
 }
 
@@ -1659,12 +1525,9 @@ body .role-portal-shell .customer-card-row {
 
 @media (max-width: 700px) {
   :root {
-    --eo-card-inline-padding: 20px;
-    --eo-card-block-padding: 18px;
     --eo-page-stack-gap: 18px;
     --eo-section-stack-gap: 14px;
     --eo-content-gap: 9px;
-    --eo-control-gap: 9px;
     --eo-actions-top-gap: 11px;
   }
 
@@ -1682,11 +1545,8 @@ body .role-portal-shell .customer-card-row {
 
 @media (max-width: 420px) {
   :root {
-    --eo-card-inline-padding: 18px;
-    --eo-card-block-padding: 16px;
     --eo-page-stack-gap: 16px;
     --eo-section-stack-gap: 12px;
-    --eo-control-gap: 8px;
   }
 }
 

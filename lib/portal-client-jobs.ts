@@ -107,6 +107,15 @@ function toListJob(job: JobRow, invoices: InvoiceRow[]): ClientPortalJobRow {
   };
 }
 
+const PORTAL_LOAD_ERROR = 'Unable to load shared jobs.';
+
+/** Keep database detail in server logs; clients only get a generic message. */
+function portalLoadFailure(stage: string, error: unknown): { ok: false; error: string; status: number } {
+  const reason = error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String((error as { message: unknown }).message) : String(error);
+  console.error(`[everittos-portal] ${JSON.stringify({ event: 'client_portal_load_failed', stage, reason })}`);
+  return { ok: false, error: PORTAL_LOAD_ERROR, status: 500 };
+}
+
 export async function loadClientPortalJobs(input: {
   admin: SupabaseClient;
   userId: string;
@@ -123,7 +132,7 @@ export async function loadClientPortalJobs(input: {
     .eq('client_user_id', input.userId);
 
   if (accessError) {
-    return { ok: false, error: accessError.message, status: 500 };
+    return portalLoadFailure('access', accessError);
   }
 
   const jobIds = Array.from(
@@ -152,11 +161,7 @@ export async function loadClientPortalJobs(input: {
       return (data || []) as InvoiceRow[];
     }, jobIds);
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unable to load shared jobs.',
-      status: 500
-    };
+    return portalLoadFailure('list', error);
   }
 
   const invoicesByJob = new Map<string, InvoiceRow[]>();
@@ -219,7 +224,7 @@ export async function loadClientPortalJob(input: {
     .maybeSingle();
 
   if (accessError) {
-    return { ok: false, error: accessError.message, status: 500 };
+    return portalLoadFailure('job_access', accessError);
   }
   if (!access) {
     return { ok: false, error: 'This job is not shared with your account.', status: 403 };
@@ -240,7 +245,7 @@ export async function loadClientPortalJob(input: {
     ]);
 
   if (jobError) {
-    return { ok: false, error: jobError.message, status: 500 };
+    return portalLoadFailure('job', jobError);
   }
   if (!job) {
     return { ok: false, error: 'This shared job could not be found.', status: 404 };

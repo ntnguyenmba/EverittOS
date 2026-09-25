@@ -11,7 +11,7 @@ type AppPageContentProps = {
   className?: string;
 };
 
-/** Ask Everitt floats as chrome; all page content lives in one white stage. */
+/** Ask Everitt floats as chrome; page sections float as separate surfaces on the backdrop. */
 export function AppPageContent({ children, className }: AppPageContentProps) {
   const classes = className ? `app-page-content ${className}` : 'app-page-content';
   const items = Children.toArray(children);
@@ -24,16 +24,7 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
   }
 
   return (
-    <div
-      className={classes}
-      style={{
-        width: '100%',
-        maxWidth: 'none',
-        minWidth: 0,
-        marginLeft: 0,
-        marginRight: 0
-      }}
-    >
+    <div className={classes}>
       {chrome}
       <div className="app-page-stage">
         <CompactRecordLists />

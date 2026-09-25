@@ -1,19 +1,7 @@
 :root {
-  /* Everitt Ventures Tech palette */
-  --bg: #FAFBFC;
-  --surface: #FFFFFF;
   --sidebar-bg: #EFF3F7;
-  --card: #FFFFFF;
-  --text: #25364A;
-  --text-secondary: #5F7186;
   --text-on-dark: #F7F6F3;
-  --navy-primary: #2D3748;
-  --navy-secondary: #3A4658;
-  --accent: #2f5f8f;
-  --line: rgba(37, 54, 74, 0.12);
   --hover: rgba(47, 95, 143, 0.07);
-  --muted: #8897A8;
-  --warm-white: #F7F6F3;
   --success: #4A6354;
   --success-soft: rgba(74, 99, 84, 0.1);
   --accent-soft: rgba(47, 95, 143, 0.1);
@@ -42,7 +30,6 @@
   /* Legacy aliases */
   --slate: var(--navy-primary);
   --charcoal: #2A2A2A;
-  --soft-white: var(--warm-white);
   --cool-grey: var(--muted);
   --blue: var(--navy-primary);
   --blue-soft: var(--accent-soft);
@@ -309,17 +296,6 @@ p { color: var(--muted); line-height: 1.7; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
 .workflow { display: grid; gap: 14px; margin-top: 24px; }
 
-.dashboard-shell {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    'mobile mobile'
-    'side main';
-  min-height: 100vh;
-  background: transparent;
-}
-
 .dashboard-shell-mobile {
   grid-area: mobile;
   display: none;
@@ -335,8 +311,6 @@ p { color: var(--muted); line-height: 1.7; }
   grid-area: side;
 }
 
-.main { grid-area: main; }
-
 .sidebar-plan { margin-bottom: 20px; }
 .sidebar-plan-link {
   display: inline-flex;
@@ -349,12 +323,6 @@ p { color: var(--muted); line-height: 1.7; }
   background: var(--hover);
 }
 .sidebar-logout { margin-top: 0; width: auto; }
-
-.main {
-  padding: var(--page-py) var(--page-px) calc(var(--page-py) + 12px);
-  max-width: 1200px;
-  width: 100%;
-}
 .page-head { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-bottom: 28px; }
 
 .app-page-top {
@@ -1434,13 +1402,6 @@ p { color: var(--muted); line-height: 1.7; }
     visibility: hidden;
     pointer-events: none;
   }
-  .dashboard-shell {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'mobile'
-      'main';
-    overflow-x: hidden;
-  }
   .mobile-nav {
     position: relative;
     z-index: 40;
@@ -1462,20 +1423,6 @@ p { color: var(--muted); line-height: 1.7; }
     overflow: hidden;
   }
   h1 { font-size: var(--text-page-title); }
-  .main {
-    grid-area: main;
-    position: relative;
-    z-index: 1;
-    min-width: 0;
-    width: 100%;
-    padding: 12px var(--page-px) calc(var(--page-py) + 12px);
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-  .dashboard-shell .main {
-    padding-top: 12px;
-    margin-left: 0;
-  }
   .app-page-top {
     margin-bottom: 12px;
   }
@@ -2728,15 +2675,6 @@ p { color: var(--muted); line-height: 1.7; }
   .inline-actions .input {
     width: 100%;
   }
-
-  .dashboard-shell {
-    overflow-x: hidden;
-  }
-
-  .main {
-    max-width: 100%;
-    overflow-x: auto;
-  }
 }
 
 .report-signature {
@@ -2832,10 +2770,6 @@ html[data-deployment='production'] #vercel-toolbar {
   .no-print,
   .nav {
     display: none !important;
-  }
-
-  .main {
-    padding: 0;
   }
 
   body {
@@ -3040,7 +2974,6 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 /* Safe-area support for mobile / future native wrappers */
-.dashboard-shell,
 .auth-page,
 .cookie-banner {
   padding-left: env(safe-area-inset-left);
@@ -3051,10 +2984,10 @@ html[data-deployment='production'] #vercel-toolbar {
 .mobile-nav {
   padding-top: env(safe-area-inset-top);
 }
-
-.dashboard-shell .main,
-.app-footer,
 .cookie-banner {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.app-footer {
   padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
@@ -3119,7 +3052,6 @@ html[data-deployment='production'] #vercel-toolbar {
 
 /* App footer */
 .app-footer {
-  margin-top: 40px;
   padding-top: 20px;
   border-top: 1px solid var(--line);
 }
@@ -3590,10 +3522,6 @@ html[data-deployment='production'] #vercel-toolbar {
   .dashboard-activity-card {
     padding: 18px 16px;
   }
-
-  .dashboard-shell .main {
-    padding-bottom: 32px;
-  }
 }
 
 /* Dashboard polish (legacy) */
@@ -3771,9 +3699,7 @@ html[data-deployment='production'] #vercel-toolbar {
   font-size: 14px;
   word-break: break-all;
 }
-
 .app-footer {
-  margin-top: 40px;
   padding: 24px 0 8px;
   font-size: 14px;
 }
@@ -4616,11 +4542,6 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 /* ── Responsive page shell ── */
-.app-page-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--section-gap);
-}
 
 .page-header {
   display: flex;
@@ -5298,10 +5219,6 @@ html[data-deployment='production'] #vercel-toolbar {
     --page-py: 32px;
     --section-gap: 32px;
     --card-pad: 24px;
-  }
-
-  .main {
-    padding-bottom: calc(var(--page-py) + 12px);
   }
 }
 

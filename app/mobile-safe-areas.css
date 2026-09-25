@@ -10,13 +10,6 @@
     padding-right: 0 !important;
   }
 
-  html[data-native-app='true'] .dashboard-shell-header,
-  html[data-standalone='true'] .dashboard-shell-header,
-  body.native-app .dashboard-shell-header,
-  body.capacitor-app .dashboard-shell-header {
-    padding-top: max(8px, env(safe-area-inset-top)) !important;
-  }
-
   html[data-native-app='true'] .app-shell-header,
   html[data-native-app='true'] .mobile-nav-top,
   html[data-standalone='true'] .app-shell-header,
@@ -49,35 +42,12 @@
 
 /* Central signed-in header behavior for owner, client, and worker views. */
 @media (max-width: 1024px) {
-  .dashboard-shell-header,
-  html[data-native-app='true'] .dashboard-shell-header,
-  html[data-standalone='true'] .dashboard-shell-header,
-  body.native-app .dashboard-shell-header,
-  body.capacitor-app .dashboard-shell-header {
-    position: sticky !important;
-    top: 0 !important;
-    left: auto !important;
-    right: auto !important;
-    z-index: 1000 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    background: var(--eo-color-brand) !important;
-    border-bottom: 1px solid rgba(255,255,255,.10) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    pointer-events: auto !important;
-  }
-
-  .dashboard-shell > .main,
-  html[data-native-app='true'] .dashboard-shell > .main,
-  html[data-standalone='true'] .dashboard-shell > .main,
-  body.native-app .dashboard-shell > .main,
-  body.capacitor-app .dashboard-shell > .main {
-    padding-top: 20px !important;
-  }
+.dashboard-shell-header,
+html[data-native-app='true'] .dashboard-shell-header,
+html[data-standalone='true'] .dashboard-shell-header,
+body.native-app .dashboard-shell-header,
+body.capacitor-app .dashboard-shell-header {
+    pointer-events: auto !important;}
 
   .dashboard-shell .app-page-content > .everitt-cmd-trigger {
     position: relative !important;

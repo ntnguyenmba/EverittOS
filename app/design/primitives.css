@@ -48,6 +48,138 @@
   margin-inline: auto;
 }
 
+/* Signed-in shell geometry. AppShell renders these containers; this is the
+   only place their width, gutters, and spacing are defined. The shell is
+   transparent so .eo-backdrop shows around the floating page surfaces. */
+.dashboard-shell {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
+  background: transparent;
+}
+
+.dashboard-shell > .sidebar {
+  display: none;
+}
+
+.dashboard-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: block;
+  width: 100%;
+  padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--eo-shell-header-border);
+  background: var(--eo-header-bg);
+}
+
+.dashboard-shell > .main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+  margin: 0;
+  padding: var(--eo-page-pad-top) max(var(--eo-gutter), env(safe-area-inset-right, 0px)) var(--eo-page-pad-bottom) max(var(--eo-gutter), env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-x: clip;
+  background: transparent;
+}
+
+.app-page-content,
+.dashboard-shell > .main > .app-footer {
+  width: min(100%, var(--eo-page-max));
+  min-width: 0;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.app-page-content {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--eo-section-gap);
+  padding: 0;
+  background: transparent;
+}
+
+.app-page-content > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell > .main > .app-footer {
+  margin-top: var(--eo-section-gap);
+}
+
+/* Page stage: a transparent column. Each section inside it is its own
+   surface; the stage itself never paints a background. */
+.app-page-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eo-section-gap);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* Page surfaces. Every section a page renders into the stage floats as its
+   own white surface over the backdrop; nothing wraps the whole route.
+   - A wrapper (a plain container whose direct children are already cards or
+     page headers) stays transparent; its children become the surfaces. Two
+     wrapper levels are recognised, which covers every current route.
+   - Action, filter, and tab rows sit on the backdrop: their buttons are
+     surfaces already.
+   Pages opt out of the automatic surface with .eo-bare. */
+.app-page-stage > :is(div, section, main, article):not(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .eo-bare):has(> :is(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .page-header, .page-head, header)),
+.app-page-stage > :is(div, section, main, article) > :is(div, section):not(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .eo-bare):has(> :is(.card, .settings-card, .panel, [class$='-card'], [class*='-card '])) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eo-section-gap);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(
+  .app-page-stage,
+  .app-page-stage > :is(div, section, main, article):not(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .eo-bare):has(> :is(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .page-header, .page-head, header)),
+  .app-page-stage > :is(div, section, main, article) > :is(div, section):not(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .eo-bare):has(> :is(.card, .settings-card, .panel, [class$='-card'], [class*='-card ']))
+) > :not(
+  :is(div, section, main, article):not(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .eo-bare):has(> :is(.card, .settings-card, .panel, [class$='-card'], [class*='-card '], .page-header, .page-head, header)),
+  .app-role-banner, .eo-bare, .button-row, .inline-actions, .job-detail-actions, .page-actions,
+  .jobs-filter-tabs, .app-list-disclosure, .segmented-control, .portal-client-nav,
+  .role-period-filter, .metric-grid, .role-summary-grid,
+  button, a, script, style, template, :empty
+) {
+  min-width: 0;
+  margin: 0;
+  padding: var(--eo-card-padding);
+  box-sizing: border-box;
+  border: 1px solid var(--eo-surface-border);
+  border-radius: var(--eo-radius-card);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  box-shadow: var(--eo-shadow-card);
+}
+
 /* One visible keyboard focus ring for every interactive element. Zero
    specificity, so component rules can restyle it but never need to remove it. */
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible {

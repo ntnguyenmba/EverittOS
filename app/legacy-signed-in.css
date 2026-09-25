@@ -9,26 +9,10 @@
    owns signed-in layout and hero-last/mobile-readability own the raw backdrop. */
 
 :root {
-  --paper: #ffffff;
   --paper-solid: #ffffff;
-  --ink: #132433;
-  --ink-2: #31495b;
-  --ink-3: #526777;
-  --line: #d5dee5;
-  --accent: #285d78;
-  --surface: #ffffff;
-  --card: #ffffff;
-  --text: #132433;
-  --text-secondary: #31495b;
-  --muted: #526777;
 }
-
-.dashboard-shell > .main,
-.dashboard-shell .main,
-.dashboard-shell .app-page-content,
 .contractor-main,
-.client-main,
-.role-portal-shell .app-page-content {
+.client-main {
   background: transparent !important;
   background-color: transparent !important;
   border: 0 !important;
@@ -36,28 +20,19 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-
 .dashboard-shell .app-page-content,
 .role-portal-shell .app-page-content,
 .contractor-main .app-page-content,
 .client-main .app-page-content {
-  padding: 0 !important;
   color: var(--ink) !important;
 }
 
 /* Structural list/grid holders stay invisible. */
-.dashboard-shell .jobs-table-card,
-.dashboard-shell .jobs-advanced-filters,
 .dashboard-shell .dashboard-revenue-grid,
 .dashboard-shell .metric-grid,
 .dashboard-shell .stats-grid,
 .dashboard-shell .team-command-grid,
 .dashboard-shell .role-summary-grid,
-.dashboard-shell .list-group,
-.dashboard-shell .jobs-list,
-.dashboard-shell .customer-list,
-.dashboard-shell .customers-list,
-.dashboard-shell .record-list,
 .dashboard-shell .cards-grid,
 .dashboard-shell .section-grid,
 .contractor-main .contractor-content-card,
@@ -258,11 +233,6 @@
   .dashboard-shell .jobs-advanced-filters {
     display: block !important;
     width: 100% !important;
-    margin: 16px 0 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
   }
 
   .dashboard-shell .jobs-filter-heading {
@@ -314,15 +284,7 @@
   }
 
   .dashboard-shell .jobs-list-more {
-    width: auto !important;
-    max-width: 100% !important;
     min-height: 0 !important;
-    margin: 16px 0 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
     color: #526777 !important;
     font-size: 13px !important;
     font-weight: 400 !important;
@@ -356,53 +318,43 @@
 /* END jobs-filter-mobile-alignment.css */
 
 /* BEGIN jobs-mobile-layout-hotfix.css */
-/* Canonical signed-in layout. Login is the visual master: floating chrome + one white page card. */
-:root{--eo-gutter:16px;--eo-gap:16px;--eo-radius:26px;--eo-max:720px;--eo-paper:#fff;--eo-ink:#132433;--eo-muted:#526777;--eo-line:#d5dee5;--eo-accent:#285d78}
-.dashboard-shell,.dashboard-shell *{box-sizing:border-box}
-.dashboard-shell .app-page-top,.dashboard-shell .app-page-content{width:min(var(--eo-max),calc(100% - 32px))!important;max-width:var(--eo-max)!important;margin-left:auto!important;margin-right:auto!important}
-.dashboard-shell .app-page-content{display:flex!important;flex-direction:column!important;gap:12px!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* Signed-in page details. Layout and surfaces now live in app/design/primitives.css. */
+:root{--eo-gap:16px;--eo-radius:26px;--eo-max:720px;--eo-paper:#fff;--eo-line:#d5dee5;--eo-accent:#285d78}.dashboard-shell * {box-sizing:border-box}
+.dashboard-shell .app-page-top {width:min(var(--eo-max),calc(100% - 32px))!important;max-width:var(--eo-max)!important;margin-left:auto!important;margin-right:auto!important}
 .dashboard-shell .everitt-cmd-trigger,.dashboard-shell .ask-everitt-trigger,.dashboard-shell [data-ask-everitt-trigger]{width:100%!important;min-height:48px!important;margin:0!important;border:1px solid rgba(255,255,255,.62)!important;border-radius:14px!important;background:#fff!important;color:var(--eo-ink)!important;box-shadow:0 12px 30px rgba(11,29,42,.17)!important}
-.dashboard-shell .app-page-stage{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:24px!important;border:1px solid rgba(255,255,255,.85)!important;border-radius:var(--eo-radius)!important;background:#fff!important;color:var(--eo-ink)!important;box-shadow:0 34px 90px rgba(9,24,35,.24)!important;overflow:visible!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.dashboard-shell .app-page-stage>*+*{margin-top:var(--eo-gap)!important}
+.dashboard-shell .app-page-stage {color:var(--eo-ink)!important;}
 .dashboard-shell .app-page-stage h1,.dashboard-shell .app-page-stage h2,.dashboard-shell .app-page-stage h3,.dashboard-shell .app-page-stage p,.dashboard-shell .app-page-stage label,.dashboard-shell .app-page-stage summary{color:var(--eo-ink)!important;opacity:1!important}
 .dashboard-shell .app-page-stage .muted,.dashboard-shell .app-page-stage .page-subtitle,.dashboard-shell .app-page-stage small{color:var(--eo-muted)!important;opacity:1!important}
-.dashboard-shell .app-page-stage .page-header,.dashboard-shell .app-page-stage .page-head,.dashboard-shell .app-page-stage .quote-page-head,.dashboard-shell .app-page-stage>header.card,.dashboard-shell .app-page-stage>header,.dashboard-shell .app-page-stage .panel,.dashboard-shell .app-page-stage .card:not(.job-card):not(.client-job-card):not(.role-summary-card):not(.record-card){width:100%!important;margin-left:0!important;margin-right:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.dashboard-shell .app-page-stage .page-header,.dashboard-shell .app-page-stage .page-head,.dashboard-shell .app-page-stage .quote-page-head,.dashboard-shell .app-page-stage>header.card,.dashboard-shell .app-page-stage>header{margin-top:0!important;padding:0!important;color:var(--eo-ink)!important}
 .dashboard-shell .app-page-stage h1{margin:0!important;text-align:left!important}.dashboard-shell .quote-page-head .eyebrow{display:none!important}.dashboard-shell .page-subtitle{margin:6px 0 0!important;font-size:13px!important;line-height:1.45!important}
-.dashboard-shell .app-page-stage .jobs-table-card,.dashboard-shell .app-page-stage .jobs-mobile-table-wrap,.dashboard-shell .app-page-stage .jobs-filter-tabs,.dashboard-shell .app-page-stage .jobs-advanced-filters,.dashboard-shell .app-page-stage .jobs-filter-grid,.dashboard-shell .app-page-stage .quote-compose-grid,.dashboard-shell .app-page-stage .quote-compose,.dashboard-shell .app-page-stage .quote-saved,.dashboard-shell .app-page-stage .quote-list,.dashboard-shell .app-page-stage .customer-list,.dashboard-shell .app-page-stage .customers-list,.dashboard-shell .app-page-stage .record-list,.dashboard-shell .app-page-stage .role-summary-grid,.dashboard-shell .app-page-stage .metric-grid{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.dashboard-shell .app-page-stage .quote-compose{padding-left:0!important;padding-right:0!important}
 .dashboard-shell .app-page-stage .jobs-operations-row,.dashboard-shell .app-page-stage .job-card,.dashboard-shell .app-page-stage .customer-card-row,.dashboard-shell .app-page-stage .client-job-card,.dashboard-shell .app-page-stage .list-row,.dashboard-shell .app-page-stage .record-card,.dashboard-shell .app-page-stage .quote-row,.dashboard-shell .app-page-stage .role-summary-card{min-height:64px!important;margin:0!important;padding:14px 0!important;border:0!important;border-bottom:1px solid var(--eo-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .dashboard-shell .app-page-stage input:not([type=checkbox]):not([type=radio]),.dashboard-shell .app-page-stage select,.dashboard-shell .app-page-stage textarea{width:100%!important;min-width:0!important;min-height:48px!important;border:1px solid rgba(19,36,51,.18)!important;border-radius:12px!important;background:#fff!important;color:var(--eo-ink)!important}.dashboard-shell .app-page-stage textarea{min-height:112px!important}
 .dashboard-shell .app-page-stage .btn,.dashboard-shell .app-page-stage button:not(.unstyled-button){min-height:44px!important;height:auto!important;padding:10px 14px!important;border-radius:12px!important;writing-mode:horizontal-tb!important;text-orientation:mixed!important;white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;line-height:1.2!important}
 .dashboard-shell .app-page-stage .empty-state{padding:16px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--eo-ink)!important}.dashboard-shell .app-page-stage .empty-state p{color:var(--eo-muted)!important}
 .dashboard-shell .app-stage-copyright{margin:24px 0 0!important;padding-top:16px!important;border-top:1px solid var(--eo-line)!important;color:var(--eo-muted)!important;font-size:12px!important;font-weight:400!important;line-height:1.4!important;text-align:center!important}
-.role-portal-shell .app-page-stage .role-dashboard>header.card,.role-portal-shell .app-page-stage .contractor-dashboard>header.card,.role-portal-shell .app-page-stage .portal-page>header.card,.role-portal-shell .app-page-stage .role-dashboard-topbar,.role-portal-shell .app-page-stage .portal-client-nav{margin:0!important;padding-left:0!important;padding-right:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
-.role-portal-shell .app-page-stage .role-summary-grid,.role-portal-shell .app-page-stage .metric-grid{gap:0!important}
 .role-portal-shell .app-page-stage .portal-client-nav{display:flex!important;flex-wrap:wrap!important;gap:8px!important}.role-portal-shell .app-page-stage .portal-client-nav a,.role-portal-shell .app-page-stage .portal-client-nav button{flex:1 1 120px!important;min-width:0!important;min-height:44px!important}.role-portal-shell .app-page-stage .button-row{gap:12px!important}
-.dashboard-shell .jobs-list-page .page-header-action{display:block!important;width:100%!important;max-width:none!important;margin:16px 0 0!important;position:static!important;transform:none!important}.dashboard-shell .jobs-header-actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:48px 48px!important;gap:12px!important;width:100%!important;margin:0!important}.dashboard-shell .jobs-header-actions>*{width:100%!important;min-width:0!important;max-width:none!important;height:48px!important;margin:0!important}.dashboard-shell .jobs-header-actions>:last-child{grid-column:1/-1!important;grid-row:1!important}.dashboard-shell .jobs-header-actions>:first-child{grid-column:1!important;grid-row:2!important}.dashboard-shell .jobs-header-actions>:nth-child(2){grid-column:2!important;grid-row:2!important}.dashboard-shell .jobs-header-actions a,.dashboard-shell .jobs-header-actions button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:48px!important;margin:0!important;white-space:nowrap!important}
+@media(max-width:640px){.dashboard-shell .jobs-list-page .page-header-action{display:block!important;width:100%!important;max-width:none!important;margin:16px 0 0!important;position:static!important;transform:none!important}.dashboard-shell .jobs-header-actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:48px 48px!important;gap:12px!important;width:100%!important;margin:0!important}.dashboard-shell .jobs-header-actions>*{width:100%!important;min-width:0!important;max-width:none!important;height:48px!important;margin:0!important}.dashboard-shell .jobs-header-actions>:last-child{grid-column:1/-1!important;grid-row:1!important}.dashboard-shell .jobs-header-actions>:first-child{grid-column:1!important;grid-row:2!important}.dashboard-shell .jobs-header-actions>:nth-child(2){grid-column:2!important;grid-row:2!important}.dashboard-shell .jobs-header-actions a,.dashboard-shell .jobs-header-actions button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:48px!important;margin:0!important;white-space:nowrap!important}}
 .dashboard-shell .jobs-filter-tabs{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:0!important;padding:0!important}.dashboard-shell .jobs-filter-tab{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:36px!important;padding:7px 13px!important;border:1px solid rgba(19,36,51,.14)!important;border-radius:999px!important;background:#fff!important;color:var(--eo-muted)!important;white-space:nowrap!important}.dashboard-shell .jobs-filter-tab-active{color:var(--eo-accent)!important;border-color:rgba(40,93,120,.32)!important}
 .dashboard-shell .jobs-filter-grid{display:grid!important;grid-template-columns:1fr!important;gap:12px!important;margin:0!important;padding:0!important}.dashboard-shell .jobs-filter-control{grid-column:1!important;width:100%!important}.dashboard-shell .jobs-filter-control select{height:48px!important}
 .dashboard-shell .record-count,.dashboard-shell .jobs-count,.dashboard-shell .showing-count{display:block!important;width:auto!important;margin:12px 0 0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--eo-muted)!important;font-size:13px!important;font-weight:400!important;line-height:1.4!important}
 .dashboard-shell .quote-workspace{max-width:100%!important;padding:0!important;margin:0!important}.dashboard-shell .quote-compose-grid{display:block!important}.dashboard-shell .quote-letter{display:none!important}.dashboard-shell .quote-saved{margin-top:20px!important}.dashboard-shell .quote-section-head{margin:0 0 10px!important;padding:0!important;border:0!important;background:transparent!important}
-@media(max-width:1279px){.dashboard-shell>.main{padding-left:0!important;padding-right:0!important;padding-bottom:calc(144px + env(safe-area-inset-bottom,0px))!important}}
-@media(max-width:560px){.dashboard-shell .app-page-top,.dashboard-shell .app-page-content{width:calc(100% - 32px)!important}.dashboard-shell .app-page-stage{padding:22px!important;border-radius:22px!important}.role-portal-shell .app-page-stage .role-summary-grid,.role-portal-shell .app-page-stage .metric-grid{grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav{display:grid!important;grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav a,.role-portal-shell .app-page-stage .portal-client-nav button{width:100%!important}}
+@media(max-width:560px){.dashboard-shell .app-page-top {width:calc(100% - 32px)!important}.role-portal-shell .app-page-stage .role-summary-grid,.role-portal-shell .app-page-stage .metric-grid{grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav{display:grid!important;grid-template-columns:1fr!important}.role-portal-shell .app-page-stage .portal-client-nav a,.role-portal-shell .app-page-stage .portal-client-nav button{width:100%!important}}
 @media(max-width:350px){.dashboard-shell .jobs-header-actions{grid-template-columns:1fr!important;grid-template-rows:repeat(3,48px)!important}.dashboard-shell .jobs-header-actions>:last-child,.dashboard-shell .jobs-header-actions>:first-child,.dashboard-shell .jobs-header-actions>:nth-child(2){grid-column:1!important;grid-row:auto!important}}
 /* END jobs-mobile-layout-hotfix.css */
 
 /* BEGIN word-spacing-fix.css */
 /* Global readable type. Visual only. Owner, worker, client. */
-
 .dashboard-shell,
 .role-portal-shell {
   color: #132433;
 }
-
-.dashboard-shell,
 .dashboard-shell *,
-.role-portal-shell,
 .role-portal-shell * {
   word-spacing: normal;
   overflow-wrap: break-word;
+}
+.dashboard-shell,
+.role-portal-shell {
+  word-spacing: normal;
 }
 
 .dashboard-shell .muted,
@@ -417,11 +369,13 @@
 .dashboard-shell .card,
 .dashboard-shell .panel,
 .dashboard-shell .settings-card,
-.dashboard-shell .app-page-stage,
 .dashboard-shell .bookkeeping-ledger,
 .dashboard-shell .bookkeeping-metric-card {
   color: #132433 !important;
   background: #fff !important;
+}
+.dashboard-shell .app-page-stage {
+  color: #132433 !important;
 }
 
 .dashboard-shell .btn-primary,
@@ -548,10 +502,6 @@
   .dashboard-shell .app-page-top-logo {
     display: none !important;
   }
-
-  .dashboard-shell-header {
-    padding-bottom: 4px !important;
-  }
 }
 /* END top-chrome-align.css */
 
@@ -579,11 +529,6 @@
   overflow: hidden;
   pointer-events: auto !important;
   background: rgba(18, 37, 50, 0.42) !important;
-}
-
-body:has(.everitt-cmd-overlay) .dashboard-shell > .main,
-body:has(.everitt-cmd-overlay) .main {
-  z-index: 2147482999 !important;
 }
 
 body:has(.everitt-cmd-overlay) .dashboard-shell-mobile,
@@ -819,14 +764,9 @@ body:has(.everitt-cmd-overlay) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
-
 .dashboard-shell-header {
-  display: block !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  position: sticky;
-  top: 0;
-  z-index: 100 !important;
 }
 
 .dashboard-shell-header .mobile-nav,
@@ -1031,17 +971,10 @@ body:has(.everitt-cmd-overlay) {
 .role-portal-shell fieldset > label + :is(input, select, textarea, .input) {
   margin-top: var(--everitt-label-gap) !important;
 }
-
-.dashboard-shell .app-page-stage > * + *,
-.dashboard-shell .app-page-content > * + *,
 .dashboard-shell .contractor-main > * + *,
-.dashboard-shell .client-main > * + *,
-.role-portal-shell .app-page-stage > * + * {
+.dashboard-shell .client-main > * + * {
   margin-top: var(--everitt-section-gap) !important;
 }
-
-.dashboard-shell .app-page-content > .card + .card,
-.dashboard-shell .app-page-stage > .card + .card,
 .dashboard-shell .contractor-main > .card + .card,
 .dashboard-shell .client-main > .card + .card,
 .role-portal-shell .card + .card {
@@ -1154,13 +1087,8 @@ body {
 body {
   touch-action: pan-y;
 }
-
-.dashboard-shell,
-.role-portal-shell,
 .app-shell,
 .app-page-shell,
-.app-page-stage,
-.app-page-content,
 .contractor-main,
 .client-main {
   width: 100%;
@@ -1239,18 +1167,11 @@ body {
 }
 
 @media (max-width: 1279px) {
-  .dashboard-shell,
-  .role-portal-shell,
   .app-shell,
   .app-page-shell {
     padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
   }
-
-  .dashboard-shell .app-page-stage,
-  .dashboard-shell .app-page-content,
-  .role-portal-shell .app-page-stage,
-  .role-portal-shell .app-page-content,
   .dashboard-shell .contractor-main,
   .dashboard-shell .client-main {
     margin-left: auto;
@@ -1266,8 +1187,6 @@ body {
 /* BEGIN visual-unify.css */
 /* Last visual pass: type, color, inner spacing. No route or data changes. */
 :root {
-  --eo-ink: #132433;
-  --eo-muted: #31495b;
   --eo-line: #c9d4dc;
   --eo-accent: #243f53;
   --eo-paper: #ffffff;
@@ -1275,21 +1194,26 @@ body {
 
 html,
 body,
-.dashboard-shell,
 .dashboard-shell *,
-.role-portal-shell,
 .role-portal-shell *,
-.app-footer,
 .mobile-nav,
 .mobile-nav * {
   font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
 }
-
-.dashboard-shell .app-page-stage,
+.app-footer {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
+.dashboard-shell,
+.role-portal-shell {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
 .dashboard-shell .card,
 .dashboard-shell .panel,
 .dashboard-shell .settings-card {
   background: var(--eo-paper) !important;
+  color: var(--eo-ink) !important;
+}
+.dashboard-shell .app-page-stage {
   color: var(--eo-ink) !important;
 }
 
@@ -1470,23 +1394,29 @@ body,
 /* Keep login type/color. Backdrop is owned by hero-last + AppShell overlay. */
 html,
 body,
-.dashboard-shell,
 .dashboard-shell *,
-.role-portal-shell,
 .role-portal-shell *,
 .mobile-nav,
-.sidebar,
+.sidebar {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
 .app-footer {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
+}
+.dashboard-shell,
+.role-portal-shell {
   font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
 }
 
 .dashboard-shell .card,
 .dashboard-shell .panel,
 .dashboard-shell .settings-card,
-.dashboard-shell .app-page-stage,
 .dashboard-shell .bookkeeping-metric-card,
 .dashboard-shell .bookkeeping-ledger {
   background: #ffffff !important;
+  color: #132433 !important;
+}
+.dashboard-shell .app-page-stage {
   color: #132433 !important;
 }
 
@@ -1503,19 +1433,11 @@ body,
 /* Final responsive layout guard.
    This file must remain a late global stylesheet import so authenticated pages
    cannot inherit stale desktop offsets when the sidebar is replaced by mobile navigation. */
-
-.dashboard-shell,
-.dashboard-shell > .main,
-.app-page-content,
 .page-content,
 .dashboard-content,
 .today-page,
 .dashboard-home {
   min-width: 0;
-}
-
-.main {
-  max-width: none;
 }
 
 .app-page-top-language {
@@ -1524,27 +1446,25 @@ body,
 
 /* Never animate structural layout properties. This prevents the page from visibly
    sliding after hydration, workspace loading, or native-platform detection. */
-.dashboard-shell,
-.dashboard-shell > .main,
-.dashboard-shell-header,
 .dashboard-shell-mobile,
 .sidebar,
-.app-page-content,
 .today-page,
 .dashboard-home {
   transition-property: none !important;
   animation-name: none !important;
 }
+.dashboard-shell-header {
+  transition-property: none !important;
+  animation-name: none !important;
+}
+.dashboard-shell,
+.dashboard-shell > .main,
+.app-page-content {
+  transition-property: none !important;
+  animation-name: none !important;
+}
 
 /* Owner, worker, and client all use the worker chrome: no left sidebar, hamburger top right. */
-.dashboard-shell {
-  display: block !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-}
 
 .dashboard-shell > .sidebar,
 .dashboard-shell .sidebar {
@@ -1558,8 +1478,6 @@ body,
   visibility: hidden !important;
   pointer-events: none !important;
 }
-
-.dashboard-shell-header,
 .dashboard-shell-mobile {
   display: block !important;
   visibility: visible !important;
@@ -1574,6 +1492,11 @@ body,
   margin: 0 !important;
   padding: 10px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)) !important;
   box-sizing: border-box !important;
+}
+.dashboard-shell-header {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .dashboard-shell-header .mobile-nav,
@@ -1594,31 +1517,17 @@ body,
   opacity: 1 !important;
   pointer-events: auto !important;
 }
-
 .dashboard-shell > .main,
 .main {
-  display: block !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  margin-left: 0 !important;
-  inset: auto !important;
   translate: none !important;
-  transform: none !important;
-  padding-left: clamp(16px, 3vw, 30px) !important;
-  padding-right: clamp(16px, 3vw, 30px) !important;
 }
 
 .main > .app-page-top,
-.main > .app-page-content,
-.app-page-content,
 .page-content,
 .dashboard-content,
 .app-authenticated-header,
 .app-authenticated-header-search,
 .app-authenticated-header-search-only,
-body:has(.today-page) .app-page-content,
 body:has(.today-page) .today-page,
 .today-page,
 .dashboard-home {
@@ -1632,10 +1541,10 @@ body:has(.today-page) .today-page,
   translate: none !important;
   transform: none !important;
 }
-
-.app-page-content {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.main > .app-page-content,
+.app-page-content,
+body:has(.today-page) .app-page-content {
+  translate: none !important;
 }
 
 .today-page,
@@ -1648,14 +1557,6 @@ body:has(.today-page) .today-page,
 .dashboard-home > * {
   min-width: 0 !important;
   max-width: 100% !important;
-}
-
-@media (max-width: 640px) {
-  .dashboard-shell > .main,
-  .main {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
 }
 
 /* Customers / CRM page polish */
@@ -1798,25 +1699,12 @@ body:has(.today-page) .today-page,
 
 :root {
   --eo-view-inset: clamp(14px, 4.2vw, 28px);
-  --eo-view-max: 760px;
-  --eo-box-gap: 16px;
-}
-
-@media (min-width: 900px) {
-  :root { --eo-view-max: 920px; }
-}
-
-@media (min-width: 1200px) {
-  :root { --eo-view-max: 1080px; }
 }
 
 html,
 body {
   overflow-x: hidden;
 }
-
-.dashboard-shell,
-.role-portal-shell,
 .contractor-main,
 .client-main {
   width: 100% !important;
@@ -1826,14 +1714,8 @@ body {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
-
-.dashboard-shell > .main,
-.dashboard-shell .main,
-.role-portal-shell .main,
 .contractor-main,
 .client-main,
-.app-page-content,
-.app-page-stage,
 .page-content,
 .dashboard-content,
 .today-page,
@@ -1848,12 +1730,6 @@ body {
   margin-right: 0 !important;
   box-sizing: border-box !important;
 }
-
-.dashboard-shell .app-page-content,
-.dashboard-shell .app-page-stage,
-.role-portal-shell .app-page-content,
-.contractor-main .app-page-content,
-.client-main .app-page-content,
 .today-page,
 .dashboard-home {
   display: flex !important;
@@ -1862,10 +1738,6 @@ body {
   padding-left: var(--eo-view-inset) !important;
   padding-right: var(--eo-view-inset) !important;
 }
-
-.dashboard-shell .app-page-content > *,
-.dashboard-shell .app-page-stage > *,
-.role-portal-shell .app-page-content > *,
 .contractor-main > *,
 .client-main > *,
 .today-page > *,
@@ -1875,9 +1747,6 @@ body {
 .dashboard-shell .everitt-cmd-trigger,
 .role-portal-shell .everitt-cmd-trigger,
 .contractor-main .everitt-cmd-trigger,
-.dashboard-shell .app-footer,
-.role-portal-shell .app-footer,
-.app-footer,
 .dashboard-shell .page-header,
 .dashboard-shell .card,
 .dashboard-shell .panel,
@@ -1891,6 +1760,16 @@ body {
   max-width: var(--eo-view-max) !important;
   margin-left: auto !important;
   margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+.dashboard-shell .app-footer,
+.role-portal-shell .app-footer,
+.app-footer {
+  box-sizing: border-box !important;
+}
+.dashboard-shell .app-page-content > *,
+.dashboard-shell .app-page-stage > *,
+.role-portal-shell .app-page-content > * {
   box-sizing: border-box !important;
 }
 
@@ -1919,31 +1798,16 @@ body {
   display: block !important;
 }
 
-.dashboard-shell .app-footer,
-.app-footer {
-  width: min(100%, var(--eo-view-max)) !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
 @media (max-width: 640px) {
-  :root { --eo-view-inset: 16px; --eo-view-max: 100%; }
-
-  .dashboard-shell .app-page-content,
-  .dashboard-shell .app-page-stage,
+  :root { --eo-view-inset: 16px; }
   .today-page,
   .dashboard-home {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-
-  .dashboard-shell .app-page-content > *,
-  .dashboard-shell .app-page-stage > *,
   .today-page > *,
   .dashboard-home > *,
-  .dashboard-shell .everitt-cmd-trigger,
-  .dashboard-shell .app-footer,
-  .app-footer {
+  .dashboard-shell .everitt-cmd-trigger {
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -1951,9 +1815,6 @@ body {
 
 /* One nav rule for every view: worker chrome.
    No left sidebar. Logo left, 3-stripe menu top right. */
-.dashboard-shell {
-  display: block !important;
-}
 
 .dashboard-shell > .sidebar,
 .dashboard-shell .sidebar {
@@ -1964,17 +1825,11 @@ body {
   min-width: 0 !important;
   max-width: 0 !important;
 }
-
 .dashboard-shell-header,
 .dashboard-shell > .dashboard-shell-header {
-  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 100 !important;
-  width: 100% !important;
 }
 
 .dashboard-shell-header .mobile-nav,
@@ -2033,10 +1888,7 @@ body {
 
 .dashboard-shell .page-header + *,
 .dashboard-shell .jobs-list-page > * + *,
-.dashboard-shell .app-page-stage > * + *,
-.dashboard-shell .app-page-content > * + *,
 .role-portal-shell .page-header + *,
-.role-portal-shell .app-page-content > * + *,
 .contractor-main > * + *,
 .client-main > * + * {
   margin-top: var(--eo-box-gap) !important;
@@ -2949,26 +2801,9 @@ body {
   --eo-rhythm-heading: 16px;
   --eo-rhythm-section: 26px;
 }
-
-.dashboard-shell .app-page-content,
-.dashboard-shell .app-page-stage,
-.role-portal-shell .app-page-content,
-.role-portal-shell .app-page-stage {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
 .dashboard-shell .app-page-stage > *,
 .role-portal-shell .app-page-stage > * {
-  min-width: 0 !important;
   box-sizing: border-box !important;
-}
-
-.dashboard-shell .app-page-stage > * + *,
-.role-portal-shell .app-page-stage > * + * {
-  margin-top: var(--eo-rhythm-section) !important;
 }
 
 .dashboard-shell :is(.job-detail-shell,.contractor-main,.client-main),

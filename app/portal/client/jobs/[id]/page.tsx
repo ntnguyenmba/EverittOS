@@ -41,7 +41,7 @@ export default function ClientPortalJobDetailPage() {
       try {
         const response = await fetch(`/api/portal/client/jobs/${encodeURIComponent(jobId)}`, { method: 'GET', cache: 'no-store' });
         const payload = (await response.json()) as SharedJobResponse;
-        if (!response.ok || !payload.job) { setMessage(payload.error || t('portal.client.jobNotFound')); setLoading(false); return; }
+        if (!response.ok || !payload.job) { setMessage(response.status >= 500 ? t('portal.client.jobLoadError') : t('portal.client.jobNotFound')); setLoading(false); return; }
         setJob(payload.job); setReports(payload.reports || []); setInvoices(payload.invoices || []); setCharges(payload.charges || null); setCanViewPhotos(payload.canViewPhotos !== false); setLoading(false);
       } catch { setMessage(t('portal.client.jobLoadError')); setLoading(false); }
     }

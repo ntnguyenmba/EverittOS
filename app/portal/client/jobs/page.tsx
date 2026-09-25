@@ -110,7 +110,7 @@ export default function ClientPortalJobsPage() {
       const response = await fetch('/api/portal/client/jobs', { cache: 'no-store' });
       if (response.status === 401) { router.push(`/login?next=${encodeURIComponent(clientPortalJobsPath())}`); return; }
       const payload = (await response.json().catch(() => ({}))) as { jobs?: ClientJob[]; error?: string };
-      if (!response.ok) { setMessage(payload.error || t('portal.client.jobLoadError')); setLoading(false); return; }
+      if (!response.ok) { setMessage(t('portal.client.jobLoadError')); setLoading(false); return; }
       const rows = payload.jobs || [];
       setJobs(rows); setMessage(''); setEmpty(rows.length === 0); setLoading(false);
     }

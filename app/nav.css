@@ -1,9 +1,5 @@
 /* EverittOS application navigation */
 
-.dashboard-shell {
-  grid-template-columns: 300px minmax(0, 1fr);
-}
-
 .sidebar {
   grid-area: side;
   width: 300px;
@@ -383,32 +379,12 @@ a.sidebar-plan-card-name.active {
   font-weight: 600 !important;
 }
 
-@media (max-width: 1023px) {
-  .dashboard-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 /* Premium EverittOS visual refresh.
    Loaded late in the cascade so this stays UI-only and avoids component logic changes. */
 :root {
-  --bg: #F8FAFC;
-  --surface: #FFFFFF;
-  --card: #FFFFFF;
-  --text: #172033;
   --text-on-dark: #FFFFFF;
-  --navy-primary: #234A84;
-  --navy-secondary: #1E3F72;
-  --accent: #234A84;
-  --accent-strong: #234A84;
   --accent-soft: #EAF2FF;
-  --secondary-blue: #4F7CC4;
-  --selected: #EAF2FF;
-  --muted: #5B667A;
   --cool-grey: #7C8798;
-  --warm-white: #F8FAFC;
-  --soft-white: #F8FAFC;
-  --line: #DDE6F2;
   --divider: #E7EEF7;
   --hover: #F8FAFC;
   --disabled-bg: #EEF3F8;
@@ -469,11 +445,14 @@ dialog,
 .nav,
 .mobile-bottom-nav,
 .page-header,
-.dashboard-shell,
 .auth-card,
 .billing-plans-grid,
 .schedule-board,
 .crm-shell {
+  font-family: var(--font-ui) !important;
+  letter-spacing: 0 !important;
+}
+.dashboard-shell {
   font-family: var(--font-ui) !important;
   letter-spacing: 0 !important;
 }
@@ -583,21 +562,8 @@ select:focus-visible,
   outline: 2px solid rgba(79, 124, 196, 0.72) !important;
   outline-offset: 2px !important;
 }
-
-.dashboard-shell {
-  grid-template-columns: 272px minmax(0, 1fr) !important;
-  background: transparent !important;
-}
-
 .main {
-  width: 100% !important;
-  max-width: var(--app-max-width) !important;
-  padding: var(--page-py) var(--page-px) calc(var(--page-py) + 12px) !important;
   color: var(--text) !important;
-}
-
-.app-page-content {
-  gap: var(--section-gap) !important;
 }
 
 .page-head,
@@ -1387,12 +1353,6 @@ form,
 }
 
 @media (max-width: 980px) {
-  .dashboard-shell {
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-areas:
-      'mobile'
-      'main' !important;
-  }
 
   .sidebar {
     display: none !important;
@@ -1401,10 +1361,6 @@ form,
   .dashboard-shell-mobile {
     display: block !important;
     padding: 0 var(--page-px) !important;
-  }
-
-  .main {
-    max-width: none !important;
   }
 }
 
@@ -1415,10 +1371,6 @@ form,
     --page-py: 20px;
     --section-gap: 16px;
     --card-pad: 16px;
-  }
-
-  .main {
-    padding: var(--page-py) var(--page-px) calc(var(--page-py) + 10px) !important;
   }
 
   .page-head,

@@ -20,8 +20,6 @@ export function AppFooter() {
       </div>
       <style jsx global>{`
         .app-footer {
-          width: 100% !important;
-          margin: 22px 0 0 !important;
           padding: 0 0 calc(12px + env(safe-area-inset-bottom)) !important;
           background: transparent !important;
           border: 0 !important;

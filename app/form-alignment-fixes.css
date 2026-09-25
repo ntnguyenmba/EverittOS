@@ -185,8 +185,6 @@ a[href*="/portal/client/jobs/"] {
 }
 
 .jobs-shell-minimal,
-.jobs-shell-minimal .main,
-.jobs-shell-minimal .app-page-content,
 .jobs-shell-minimal .jobs-list-page {
   background: transparent !important;
   background-color: transparent !important;
@@ -237,12 +235,7 @@ a[href*="/portal/client/jobs/"] {
 .jobs-filter-tab-alert { margin-left: auto; }
 
 .jobs-table-card {
-  padding: 0 !important;
   overflow: visible !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
 }
 
 .jobs-operations-table {
