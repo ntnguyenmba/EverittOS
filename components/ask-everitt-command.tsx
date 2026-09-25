@@ -601,7 +601,6 @@ function CommandOverlay({
 
   const searchTitle = copy === COPY.es ? 'Buscar' : copy === COPY.vi ? 'Tìm kiếm' : 'Search';
   const searchPlaceholder = copy === COPY.es ? 'Buscar trabajos, clientes, equipo, facturas y más…' : copy === COPY.vi ? 'Tìm công việc, khách hàng, nhân sự, hóa đơn và hơn thế nữa…' : 'Search jobs, customers, team members, invoices, and more…';
-  const searchTagline = copy === COPY.es ? 'Solo muestra datos permitidos para su cuenta.' : copy === COPY.vi ? 'Chỉ hiển thị dữ liệu tài khoản của bạn được phép xem.' : 'Only shows data your account is allowed to see.';
 
   const touchControls = !kbd;
 
@@ -632,7 +631,7 @@ function CommandOverlay({
           {kbd ? <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span> : null}
         </div>
 
-        <p className="everitt-cmd-tagline muted">{searchOnly ? searchTagline : copy.tagline}</p>
+        {!searchOnly ? <p className="everitt-cmd-tagline muted">{copy.tagline}</p> : null}
 
         {!searchOnly && !query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
@@ -754,9 +753,7 @@ function CommandOverlay({
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
         {searchOnly ? (
-          <p className="muted everitt-cmd-footer">
-            {searchTagline}{kbd ? ` · ${copy.escapeHint}` : null}
-          </p>
+          kbd ? <p className="muted everitt-cmd-footer">{copy.escapeHint}</p> : null
         ) : askAccess.shouldShowAiUpsell ? (
           <p className="muted everitt-cmd-footer">
             {copy.footerPrefix}
