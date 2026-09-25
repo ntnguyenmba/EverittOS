@@ -451,8 +451,7 @@ canvas {
 html body .contractor-dashboard,
 html body .client-portal-jobs,
 html body .client-portal-job-detail,
-html body .client-portal-settings,
-html body .owner-home-sheet {
+html body .client-portal-settings {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -461,8 +460,6 @@ html body .owner-home-sheet {
 html body .card:not(.customer-card-row):not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
 html body .panel:not(:has(> :is(.customer-card-list, .team-member-list, .client-job-card-list, .finance-expense-list, .worker-list, .contractor-list, .record-list, .jobs-list, .jobs-operations-table))),
 html body .settings-card,
-html body .contractor-next-job,
-html body .client-next-visit-paper,
 html body .job-financials-card,
 html body .role-summary-card,
 html body .team-directory-card {
@@ -592,7 +589,6 @@ html body .page-header {
   margin-bottom: 0 !important;
 }
 
-html body .contractor-portal-hero,
 html body .contractor-content-card,
 html body .owner-home-primary,
 html body .client-next-visit-copy {
