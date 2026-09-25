@@ -2880,7 +2880,8 @@ body {
 .dashboard-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn),
 .role-portal-shell :is(.button-row,.inline-actions,.record-actions,.job-detail-actions,.team-member-actions,.team-directory-actions,.settings-actions,.page-actions) > :is(button,.btn,a.btn) {
   align-self: center !important;
-  min-height: 44px;
+  min-height: var(--eo-control-height);
+  height: var(--eo-control-height);
   display: inline-flex;
   align-items: center;
   justify-content: center;
