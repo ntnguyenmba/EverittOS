@@ -30,7 +30,7 @@ function roleBannerKind(role: UserRole): RoleBannerKind {
 
 function RoleContextBanner({ role }: { role: UserRole }) {
   const { locale } = useTranslation();
-  const copy = ROLE_BANNER_COPY[locale];
+  const copy = ROLE_BANNER_COPY[locale] ?? ROLE_BANNER_COPY.en;
   const kind = roleBannerKind(role);
   return <section className={`app-role-banner app-role-banner-${kind}`} aria-label={`${copy.context}: ${copy[kind]}`}><span className="app-role-banner-context">{copy.context}</span><strong className="app-role-banner-name">{copy[kind]}</strong></section>;
 }

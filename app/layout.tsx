@@ -50,16 +50,7 @@ import './quote-workspace.css';
 import './role-home-structure.css';
 import './legacy-signed-in.css';
 import './global-content-rhythm.css';
-import './viewport-lock.css';
 
-/* Centralized signed-in visual authorities. */
-import './control-breathing.css';
-import './signed-in-sticky-header.css';
-import './signed-in-layout-alignment.css';
-import './jobs-mobile-cards.css';
-import './universal-card-spacing.css';
-/* Controls load last so page rules cannot stretch or squeeze button labels. */
-import './universal-button-controls.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
