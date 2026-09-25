@@ -795,7 +795,7 @@ body.capacitor-app .dashboard-shell > .dashboard-shell-header {
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     box-sizing: border-box !important;
     align-self: center !important;
   }
@@ -944,7 +944,7 @@ html body .dashboard-shell .customer-card-row > div {
 html body .customer-card-row .record-actions {
   position: relative !important;
   z-index: 2 !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   margin-left: 0 !important;
   margin-top: 14px !important;
 }
@@ -1222,7 +1222,7 @@ html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.
 
   html body .dashboard-shell table.jobs-operations-table.jobs-mobile-table td.jobs-col-actions {
     display: flex !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     padding-top: 12px !important;
     padding-bottom: 18px !important;
@@ -1546,7 +1546,7 @@ body :is(.dashboard-shell, .role-portal-shell) :is(.btn, a.btn, button.btn) {
   box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   flex: 0 0 auto !important;
   width: auto !important;
   max-width: 100% !important;
@@ -1592,7 +1592,7 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   align-content: center !important;
   column-gap: 10px !important;
   row-gap: 10px !important;
@@ -1702,9 +1702,9 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   .dashboard-header,
   .settings-page-head
 ) {
-  text-align: center !important;
-  align-items: center !important;
-  justify-items: center !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  justify-items: start !important;
   padding: var(--eo-card-padding) !important;
 }
 
@@ -1715,7 +1715,7 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   .settings-page-head > div:first-child
 ) {
   width: 100% !important;
-  text-align: center !important;
+  text-align: left !important;
 }
 
 body :is(.dashboard-shell, .role-portal-shell) :is(
@@ -1728,7 +1728,7 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   .button-row,
   .inline-actions
 ) {
-  justify-content: center !important;
+  justify-content: flex-start !important;
   align-items: center !important;
 }
 
@@ -1744,8 +1744,8 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   .finance-section,
   .record-card
 ) > :is(h1, h2, h3, h4, p, .muted, .helper-text, .section-description, summary) {
-  text-align: center !important;
-  margin-inline: auto !important;
+  text-align: left !important;
+  margin-inline: 0 !important;
 }
 
 body :is(.dashboard-shell, .role-portal-shell) :is(
