@@ -443,7 +443,6 @@ button,
 .modal,
 dialog,
 .nav,
-.mobile-bottom-nav,
 .page-header,
 .auth-card,
 .billing-plans-grid,
@@ -1325,12 +1324,6 @@ form,
 .mobile-nav-drawer-link.active {
   background: var(--selected) !important;
   color: var(--navy-primary) !important;
-}
-
-.mobile-bottom-nav,
-.bottom-nav,
-.app-bottom-nav {
-  display: none !important;
 }
 
 @media (min-width: 640px) {

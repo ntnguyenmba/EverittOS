@@ -52,7 +52,8 @@ const en: CustomerLifecycleCopy = {
     former: 'Past customer',
     recurring: 'Recurring',
     reopened: 'Reopened',
-    lead: 'Request'
+    lead: 'Request',
+    customer: 'Customer'
   },
   actions: {
     markPast: 'Mark as past customer',
@@ -96,7 +97,8 @@ const es: CustomerLifecycleCopy = {
     former: 'Cliente anterior',
     recurring: 'Recurrente',
     reopened: 'Reabierta',
-    lead: 'Solicitud'
+    lead: 'Solicitud',
+    customer: 'Cliente'
   },
   actions: {
     markPast: 'Marcar como cliente anterior',
@@ -140,7 +142,8 @@ const vi: CustomerLifecycleCopy = {
     former: 'Khách hàng cũ',
     recurring: 'Định kỳ',
     reopened: 'Đã mở lại',
-    lead: 'Yêu cầu'
+    lead: 'Yêu cầu',
+    customer: 'Khách hàng'
   },
   actions: {
     markPast: 'Đánh dấu khách hàng cũ',

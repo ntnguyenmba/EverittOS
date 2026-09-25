@@ -25,49 +25,32 @@ Forbidden:
 
 Do not hide or reposition New Job, Save, Start, Finish, filters, role switch, PIN, or photo controls with a global override.
 
-## What is loaded today
+## Where things live now (2026-09-25)
 
-`app/layout.tsx` loads these, in order. That order *is* the current look. Do not prepend or append another global overlay.
+- `app/design/tokens.css` is the only place `:root` design tokens are defined,
+  including the compatibility aliases (`--accent`, `--line`, `--bg`, …) and the
+  backdrop (`--eo-shell-*`). Other stylesheets must not redefine them.
+- `app/design/primitives.css` owns:
+  - `.eo-backdrop`: the hero.jpg background, mounted once by
+    `components/app-backdrop.tsx` in the root layout. Tune it with the
+    `--eo-shell-*` tokens only.
+  - shell geometry: `.dashboard-shell`, `.dashboard-shell-header` (sticky, in
+    flow), `.dashboard-shell > .main`, `.app-page-content`, `.app-page-stage`,
+    and the footer width. No other file may set their width, padding,
+    position, or background.
+  - page surfaces: each section inside the stage floats as its own card;
+    wrappers of cards stay transparent. Use `.eo-bare` to opt a section out.
+  - the shared `:focus-visible` ring.
+- Document pages (`main.section`: legal, help, pricing) are an explicit variant
+  that hides the backdrop.
 
-1. `globals.css`
-2. `design/tokens.css`
-3. `design/primitives.css`
-4. `everitt-theme.css`
-5. `typography.css`
-6. `nav.css`
-7. `outbound.css`
-8. `feedback-toast.css`
-9. `dashboard.css`
-10. `form-alignment-fixes.css`
-11. `job-visit-layout-override.css`
-12. `payment-receipt-modal-fix.css`
-13. `receipt.css`
-14. `mobile-safe-areas.css`
-15. `contractor-portal.css`
-16. `quote-workspace.css`
-17. `role-home-structure.css`
-18. `signed-in-canvas.css`
-19. `jobs-filter-mobile-alignment.css`
-20. `jobs-mobile-layout-hotfix.css`
-21. `word-spacing-fix.css`
-22. `top-chrome-align.css`
-23. `ask-everitt-overlay-fix.css`
-24. `job-card-spacing.css`
-25. `one-nav.css`
-26. `box-stack-spacing.css`
-27. `signed-in-stability.css`
-28. `hero-last.css`
-29. `visual-unify.css`
-30. `readability-last.css`
-31. `everitt-login-look.css`
-32. `final-layout-guard.css`
-33. `view-center-final.css`
+`app/layout.tsx` still loads the 19 stylesheets checked by
+`scripts/ui-polish-audit.ts`. The 69 unloaded overlay files and the seven
+`dashboard-*` sub-files were deleted on 2026-09-25 (the latter inlined into
+`dashboard.css` in order). `scripts/style-sprawl-guard.ts` lists the 18 root
+stylesheets that remain; the list may only shrink.
 
-Files that exist under `app/` but are not in this list are still frozen. Do not add more of them. Harvest, then stop importing, then delete.
-
-`scripts/ui-polish-audit.ts` freezes the import list above, plus the two design files.
-
-## Jobs list — first harvest surface
+## Jobs list — first harvest surface (historical)
 
 Full keep / drop / copy list: `JOBS-HARVEST.md`.
 
