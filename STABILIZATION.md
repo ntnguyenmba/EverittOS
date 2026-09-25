@@ -78,3 +78,11 @@ Leave these alone in a visual PR: Capacitor plugins, native PIN / biometric, Str
 
 `npm run ui:style-sprawl` must stay in `npm run verify`.
 A visual PR is not done unless New Job, Save, Start, Finish, payments, filters, role switch, PIN, and photos still work.
+
+## Standing spacing rule
+
+Keep healthy responsive space everywhere: no cards or controls pressed against viewport edges, no sections jammed together, no text touching borders or controls, and no excessively wide or cramped content columns. Use the centralized `--eo-gutter`, `--eo-section-gap`, `--eo-card-padding`, `--eo-control-gap`, and `--eo-view-max` tokens instead of page-specific spacing overrides.
+
+## 2026-09-25 final stabilization follow-up
+
+`/expenses` now starts with a deterministic server/client form state and fills the local default date after mount, removing the remaining timezone-sensitive hydration path while preserving the local-date default for users.
