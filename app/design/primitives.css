@@ -276,8 +276,9 @@ html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
   padding: var(--eo-card-padding);
 }
 
-/* Surface content alignment: headings, summaries, helper copy, and action rows
-   are centered inside visible boxes. Form fields/tables keep left-aligned data. */
+/* Surface content alignment: app surfaces use one shared left edge for title,
+   subtitle, helper copy, badges and action rows. Controls remain centered
+   inside their own button boxes; forms/tables also stay left-aligned. */
 :is(.dashboard-shell, .role-portal-shell) :is(
   .page-head,
   .page-header,
@@ -294,7 +295,7 @@ html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
   .finance-section,
   .record-card
 ) {
-  text-align: center;
+  text-align: left;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -303,8 +304,8 @@ html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
   .dashboard-header,
   .settings-page-head
 ) {
-  justify-items: center;
-  align-items: center;
+  justify-items: start;
+  align-items: start;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -318,8 +319,8 @@ html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
   .panel,
   .settings-card
 ) > :is(h1, h2, h3, h4, p, .muted, .helper-text, .section-description, summary) {
-  text-align: center;
-  margin-inline: auto;
+  text-align: left;
+  margin-inline: 0;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -334,7 +335,7 @@ html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
   .page-header-actions,
   .actions
 ) {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(
