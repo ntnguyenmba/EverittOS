@@ -17,9 +17,11 @@ import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
 import { recordAiUsage } from '@/lib/ai-usage-events';
-import { isClientRole, normalizeRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { canAccessNavHref } from '@/lib/nav-access';
+import type { AskEverittSearchResponse } from '@/lib/ask-everitt/types';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -153,7 +155,6 @@ export async function POST(request: Request) {
 
   const org = await fetchOrganizationContextForRequest(supabase, user.id);
   if (!org) return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
-  if (isClientRole(org.role)) return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
 
   const activeSupabase = supabase;
   const activeUser = user;
@@ -162,6 +163,44 @@ export async function POST(request: Request) {
   const activePrompt = prompt;
 
   const { plan } = await resolveOrganizationPlan(activeSupabase, activeUser.id);
+  const normalizedRole = normalizeRole(activeOrg.role);
+
+  function permissionScopedSearchResult(result: AskEverittSearchResponse): AskEverittSearchResponse {
+    const allowHref = (href?: string | null) => {
+      if (!href) return false;
+      const path = href.split(/[?#]/)[0] || '/dashboard';
+      if (isClientRole(normalizedRole)) return path.startsWith('/portal/client');
+      if (isContractorRole(normalizedRole)) return path.startsWith('/portal/contractor') || path.startsWith('/jobs/');
+      return canAccessNavHref(normalizedRole as UserRole, path, plan);
+    };
+
+    const mapRecord = (record: AskEverittSearchResponse['results'][number]) => {
+      if (isClientRole(normalizedRole)) {
+        if (record.type === 'job' || record.type === 'schedule' || record.type === 'booking') {
+          return { ...record, href: '/portal/client?tab=jobs' };
+        }
+        if (record.type === 'invoice') return { ...record, href: '/portal/client' };
+        return null;
+      }
+      if (isContractorRole(normalizedRole)) {
+        if (record.type === 'job' || record.type === 'schedule' || record.type === 'booking') {
+          return { ...record, href: '/portal/contractor#current-jobs' };
+        }
+        if (record.type === 'revenue' || record.type === 'invoice') {
+          return { ...record, href: '/portal/contractor#history' };
+        }
+        return null;
+      }
+      return allowHref(record.href) ? record : null;
+    };
+
+    const filtered = (result.results || []).map(mapRecord).filter(Boolean) as AskEverittSearchResponse['results'];
+    const groups = result.groups
+      ?.map((group) => ({ ...group, results: group.results.map(mapRecord).filter(Boolean) as AskEverittSearchResponse['results'] }))
+      .filter((group) => group.results.length > 0);
+    const metrics = result.metrics?.filter((metric) => !metric.href || allowHref(metric.href));
+    return { ...result, results: filtered, groups, metrics };
+  }
   const natural = parseNaturalAskEverittQuery(activePrompt);
   const detectedMode = detectAskEverittMode(activePrompt);
   const mode = body.forceMode || (natural.preferSearch ? 'search' : detectedMode);
@@ -192,10 +231,13 @@ export async function POST(request: Request) {
     }
 
     await recordAiUsage(activeAdmin, searchUsageEvent({ workspaceId: activeOrg.organizationId, userId: activeUser.id, userRole: normalizeRole(activeOrg.role), prompt: activePrompt }));
-    return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
+    return NextResponse.json(localizeAskEverittSearchResponse(permissionScopedSearchResult(searchResult), locale));
   }
 
   if (mode === 'search') return runStructuredSearch();
+  if (isClientRole(normalizedRole) || isContractorRole(normalizedRole)) {
+    return NextResponse.json({ error: 'Ask Everitt AI is not available for this role.', code: 'permission_denied', searchAvailable: true }, { status: 403 });
+  }
 
   const gate = await verifyAiRequest(activeSupabase, activeAdmin, activeUser.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
