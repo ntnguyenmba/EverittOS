@@ -569,9 +569,9 @@ select:focus-visible,
 .page-header,
 .dashboard-header,
 .section-header {
-  align-items: center !important;
-  justify-items: center !important;
-  text-align: center !important;
+  align-items: flex-start !important;
+  justify-items: start !important;
+  text-align: left !important;
   gap: 12px 20px !important;
   margin-bottom: 0 !important;
 }
@@ -582,7 +582,7 @@ select:focus-visible,
 .section-header > div:first-child {
   min-width: 0;
   width: 100%;
-  text-align: center !important;
+  text-align: left !important;
 }
 
 .page-subtitle,
@@ -599,7 +599,7 @@ select:focus-visible,
 .app-page-top-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
   flex-wrap: wrap;
   width: 100%;
