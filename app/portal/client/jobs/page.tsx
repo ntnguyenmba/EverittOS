@@ -175,7 +175,7 @@ export default function ClientPortalJobsPage() {
             <p className="client-next-visit-time">{[jobDate(nextVisit, localeCode), jobTime(nextVisit, localeCode)].filter(Boolean).join(' · ') || c.dateNotSet}</p>
             {nextVisit.address ? <p className="muted">{nextVisit.address}</p> : null}
             {Number(nextVisit.balanceDue || 0) > 0 ? <p className="client-next-balance"><span>{c.balanceDue}</span><strong>{formatMoney(nextVisit.balanceDue, localeCode)}</strong></p> : null}
-            <Link className="btn btn-primary" href={clientPortalJobsPath(nextVisit.id)}>{c.viewVisit}</Link>
+            <Link className="btn btn-primary eo-upcoming-actions" href={clientPortalJobsPath(nextVisit.id)}>{c.viewVisit}</Link>
           </div>
           <div className="client-next-visit-photos"><h2>{c.photos}</h2><PhotoGallery jobId={nextVisit.id} refreshKey={0} canView customerOnly /></div>
         </section> : null}
