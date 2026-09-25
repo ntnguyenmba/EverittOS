@@ -216,6 +216,56 @@ body:has(main.eo-document) .eo-backdrop {
   box-shadow: var(--eo-shadow-card);
 }
 
+/* Canonical signed-in surface inset. Any element that is visibly rendered as
+   a card/header/detail surface gets the same padding token. Layout wrappers
+   remain transparent and unpadded. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .card,
+  .panel,
+  .settings-card,
+  .billing-card,
+  .schedule-card,
+  .booking-card,
+  .report-card,
+  .job-financials-card,
+  .finance-section,
+  .record-card,
+  .customer-card-row,
+  .team-member-card,
+  .client-job-card,
+  .finance-list-card,
+  .portal-job-row,
+  .quote-row,
+  .page-head,
+  .page-header,
+  .dashboard-header,
+  [data-record-card='true']
+) {
+  box-sizing: border-box;
+  padding: var(--eo-card-padding);
+}
+
+/* Standard buttons share one exact height. Pills/chips keep their compact
+   semantics unless they are explicitly placed in an action row. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  button:not(.unstyled-button):not(.icon-button):not(.menu-icon-button),
+  a.btn,
+  .btn,
+  .primary-button,
+  .secondary-button,
+  .ghost-button,
+  .danger-button
+) {
+  min-height: var(--eo-control-height);
+  height: var(--eo-control-height);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  padding-inline: 16px;
+}
+
 .eo-list-row {
   min-width: 0;
   min-height: var(--eo-tap);
