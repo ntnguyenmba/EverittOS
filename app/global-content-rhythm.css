@@ -1691,3 +1691,79 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
     width: 100% !important;
   }
 }
+
+
+/* Final alignment contract: this file loads last, so legacy route CSS cannot
+   pull visible box copy back to an edge after the shared primitives run. */
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header,
+  .page-head,
+  .quote-page-head,
+  .dashboard-header,
+  .settings-page-head
+) {
+  text-align: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: var(--eo-card-padding) !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header-text,
+  .page-head > div:first-child,
+  .dashboard-header > div:first-child,
+  .settings-page-head > div:first-child
+) {
+  width: 100% !important;
+  text-align: center !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .page-header-action,
+  .page-header-actions,
+  .page-head > .button-row,
+  .settings-page-head > .inline-actions,
+  .card-actions,
+  .action-row,
+  .button-row,
+  .inline-actions
+) {
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  .card,
+  .panel,
+  .settings-card,
+  .billing-card,
+  .schedule-card,
+  .booking-card,
+  .report-card,
+  .job-financials-card,
+  .finance-section,
+  .record-card
+) > :is(h1, h2, h3, h4, p, .muted, .helper-text, .section-description, summary) {
+  text-align: center !important;
+  margin-inline: auto !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) :is(
+  form,
+  fieldset,
+  label,
+  input,
+  select,
+  textarea,
+  table,
+  th,
+  td,
+  .form,
+  .form-grid,
+  .field-grid,
+  .settings-form-grid,
+  .table-responsive,
+  .data-table-wrap
+) {
+  text-align: left !important;
+}
