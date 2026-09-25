@@ -194,11 +194,16 @@ body:has(main.eo-document) .eo-backdrop {
 .eo-upcoming-content {
   display: grid;
   justify-items: start;
+  gap: var(--eo-control-gap);
   text-align: left;
 }
 
 .page-header + .eo-upcoming-content {
   margin-top: var(--eo-section-stack-gap);
+}
+
+.eo-upcoming-actions {
+  margin-top: var(--eo-control-gap);
 }
 
 .dashboard-shell .owner-home-primary {
