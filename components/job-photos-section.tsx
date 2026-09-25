@@ -346,12 +346,14 @@ export function JobPhotosSection({
                 onDragLeave={() => setDragOverTag(null)} onDrop={(event) => onDrop(event, tag)}>
                 <p className="photo-dropzone-title">{sectionTitle(tag, count)}</p>
                 <p className="muted">{tag === 'progress' ? ui.progressHelp : ui.uploadHelp}</p>
-                <button type="button" className="btn btn-primary photo-capture-btn" disabled={uploading}
-                  onClick={() => (isNativePlatform() ? void openNativeCamera(tag) : openCameraPicker(tag))}>
-                  {uploading && activeTag === tag ? FEEDBACK.loading : labels.camera}
-                </button>
-                <button type="button" className="btn photo-capture-btn" disabled={uploading}
-                  onClick={() => (isNativePlatform() ? void openNativeLibrary(tag) : openLibraryPicker(tag))}>{labels.library}</button>
+                <div className="action-row photo-capture-actions">
+                  <button type="button" className="btn btn-primary photo-capture-btn" disabled={uploading}
+                    onClick={() => (isNativePlatform() ? void openNativeCamera(tag) : openCameraPicker(tag))}>
+                    {uploading && activeTag === tag ? FEEDBACK.loading : labels.camera}
+                  </button>
+                  <button type="button" className="btn photo-capture-btn" disabled={uploading}
+                    onClick={() => (isNativePlatform() ? void openNativeLibrary(tag) : openLibraryPicker(tag))}>{labels.library}</button>
+                </div>
               </div>
             );
           })}
