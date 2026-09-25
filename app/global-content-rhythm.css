@@ -234,7 +234,7 @@
   }
 
   :is(.dashboard-shell, .role-portal-shell) :is(.button-row, .inline-actions, .record-actions, .job-detail-actions) > :is(button, .btn, a.btn) {
-    min-height: 46px;
+    min-height: var(--eo-control-height);
   }
 
   .dashboard-shell .job-detail-shell .job-detail-actions {
@@ -1526,7 +1526,7 @@ body .role-portal-shell .customer-card-row {
     .card-actions,
     .form-actions
   ) > :is(.btn, button, a.btn) {
-    min-height: 44px;
+    min-height: var(--eo-control-height);
   }
 }
 
