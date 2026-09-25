@@ -33,7 +33,7 @@ test('form field order is Date, Start time, then Repeats in More options', () =>
 
 test('recurring job cannot be saved without a start date', () => {
   const source = read('components/job-creator.tsx');
-  assert.match(source, /if \(!recurrenceStartDate\.trim\(\)\) nextErrors\.startDate/);
+  assert.match(source, /if \(isRecurring && !recurrenceStartDate\.trim\(\)\) nextErrors\.startDate/);
   assert.match(source, /startDate: recurrenceStartDate/);
   assert.match(source, /auth-message-error/);
 });

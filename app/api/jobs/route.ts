@@ -363,6 +363,8 @@ export async function POST(request: Request) {
 
   const createdJob = data;
 
+  // Keep jobs.assigned_to and job_assignments in sync: write the assignment row
+  // now so the job detail UI does not ask again.
   if (assignedWorkerId) {
     const { error: assignmentError } = await ctx.supabase.from('job_assignments').upsert(
       {
@@ -456,24 +458,35 @@ export async function POST(request: Request) {
 
   let clientAccess: { attempted: boolean; reused?: boolean; accessGranted?: boolean } = { attempted: false };
   const customerEmail = body.customer_email?.trim() || '';
+  // Missing or invalid email must never block job creation: the job is already
+  // saved, so a failed or throwing client-access grant is logged, not returned.
   if (customerEmail && admin) {
-    const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
-    const grant = await grantJobClientAccess({
-      admin,
-      organizationId: ctx.workspace.organizationId,
-      organizationName: ctx.workspace.organizationName,
-      grantedByUserId: ctx.userId,
-      jobId: createdJob.id,
-      jobTitle: body.title.trim(),
-      email: customerEmail,
-      plan,
-      sendEmail: true
-    });
-    clientAccess = {
-      attempted: true,
-      reused: grant.ok ? grant.reused : false,
-      accessGranted: grant.ok ? grant.accessGranted : false
-    };
+    try {
+      const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
+      const grant = await grantJobClientAccess({
+        admin,
+        organizationId: ctx.workspace.organizationId,
+        organizationName: ctx.workspace.organizationName,
+        grantedByUserId: ctx.userId,
+        jobId: createdJob.id,
+        jobTitle: body.title.trim(),
+        email: customerEmail,
+        plan,
+        sendEmail: true
+      });
+      clientAccess = {
+        attempted: true,
+        reused: grant.ok ? grant.reused : false,
+        accessGranted: grant.ok ? grant.accessGranted : false
+      };
+    } catch (grantError) {
+      logJobFlowEvent('job_client_access_failed', {
+        userId: ctx.userId,
+        organizationId: ctx.workspace.organizationId,
+        reason: grantError instanceof Error ? grantError.message : 'Client access grant failed'
+      });
+      clientAccess = { attempted: true, reused: false, accessGranted: false };
+    }
   }
 
   return NextResponse.json({

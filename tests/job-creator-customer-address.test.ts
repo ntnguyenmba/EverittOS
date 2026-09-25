@@ -184,11 +184,12 @@ test('job creator auto-creates and links customer and primary property without p
   assert.match(source, /address: address\.trim\(\) \|\| null/);
   assert.match(source, /forceNew: true/);
   assert.match(source, /newPropertyName\.trim\(\) \|\| createCopy\.propertyNamePlaceholder/);
-  assert.match(source, /\/api\/customers\/\$\{customerId\}\/properties/);
+  assert.match(source, /\/api\/customers\/\$\{resolvedCustomerId\}\/properties/);
   assert.match(source, /createCopy\.prepareCustomerProperty/);
-  assert.match(source, /customer_id: customerId/);
-  assert.match(source, /property_id: propertyId/);
-  const prepareCatch = source.indexOf('createCopy.prepareCustomerProperty');
+  assert.match(source, /customer_id: resolvedCustomerId/);
+  assert.match(source, /property_id: resolvedPropertyId/);
+  // Customer and property are prepared before any job request is sent.
+  const prepareCatch = source.indexOf('fetch(`/api/customers/${resolvedCustomerId}/properties`');
   const jobsPost = source.indexOf("fetch('/api/jobs'");
   const recurringPost = source.indexOf("fetch('/api/recurring-jobs'");
   assert.ok(prepareCatch > 0);

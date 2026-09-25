@@ -90,7 +90,7 @@ function CustomersPageContent() {
         <div className="customers-header-actions" style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
           {isManagerRole(role) ? <Link className="btn" href="/customers/import">{copy.importCsv}</Link> : null}
           {isManagerRole(role) ? <ExportMenu endpoint="/api/exports/customers" query={{ period:periodFilter, stage:stageFilter }} locale={locale} disabled={loading} onError={(message)=>appFeedback.error(message||exportCopy.exportFailed)} onSuccess={(format)=>{if(format==='share')appFeedback.success(exportCopy.shareSent);}} /> : null}
-          {canManage ? <button type="button" className="btn btn-primary" onClick={()=>window.location.assign('/customers/new')}>{copy.addCustomer}</button> : null}
+          {canManage ? <Link className="btn btn-primary" href="/customers/new">{copy.addCustomer}</Link> : null}
         </div>
       } />
       <div className="job-detail-actions" style={{ marginBottom:16, flexWrap:'wrap', gap:8 }}>

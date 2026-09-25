@@ -98,11 +98,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     fetch('/api/customers/list', { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || 'Unable to load customers.');
+        if (!res.ok) throw new Error(json.error || createCopy.unableToLoadCustomers);
         return Array.isArray(json.customers) ? json.customers : [];
       })
       .then((rows) => { if (active) setCustomers(rows); })
-      .catch((err) => { if (active) setError(err instanceof Error ? err.message : 'Unable to load customers.'); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : createCopy.unableToLoadCustomers); })
       .finally(() => { if (active) setLoadingCustomers(false); });
     fetch('/api/team/members', { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
@@ -118,7 +118,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       .catch(() => { if (active) setTeamMembers([]); })
       .finally(() => { if (active) setLoadingTeam(false); });
     return () => { active = false; };
-  }, []);
+  }, [createCopy.unableToLoadCustomers]);
 
   useEffect(() => {
     if (!customerId) { setProperties([]); setPropertyId(''); return; }
@@ -127,7 +127,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     fetch(`/api/customers/${encodeURIComponent(customerId)}/properties`, { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || 'Unable to load properties.');
+        if (!res.ok) throw new Error(json.error || createCopy.unableToLoadProperties);
         return Array.isArray(json.properties) ? json.properties : [];
       })
       .then((rows) => {
@@ -139,10 +139,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           return '';
         });
       })
-      .catch((err) => { if (active) { setProperties([]); setError(err instanceof Error ? err.message : 'Unable to load properties.'); } })
+      .catch((err) => { if (active) { setProperties([]); setError(err instanceof Error ? err.message : createCopy.unableToLoadProperties); } })
       .finally(() => { if (active) setLoadingProperties(false); });
     return () => { active = false; };
-  }, [customerId]);
+  }, [customerId, createCopy.unableToLoadProperties]);
 
   useEffect(() => {
     if (!customerId) return;
@@ -245,7 +245,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     event.preventDefault();
     if (submitting) return;
     setError('');
-    if (!title.trim()) { setError('Job title is required.'); return; }
+    if (!title.trim()) { setError(createCopy.jobTitleRequired); return; }
     const nextErrors: typeof recurrenceFieldErrors = {};
     if (isRecurring && !recurrenceStartDate.trim()) nextErrors.startDate = recurrenceCopy.startDateRequired;
     if (isRecurring && recurrenceEndMode === 'on_date' && recurrenceEndDate && recurrenceStartDate && recurrenceEndDate < recurrenceStartDate) {
@@ -254,10 +254,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (Object.keys(nextErrors).length) { setRecurrenceFieldErrors(nextErrors); return; }
     if (contractorFlatRate.trim()) {
       const flat = optionalMoneyInput(contractorFlatRate);
-      if (flat == null || flat < 0) { setError('Enter a valid contractor pay amount.'); return; }
+      if (flat == null || flat < 0) { setError(createCopy.invalidWorkerPay); return; }
     }
     if (clientIncome.trim() && optionalMoneyInput(clientIncome) == null) {
-      setError('Enter a valid customer price.');
+      setError(createCopy.invalidCustomerPrice);
       return;
     }
     setSubmitting(true);
@@ -334,7 +334,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           })
         });
         const json = await response.json().catch(() => ({}));
-        if (!response.ok || !(json.firstJobId || json.job?.id)) throw new Error(json.error || 'Unable to create recurring job.');
+        if (!response.ok || !(json.firstJobId || json.job?.id)) throw new Error(json.error || createCopy.unableToCreateRecurringJob);
         const jobId = json.firstJobId || json.job.id;
         if (onJobCreated) onJobCreated(jobId); else window.location.assign(`/jobs/${jobId}`);
         return;
@@ -356,7 +356,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         })
       });
       const json = await response.json().catch(() => ({}));
-      if (!response.ok || !json.job?.id) throw new Error(json.error || 'Unable to create job.');
+      if (!response.ok || !json.job?.id) throw new Error(json.error || createCopy.unableToCreateJob);
       if (onJobCreated) onJobCreated(json.job.id); else window.location.assign(`/jobs/${json.job.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : createCopy.prepareCustomerProperty);
@@ -373,34 +373,34 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         {customerMode === 'existing' ? (
           <div className="client-summary-card" style={{ display: 'grid', gap: 10, marginTop: 4 }}>
             <label>
-              <span>Saved customer</span>
+              <span>{createCopy.savedCustomer}</span>
               <select ref={customerSelectRef} value={customerId} disabled={loadingCustomers} onChange={(e) => { setCustomerId(e.target.value); setPropertyId(''); }}>
-                <option value="">{loadingCustomers ? 'Loading customers…' : customers.length ? 'Select a customer' : 'No saved customers yet'}</option>
+                <option value="">{loadingCustomers ? createCopy.loadingCustomers : customers.length ? createCopy.selectCustomer : createCopy.noSavedCustomers}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.contact_name || customer.company_name || customer.email || customer.phone || 'Customer'}
+                    {customer.contact_name || customer.company_name || customer.email || customer.phone || createCopy.customerFallback}
                   </option>
                 ))}
               </select>
             </label>
             {customerId && properties.length > 1 ? <p className="muted">{createCopy.multipleProperties}</p> : null}
             <label>
-              <span>Saved property</span>
+              <span>{createCopy.savedProperty}</span>
               <select value={propertyId} disabled={!customerId || loadingProperties} onChange={(e) => setPropertyId(e.target.value)}>
                 <option value="">
                   {!customerId
-                    ? 'Select a customer first'
+                    ? createCopy.selectCustomerFirst
                     : loadingProperties
-                      ? 'Loading properties…'
+                      ? createCopy.loadingProperties
                       : properties.length
                         ? createCopy.selectProperty
-                        : 'No saved properties'}
+                        : createCopy.noSavedProperties}
                 </option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name
                       ? `${property.name}${property.formatted_address || property.address ? ` \u00b7 ${property.formatted_address || property.address}` : ''}`
-                      : property.formatted_address || property.address || 'Property'}
+                      : property.formatted_address || property.address || createCopy.propertyFallback}
                   </option>
                 ))}
               </select>
@@ -426,7 +426,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         ) : null}
         {customerMode === 'new' ? (
           <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
-            <button type="button" className="btn" onClick={chooseExistingCustomer}>Use a saved customer</button>
+            <button type="button" className="btn" onClick={chooseExistingCustomer}>{createCopy.existingCustomer}</button>
             <label><span>{createCopy.customerName}</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} autoComplete="name" /></label>
             <label><span>{createCopy.email}</span><input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} autoComplete="email" /></label>
             <label><span>{createCopy.phone}</span><input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>

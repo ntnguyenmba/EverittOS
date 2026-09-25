@@ -11,14 +11,24 @@ test('logged-out visitors can open the public landing page', () => {
   assert.doesNotMatch(middleware, /pathname === '\/'[\s\S]{0,1200}new URL\('\/login'/);
 });
 
-test('public pricing reuses the six-plan billing grid', () => {
-  assert.match(home, /<BillingPlansGrid currentPlan="free" publicMode \/>/);
-  assert.doesNotMatch(home, /className="marketing-price-grid"/);
+const pricingPage = readFileSync('app/pricing/page.tsx', 'utf8');
+const pricingPanel = readFileSync('components/pricing-checkout-panel.tsx', 'utf8');
+
+test('public pricing lists every paid plan from the shared billing config', () => {
+  // The marketing landing moved off the app; / only redirects to sign-in.
+  assert.match(home, /redirect\('\/login'\)/);
+  assert.match(pricingPage, /<PricingCheckoutPanel/);
+  assert.match(pricingPanel, /BILLING_PLANS\.filter\(\(tier\) => tier\.id !== 'free'\)/);
   assert.match(billingGrid, /publicMode \?\s*BILLING_PLANS/);
 });
 
 test('public plan actions go through signup before checkout', () => {
+  assert.match(pricingPanel, /\/signup\?plan=\$\{tierId\}/);
+  assert.match(pricingPanel, /authenticated \? \(\s*<PlanCheckoutButton/);
   assert.match(billingGrid, /href=\{\x60\/signup\?plan=\$\{tier\.id\}\x60\}/);
   assert.match(billingGrid, /publicMode \|\| !billingVisibility\.allowCheckout/);
-  assert.doesNotMatch(billingGrid, /publicMode[\s\S]{0,300}<PlanCheckoutButton/);
+  // Every checkout button in the grid is behind a !publicMode guard.
+  const checkoutButtons = billingGrid.match(/[^{]*\? <PlanCheckoutButton/g) || [];
+  assert.ok(checkoutButtons.length > 0);
+  for (const guard of checkoutButtons) assert.match(guard, /!publicMode &&/);
 });

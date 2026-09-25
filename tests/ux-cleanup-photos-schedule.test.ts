@@ -35,7 +35,8 @@ test('recurring schedule UI has one schedule block and no fake 9:00 AM default',
   assert.match(source, /recurrenceCopy\.scheduleType/);
   assert.match(source, /recurrenceCopy\.oneTime/);
   assert.match(source, /isRecurring/);
-  assert.match(source, /preferredStartTime: firstVisit\?\.start_time \|\| null/);
+  assert.match(source, /const primaryVisit = visits\[0\];/);
+  assert.match(source, /preferredStartTime: primaryVisit\?\.start_time \|\| null/);
   assert.match(source, /companyDefaultTimezone/);
   assert.match(source, /recurrenceEndMode/);
   assert.doesNotMatch(source, /\|\| '09:00'/);

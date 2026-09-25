@@ -80,6 +80,23 @@ export type JobCreateCopy = {
   recurringSeries: string;
   perVisit: string;
   createJob: string;
+  savedCustomer: string;
+  loadingCustomers: string;
+  selectCustomer: string;
+  noSavedCustomers: string;
+  customerFallback: string;
+  savedProperty: string;
+  selectCustomerFirst: string;
+  loadingProperties: string;
+  noSavedProperties: string;
+  propertyFallback: string;
+  unableToLoadProperties: string;
+  unableToLoadCustomers: string;
+  jobTitleRequired: string;
+  invalidWorkerPay: string;
+  invalidCustomerPrice: string;
+  unableToCreateRecurringJob: string;
+  unableToCreateJob: string;
 };
 
 const en: JobCreateCopy = {
@@ -161,7 +178,24 @@ const en: JobCreateCopy = {
   oneTimeJob: 'One-time job',
   recurringSeries: 'Recurring series',
   perVisit: 'Per visit',
-  createJob: 'Create Job'
+  createJob: 'Create Job',
+  savedCustomer: 'Saved customer',
+  loadingCustomers: 'Loading customers…',
+  selectCustomer: 'Select a customer',
+  noSavedCustomers: 'No saved customers yet',
+  customerFallback: 'Customer',
+  savedProperty: 'Saved property',
+  selectCustomerFirst: 'Select a customer first',
+  loadingProperties: 'Loading properties…',
+  noSavedProperties: 'No saved properties',
+  propertyFallback: 'Property',
+  unableToLoadProperties: 'Unable to load properties.',
+  unableToLoadCustomers: 'Unable to load customers.',
+  jobTitleRequired: 'Job title is required.',
+  invalidWorkerPay: 'Enter a valid contractor pay amount.',
+  invalidCustomerPrice: 'Enter a valid customer price.',
+  unableToCreateRecurringJob: 'Unable to create recurring job.',
+  unableToCreateJob: 'Unable to create job.'
 };
 
 const es: JobCreateCopy = {
@@ -243,7 +277,24 @@ const es: JobCreateCopy = {
   oneTimeJob: 'Trabajo único',
   recurringSeries: 'Serie recurrente',
   perVisit: 'Por visita',
-  createJob: 'Crear trabajo'
+  createJob: 'Crear trabajo',
+  savedCustomer: 'Cliente guardado',
+  loadingCustomers: 'Cargando clientes…',
+  selectCustomer: 'Seleccione un cliente',
+  noSavedCustomers: 'Aún no hay clientes guardados',
+  customerFallback: 'Cliente',
+  savedProperty: 'Propiedad guardada',
+  selectCustomerFirst: 'Primero seleccione un cliente',
+  loadingProperties: 'Cargando propiedades…',
+  noSavedProperties: 'No hay propiedades guardadas',
+  propertyFallback: 'Propiedad',
+  unableToLoadProperties: 'No se pudieron cargar las propiedades.',
+  unableToLoadCustomers: 'No se pudieron cargar los clientes.',
+  jobTitleRequired: 'El título del trabajo es obligatorio.',
+  invalidWorkerPay: 'Ingrese un pago válido para el contratista.',
+  invalidCustomerPrice: 'Ingrese un precio válido para el cliente.',
+  unableToCreateRecurringJob: 'No se pudo crear el trabajo recurrente.',
+  unableToCreateJob: 'No se pudo crear el trabajo.'
 };
 
 const vi: JobCreateCopy = {
@@ -325,7 +376,24 @@ const vi: JobCreateCopy = {
   oneTimeJob: 'Công việc một lần',
   recurringSeries: 'Chuỗi định kỳ',
   perVisit: 'Mỗi lần đến',
-  createJob: 'Tạo công việc'
+  createJob: 'Tạo công việc',
+  savedCustomer: 'Khách hàng đã lưu',
+  loadingCustomers: 'Đang tải khách hàng…',
+  selectCustomer: 'Chọn khách hàng',
+  noSavedCustomers: 'Chưa có khách hàng đã lưu',
+  customerFallback: 'Khách hàng',
+  savedProperty: 'Bất động sản đã lưu',
+  selectCustomerFirst: 'Hãy chọn khách hàng trước',
+  loadingProperties: 'Đang tải bất động sản…',
+  noSavedProperties: 'Chưa có bất động sản đã lưu',
+  propertyFallback: 'Bất động sản',
+  unableToLoadProperties: 'Không thể tải bất động sản.',
+  unableToLoadCustomers: 'Không thể tải khách hàng.',
+  jobTitleRequired: 'Cần nhập tiêu đề công việc.',
+  invalidWorkerPay: 'Nhập số tiền trả nhà thầu hợp lệ.',
+  invalidCustomerPrice: 'Nhập giá khách hàng hợp lệ.',
+  unableToCreateRecurringJob: 'Không thể tạo công việc định kỳ.',
+  unableToCreateJob: 'Không thể tạo công việc.'
 };
 
 const copies: Record<Locale, JobCreateCopy> = { en, es, vi };
