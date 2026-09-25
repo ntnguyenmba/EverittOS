@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandLogo } from '@/components/brand-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { PricingCheckoutPanel } from '@/components/pricing-checkout-panel';
 import { useTranslation } from '@/components/locale-provider';
 import { performClientLogout } from '@/lib/client-logout';
@@ -43,6 +44,7 @@ function PricingContent() {
         <nav className="pricing-public-nav" aria-label="Pricing navigation">
           <BrandLogo href="/" size={36} showName />
           <div className="pricing-public-nav-links">
+            <LanguageSwitcher id="pricing-nav-language" variant="compact" />
             {authenticated ? (
               <>
                 <Link href="/dashboard">{t('billing.pricingNav.dashboard')}</Link>

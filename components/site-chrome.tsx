@@ -3,10 +3,10 @@
 import { usePathname } from 'next/navigation';
 import { Nav } from '@/components/nav';
 
+/* /pricing renders its own account-aware navigation, so it is not listed here. */
 const LEGAL_PATHS = new Set([
   '/terms',
   '/privacy',
-  '/pricing',
   '/cookies',
   '/disclaimer',
   '/security',

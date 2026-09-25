@@ -5684,6 +5684,28 @@ html[data-deployment='production'] #vercel-toolbar {
   font-weight: 500;
 }
 
+.pricing-public-nav-links .language-switcher,
+.pricing-public-nav-links .language-switcher-select {
+  width: auto !important;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .pricing-public-nav {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .pricing-public-nav-links {
+    width: 100%;
+    gap: 10px 14px;
+  }
+
+  .pricing-public-nav-links .language-switcher {
+    margin-right: auto;
+  }
+}
+
 .pricing-public-nav-button {
   border: none;
   background: transparent;
