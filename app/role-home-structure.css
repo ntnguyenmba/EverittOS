@@ -1,5 +1,4 @@
 /* Owner, worker, and client: wallpaper behind, white cards on top. */
-.owner-home-sheet,
 .contractor-content-card,
 .client-portal-jobs {
   background: transparent !important;
@@ -8,19 +7,11 @@
   padding: 0 !important;
 }
 
-.contractor-portal-hero {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
 
-.contractor-next-job,
 .job-visits-list > .portal-job-row,
 .job-visits-list > .list-row,
 .client-job-card-list > .client-job-card,
-.client-job-card-list > .list-row,
-.client-next-visit-paper {
+.client-job-card-list > .list-row {
   background: #ffffff !important;
   color: #132433 !important;
   border: 1px solid #d5dee5 !important;
