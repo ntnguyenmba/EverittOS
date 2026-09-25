@@ -285,13 +285,101 @@ body:has(main.eo-document) .eo-backdrop {
   font-weight: 700;
 }
 
-.eo-action-grid {
+
+/* Structural groups never become a second surface around child cards.
+   These containers only position free-floating cards/rows on the shared
+   backdrop. Actual leaf surfaces are styled independently below. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .cards-grid,
+  .section-grid,
+  .metric-grid,
+  .stats-grid,
+  .role-summary-grid,
+  .customer-card-list,
+  .team-member-list,
+  .client-job-card-list,
+  .finance-expense-list,
+  .worker-list,
+  .contractor-list,
+  .record-list,
+  .jobs-list,
+  .jobs-list-body,
+  .job-visits-list
+) {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Record entries float as their own surfaces. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .customer-card-row,
+  .team-member-card,
+  .client-job-card,
+  .finance-list-card,
+  .record-card,
+  .portal-job-row,
+  .quote-row,
+  [data-record-card='true']
+) {
+  min-width: 0;
+  padding: var(--eo-card-padding);
+  border: 1px solid var(--eo-color-border);
+  border-radius: var(--eo-radius-card);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  box-shadow: var(--eo-shadow-card);
+}
+
+.eo-action-grid,
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .action-row,
+  .button-row,
+  .inline-actions,
+  .record-actions,
+  .job-detail-actions,
+  .card-actions,
+  .page-actions,
+  .page-header-action,
+  .page-header-actions,
+  .jobs-header-actions,
+  .form-actions,
+  .modal-actions,
+  .photo-capture-actions
+) {
   min-width: 0;
   max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--eo-control-gap);
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .action-row,
+  .button-row,
+  .inline-actions,
+  .record-actions,
+  .job-detail-actions,
+  .card-actions,
+  .page-actions,
+  .page-header-action,
+  .page-header-actions,
+  .jobs-header-actions,
+  .form-actions,
+  .modal-actions,
+  .photo-capture-actions
+) > :is(button, a.btn, .btn, .status, .status-pill, .status-badge, .badge) {
+  min-height: var(--eo-tap);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .eo-visually-hidden {
