@@ -193,9 +193,8 @@ body:has(main.eo-document) .eo-backdrop {
 
 .dashboard-shell .owner-home-primary {
   display: grid;
-  justify-items: center;
   gap: var(--eo-control-gap);
-  text-align: center;
+  text-align: left;
 }
 
 .dashboard-shell .owner-home-primary > * {
@@ -221,7 +220,6 @@ body:has(main.eo-document) .eo-backdrop {
 .dashboard-shell .owner-home-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--eo-control-gap);
   padding-top: 4px;
 }
