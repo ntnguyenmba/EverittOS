@@ -465,7 +465,7 @@ html body .team-directory-card {
   border: 1px solid var(--eo-color-border) !important;
   border-radius: var(--eo-radius-card) !important;
   box-shadow: var(--eo-shadow-card) !important;
-  padding: 18px 20px !important;
+  padding: var(--eo-card-padding) !important;
   text-shadow: none !important;
 }
 
@@ -1131,7 +1131,7 @@ html body .role-portal-shell :is(.record-actions,.page-actions,.inline-actions,.
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    padding: 16px !important;
+    padding: var(--eo-card-padding) !important;
     margin: 0 !important;
     border: 1px solid #dbe3ea !important;
     border-radius: 16px !important;
