@@ -64,8 +64,8 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
     const { performClientLogout } = await import('@/lib/client-logout');
     await performClientLogout(router);
   }
-  function openAskEveritt() {
-    document.querySelector<HTMLButtonElement>('.app-page-content .everitt-cmd-trigger')?.click();
+  function openSearch() {
+    window.dispatchEvent(new CustomEvent('everittos:open-search'));
   }
 
   const isFocusedPortal = isClientRole(role) || isContractorRole(role);
@@ -94,7 +94,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
       <div className="mobile-nav-bar">
         <BrandLogo href={homeHref} size={30} showName className="mobile-nav-top-logo" />
         <div className="mobile-nav-actions">
-          {!isFocusedPortal ? <button type="button" className="mobile-nav-search-btn" aria-label="Ask Everitt" onClick={openAskEveritt}><span className="mobile-nav-search-icon" aria-hidden="true" /></button> : null}
+          <button type="button" className="mobile-nav-search-btn" aria-label={locale === 'es' ? 'Buscar' : locale === 'vi' ? 'Tìm kiếm' : 'Search'} onClick={openSearch}><span className="mobile-nav-search-icon" aria-hidden="true" /></button>
           <button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : MENU_LABELS[locale]} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}><span className="mobile-nav-menu-icon" aria-hidden="true" /></button>
         </div>
       </div>
