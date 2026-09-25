@@ -194,7 +194,6 @@ body:has(main.eo-document) .eo-backdrop {
 .dashboard-shell .owner-home-primary {
   display: grid;
   gap: var(--eo-control-gap);
-  text-align: left;
 }
 
 .dashboard-shell .owner-home-primary > * {
