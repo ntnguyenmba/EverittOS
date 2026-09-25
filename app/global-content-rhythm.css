@@ -64,6 +64,10 @@
   padding: var(--eo-card-padding) !important;
 }
 
+:is(.dashboard-shell, .role-portal-shell) .page-header.page-header-flush {
+  padding: 0 !important;
+}
+
 :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head, .dashboard-header) :is(h1, h2, h3) {
   color: var(--eo-color-text) !important;
 }
@@ -1706,6 +1710,10 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   align-items: flex-start !important;
   justify-items: start !important;
   padding: var(--eo-card-padding) !important;
+}
+
+body :is(.dashboard-shell, .role-portal-shell) .page-header.page-header-flush {
+  padding: 0 !important;
 }
 
 body :is(.dashboard-shell, .role-portal-shell) :is(
