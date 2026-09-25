@@ -83,6 +83,8 @@ A visual PR is not done unless New Job, Save, Start, Finish, payments, filters, 
 
 Keep healthy responsive space everywhere: no cards or controls pressed against viewport edges, no sections jammed together, no text touching borders or controls, and no excessively wide or cramped content columns. Use the centralized `--eo-gutter`, `--eo-section-gap`, `--eo-card-padding`, `--eo-control-gap`, and `--eo-view-max` tokens instead of page-specific spacing overrides.
 
+**Box-edge rule:** every visible card, panel, boxed header, modal, form surface, record surface, and similar bordered/rounded container must keep comfortable internal padding between its border and all wording, icons, badges, and controls. Text must never visually start at the same edge as the box border. Use the shared card-padding tokens, with at least 20px horizontal inset on normal app surfaces, and preserve that rule across desktop, tablet, iOS, Android, and 360/390/430px mobile layouts. Do not fix individual screens with one-off padding values; correct the shared primitive/rhythm layer instead.
+
 ## 2026-09-25 final stabilization follow-up
 
 `/expenses` now starts with a deterministic server/client form state and fills the local default date after mount, removing the remaining timezone-sensitive hydration path while preserving the local-date default for users.
