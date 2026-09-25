@@ -187,6 +187,16 @@ body:has(main.eo-document) .eo-backdrop {
   box-shadow: var(--eo-shadow-card);
 }
 
+/* Pinch-zoom is allowed, so iOS would auto-zoom into any focused field under
+   16px. Phones and touch screens get a 16px minimum for text controls. */
+@media (max-width: 767px), (pointer: coarse) {
+  html body :is(input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']), select, textarea, .input),
+  html body .language-switcher .language-switcher-select,
+  html body :is(.dashboard-shell, .role-portal-shell) :is(input[type='date'], input[type='time'], input[type='datetime-local'], input[type='month']) {
+    font-size: max(16px, 1rem) !important;
+  }
+}
+
 /* One visible keyboard focus ring for every interactive element. Zero
    specificity, so component rules can restyle it but never need to remove it. */
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible {

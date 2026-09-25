@@ -67,14 +67,6 @@ body.capacitor-app .dashboard-shell-header {
   flex-wrap: wrap;
 }
 
-@media (max-width: 767px) {
-  input,
-  select,
-  textarea {
-    font-size: max(16px, 1rem);
-  }
-}
-
 @media (max-width: 1024px) {
   .table-responsive,
   .data-table-wrap,

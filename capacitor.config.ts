@@ -13,6 +13,8 @@ const config: CapacitorConfig = {
   appId: 'com.everittventures.everittos',
   appName: 'EverittOS',
   webDir: 'mobile-shell',
+  // Allow pinch-to-zoom in the native WebView, matching the web viewport.
+  zoomEnabled: true,
   server: {
     url: productionUrl,
     cleartext: isLocalDev,

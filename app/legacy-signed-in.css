@@ -1084,9 +1084,6 @@ body {
   overscroll-behavior-x: none;
 }
 
-body {
-  touch-action: pan-y;
-}
 .app-shell,
 .app-page-shell,
 .contractor-main,
