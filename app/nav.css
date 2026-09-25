@@ -1413,7 +1413,7 @@ form,
   .form-card,
   .empty-state {
     border-radius: 14px !important;
-    padding: 16px !important;
+    padding: var(--eo-card-padding) !important;
   }
 
   .dashboard-section-head {
