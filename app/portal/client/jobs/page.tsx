@@ -170,7 +170,7 @@ export default function ClientPortalJobsPage() {
       {empty ? <div className="card client-empty-state" role="status"><p>{c.noUpcoming}</p></div> : message ? <div className="card" role="alert"><p>{message}</p></div> : <>
         {messageJob ? <ClientSendMessage jobId={messageJob.id} /> : null}
         {nextVisit ? <section className="client-next-visit client-next-visit-paper">
-          <div className="client-next-visit-copy">
+          <div className="client-next-visit-copy eo-upcoming-content">
             <p className="eyebrow">{c.nextVisit}</p><h1>{nextVisit.title}</h1>
             <p className="client-next-visit-time">{[jobDate(nextVisit, localeCode), jobTime(nextVisit, localeCode)].filter(Boolean).join(' · ') || c.dateNotSet}</p>
             {nextVisit.address ? <p className="muted">{nextVisit.address}</p> : null}
