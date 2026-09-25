@@ -129,6 +129,37 @@ body:has(main.eo-document) .eo-backdrop {
   margin-top: var(--eo-section-gap);
 }
 
+/* Installed/native app chrome stays visible without covering page content. */
+html[data-native-app='true'],
+html[data-standalone='true'] {
+  --eo-fixed-footer-reserve: 104px;
+}
+
+html[data-native-app='true'] .dashboard-shell-header,
+html[data-standalone='true'] .dashboard-shell-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 110 !important;
+}
+
+html[data-native-app='true'] .dashboard-shell > .main,
+html[data-standalone='true'] .dashboard-shell > .main {
+  padding-bottom: calc(var(--eo-page-pad-bottom) + var(--eo-fixed-footer-reserve)) !important;
+}
+
+html[data-native-app='true'] .dashboard-shell > .main > .app-footer,
+html[data-standalone='true'] .dashboard-shell > .main > .app-footer {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 105 !important;
+  width: min(calc(100% - (2 * var(--eo-gutter))), var(--eo-page-max)) !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
+}
+
+
 /* Page stage: a transparent column. Each section inside it is its own
    surface; the stage itself never paints a background. */
 .app-page-stage {
@@ -245,6 +276,86 @@ body:has(main.eo-document) .eo-backdrop {
   padding: var(--eo-card-padding);
 }
 
+/* Surface content alignment: headings, summaries, helper copy, and action rows
+   are centered inside visible boxes. Form fields/tables keep left-aligned data. */
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .page-head,
+  .page-header,
+  .dashboard-header,
+  .settings-page-head,
+  .card,
+  .panel,
+  .settings-card,
+  .billing-card,
+  .schedule-card,
+  .booking-card,
+  .report-card,
+  .job-financials-card,
+  .finance-section,
+  .record-card
+) {
+  text-align: center;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .page-head,
+  .page-header,
+  .dashboard-header,
+  .settings-page-head
+) {
+  justify-items: center;
+  align-items: center;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .page-head,
+  .page-header,
+  .dashboard-header,
+  .settings-page-head
+) > :is(div, section, header),
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .card,
+  .panel,
+  .settings-card
+) > :is(h1, h2, h3, h4, p, .muted, .helper-text, .section-description, summary) {
+  text-align: center;
+  margin-inline: auto;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  .page-head,
+  .page-header,
+  .dashboard-header,
+  .settings-page-head
+) :is(
+  .button-row,
+  .inline-actions,
+  .page-header-action,
+  .page-header-actions,
+  .actions
+) {
+  justify-content: center;
+}
+
+:is(.dashboard-shell, .role-portal-shell) :is(
+  form,
+  label,
+  fieldset,
+  table,
+  th,
+  td,
+  input,
+  select,
+  textarea,
+  .form,
+  .form-grid,
+  .field-grid,
+  .table-responsive,
+  .data-table-wrap
+) {
+  text-align: left;
+}
+
 /* Standard buttons share one exact height. Pills/chips keep their compact
    semantics unless they are explicitly placed in an action row. */
 :is(.dashboard-shell, .role-portal-shell) :is(
@@ -299,7 +410,7 @@ body:has(main.eo-document) .eo-backdrop {
   .danger-button
 ) {
   min-height: var(--eo-control-height);
-  height: auto;
+  height: var(--eo-control-height);
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -564,4 +675,78 @@ body:has(main.eo-document) .eo-backdrop {
 @media (max-width: 520px) {
   .eo-public-quote { place-items: start center; padding-inline: var(--eo-space-3); }
   .eo-public-quote-card { padding: var(--eo-space-4); }
+}
+
+
+/* Native EverittOS app lock. PIN exists only in EverittOS, never Coach Chain. */
+.native-pin-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  background: rgba(19, 36, 51, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.native-pin-card {
+  width: min(100%, 420px);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 32px 28px;
+  box-sizing: border-box;
+  border: 1px solid var(--eo-color-border);
+  border-radius: var(--eo-radius-card);
+  background: var(--eo-color-surface);
+  color: var(--eo-color-text);
+  box-shadow: var(--eo-shadow-card);
+  text-align: center;
+}
+
+.native-pin-card h1,
+.native-pin-card p {
+  margin: 0;
+  text-align: center;
+}
+
+.native-pin-card input {
+  width: min(100%, 220px);
+  min-height: var(--eo-control-height);
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: .35em;
+}
+
+.native-pin-card .btn,
+.native-pin-account {
+  width: min(100%, 220px);
+  min-height: var(--eo-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.native-pin-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--eo-color-brand);
+  color: #fff;
+  font-weight: 800;
+  font-size: 24px;
+}
+
+.native-pin-account {
+  border: 0;
+  background: transparent;
+  color: var(--eo-color-accent);
+  font: inherit;
+  font-weight: 700;
 }
