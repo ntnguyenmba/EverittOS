@@ -40,8 +40,8 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState<EverittosPlan>('free'); const [role, setRole] = useState<UserRole>('owner'); const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState(false); const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, singleOpenLeadId: null, nextJob: null });
   async function loadDashboard() {
     setLoading(true); setLoadError(false);
-    const auth = await withTimeout(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') }) as { data: { user: { id: string } | null }; error: unknown }; let userId = auth.data.user?.id || null;
-    if (!userId) { const session = await withTimeout(supabase.auth.getSession(), { data: { session: null }, error: new Error('Session timed out') }) as { data: { session: { user: { id: string } } | null }; error: unknown }; userId = session.data.session?.user?.id || null; }
+    const auth = await withTimeout(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') }) as { data: { user: { id: string } | null }; error: unknown };
+    const userId = auth.data.user?.id || null;
     if (!userId) { setLoadError(true); setLoading(false); return; }
     type ProfileRow = { plan?: string | null; role?: string | null };
     const [profileResult, organization] = await Promise.all([withTimeout<{ data: ProfileRow | null; error: Error | null }>(supabase.from('profiles').select('plan, role').eq('id', userId).maybeSingle(), { data: null, error: new Error('Profile timed out') }), withTimeout(ensureOrganizationForUser(userId), null)]);
