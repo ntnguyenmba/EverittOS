@@ -39,9 +39,9 @@
   background: var(--eo-shell-overlay);
 }
 
-/* Document variant: legal, help, and pricing pages render as main.section on
+/* Document variant: legal, help, and pricing pages mark main.eo-document to stay on
    the plain page color, so text written for white stays readable. */
-body:has(main.section) .eo-backdrop {
+body:has(main.eo-document) .eo-backdrop {
   display: none;
 }
 

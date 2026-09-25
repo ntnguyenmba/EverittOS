@@ -20,6 +20,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import { PageLoading } from '@/components/page-loading';
 
 type JobOption = { id: string; title: string; customer_id: string | null };
 type CustomerOption = { id: string; company_name: string };
@@ -514,7 +515,7 @@ function ExpensesContent() {
       ) : null}
 
       <div className="card">
-        {loading ? <p className="loading-state">Loading expenses...</p> : null}
+        {loading ? <PageLoading /> : null}
         {!loading && expenses.length === 0 ? (
           <div className="empty-state">
             <h3>No business expenses recorded yet</h3>
@@ -594,7 +595,7 @@ function ExpensesContent() {
 
 export default function ExpensesPage() {
   return (
-    <Suspense fallback={<p className="loading-state">Loading expenses...</p>}>
+    <Suspense fallback={<PageLoading />}>
       <ExpensesContent />
     </Suspense>
   );

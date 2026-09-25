@@ -10,6 +10,7 @@ import { normalizeRole } from '@/lib/roles';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { combineDateAndTime } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
+import { PageLoading } from '@/components/page-loading';
 
 type JobOption = { id: string; title: string };
 
@@ -90,7 +91,7 @@ export function ScheduleCreateForm() {
   }
 
   if (loading) {
-    return <p className="loading-state" role="status">Loading jobs…</p>;
+    return <PageLoading />;
   }
 
   return (

@@ -13,5 +13,5 @@ const copy = {
 export default function CookiesPage() {
   const { locale } = useTranslation();
   const c = copy[locale] || copy.en;
-  return <main className="section"><div className="container legal-document" style={{ maxWidth: 720 }}><h2>{c.title}</h2><p className="muted">{c.updated}</p>{c.sections.map(([title, body]) => <section key={title}><h3>{title}</h3><p>{body}</p></section>)}<LegalNotice /><p><Link href="/privacy">{c.privacy}</Link> · <Link href="/terms">{c.terms}</Link> · <Link href="/terms#billing">{c.billing}</Link></p><Link className="btn" href="/login">{c.signIn}</Link></div></main>;
+  return <main className="section eo-document"><div className="container legal-document" style={{ maxWidth: 720 }}><h2>{c.title}</h2><p className="muted">{c.updated}</p>{c.sections.map(([title, body]) => <section key={title}><h3>{title}</h3><p>{body}</p></section>)}<LegalNotice /><p><Link href="/privacy">{c.privacy}</Link> · <Link href="/terms">{c.terms}</Link> · <Link href="/terms#billing">{c.billing}</Link></p><Link className="btn" href="/login">{c.signIn}</Link></div></main>;
 }

@@ -12,5 +12,5 @@ const copy = {
 export default function DisclaimerPage() {
   const { locale } = useTranslation();
   const c = copy[locale] || copy.en;
-  return <main className="section"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }} aria-label={c.related}><Link className="btn" href="/disclaimer/contractor">{c.contractor}</Link><Link className="btn" href="/disclaimer/customer">{c.customer}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/login">{c.back}</Link></nav></div></main>;
+  return <main className="section eo-document"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }} aria-label={c.related}><Link className="btn" href="/disclaimer/contractor">{c.contractor}</Link><Link className="btn" href="/disclaimer/customer">{c.customer}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/login">{c.back}</Link></nav></div></main>;
 }

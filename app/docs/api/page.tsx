@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function ApiDocsPage() {
   return (
-    <main className="section">
+    <main className="section eo-document">
       <div className="container">
         <h2>EverittOS API</h2>
         <p className="muted">Growth and Enterprise plans can create API keys in settings.</p>

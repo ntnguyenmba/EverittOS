@@ -41,7 +41,7 @@ Do not hide or reposition New Job, Save, Start, Finish, filters, role switch, PI
   - page surfaces: each section inside the stage floats as its own card;
     wrappers of cards stay transparent. Use `.eo-bare` to opt a section out.
   - the shared `:focus-visible` ring.
-- Document pages (`main.section`: legal, help, pricing) are an explicit variant
+- Document pages (`main.eo-document`: legal, help, pricing) are an explicit variant
   that hides the backdrop.
 
 `app/layout.tsx` still loads the 19 stylesheets checked by

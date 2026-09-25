@@ -38,7 +38,7 @@ function PricingContent() {
   }, []);
 
   return (
-    <main id="main-content" className="section pricing-public-page">
+    <main id="main-content" className="section eo-document pricing-public-page">
       <div className="container" style={{ maxWidth: 1080 }}>
         <nav className="pricing-public-nav" aria-label="Pricing navigation">
           <BrandLogo href="/" size={36} showName />

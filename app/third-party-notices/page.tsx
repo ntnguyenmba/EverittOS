@@ -14,7 +14,7 @@ const notices = [
 
 export default function ThirdPartyNoticesPage() {
   return (
-    <main className="section">
+    <main className="section eo-document">
       <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Third-Party Notices</h2>
         <p className="muted">

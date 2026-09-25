@@ -30,7 +30,7 @@ const plannedConnections = [
 
 export default function IntegrationsGuidePage() {
   return (
-    <main className="section">
+    <main className="section eo-document">
       <div className="container">
         <div className="card" style={{ marginBottom: 20 }}>
           <p className="eyebrow">EverittOS integrations</p>

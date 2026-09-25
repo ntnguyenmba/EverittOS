@@ -8,6 +8,7 @@ import { JobCreateRecurringDurationBridge } from '@/components/job-create-recurr
 import { useTranslation } from '@/components/locale-provider';
 import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import styles from './job-form-simplify.module.css';
+import { PageLoading } from '@/components/page-loading';
 
 const JobCreator = dynamic(
   () => import('@/components/job-creator').then((mod) => mod.JobCreator),
@@ -33,7 +34,7 @@ export default function NewJobPage() {
       </header>
 
       <div className={styles.formWrap}>
-        <Suspense fallback={<p className="loading-state">Loading form…</p>}>
+        <Suspense fallback={<PageLoading />}>
           <JobCreator onJobCreated={(jobId) => window.location.assign(`/jobs/${jobId}`)} />
         </Suspense>
       </div>

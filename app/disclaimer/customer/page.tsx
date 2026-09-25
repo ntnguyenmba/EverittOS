@@ -12,5 +12,5 @@ const copy = {
 export default function CustomerDisclaimerPage() {
   const { locale } = useTranslation();
   const c = copy[locale] || copy.en;
-  return <main className="section"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}><Link className="btn" href="/disclaimer">{c.general}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/portal/client">{c.portal}</Link></nav></div></main>;
+  return <main className="section eo-document"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}><Link className="btn" href="/disclaimer">{c.general}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/portal/client">{c.portal}</Link></nav></div></main>;
 }

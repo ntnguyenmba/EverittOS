@@ -73,7 +73,7 @@ export default function AboutPage() {
   const c = copy[locale] || copy.en;
 
   return (
-    <main className="section">
+    <main className="section eo-document">
       <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>{c.title}</h2>
         <p className="muted">{c.subtitle}</p>
