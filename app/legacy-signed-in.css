@@ -2185,7 +2185,6 @@ body {
 
 .job-detail-shell > .page-head {
   margin-bottom: var(--eo-space-1) !important;
-  padding: 0 !important;
 }
 
 .job-detail-shell > .page-head h2,
