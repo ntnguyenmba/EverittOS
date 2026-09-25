@@ -60,6 +60,8 @@
 :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head, .dashboard-header) {
   gap: var(--eo-heading-gap) !important;
   color: var(--eo-color-text) !important;
+  box-sizing: border-box !important;
+  padding: var(--eo-card-padding) !important;
 }
 
 :is(.dashboard-shell, .role-portal-shell) :is(.page-header, .page-head, .quote-page-head, .dashboard-header) :is(h1, h2, h3) {
