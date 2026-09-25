@@ -22,6 +22,8 @@ requireText('android/app/src/main/AndroidManifest.xml', 'com.android.vending.BIL
 requireText('android/app/src/main/AndroidManifest.xml', 'android:autoVerify="true"', 'Android verified app links');
 requireText('ios/App/App.xcodeproj/project.pbxproj', 'PRODUCT_BUNDLE_IDENTIFIER = com.everittventures.everittos;', 'iOS bundle ID');
 requirePattern('ios/App/App.xcodeproj/project.pbxproj', /MARKETING_VERSION = \d+\.\d+(?:\.\d+)?;/, 'iOS marketing version');
+requireText('ios/App/App/Info.plist', '<string>$(MARKETING_VERSION)</string>', 'iOS Info.plist marketing-version binding');
+requireText('ios/App/App/Info.plist', '<string>$(CURRENT_PROJECT_VERSION)</string>', 'iOS Info.plist build-number binding');
 requireText('ios/App/App/Info.plist', 'NSCameraUsageDescription', 'iOS camera usage description');
 requireText('ios/App/App/Info.plist', 'NSPhotoLibraryUsageDescription', 'iOS photo library usage description');
 requireText('ios/App/App/PrivacyInfo.xcprivacy', 'NSPrivacyTracking', 'iOS privacy manifest');
