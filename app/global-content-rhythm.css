@@ -474,19 +474,22 @@ html body :is(
   .client-job-card-list,
   .jobs-list,
   .jobs-list-body,
-  .jobs-mobile-table-wrap,
   .customers-list,
   .finance-expense-list
-),
+) {
+  display: grid !important;
+  gap: var(--eo-section-stack-gap) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html body .dashboard-shell .jobs-mobile-table-wrap,
 html body .dashboard-shell table.jobs-operations-table,
 html body .dashboard-shell .jobs-table-card {
   display: block !important;
-  background: var(--eo-color-surface) !important;
-  border: 1px solid var(--eo-color-border) !important;
-  border-radius: var(--eo-radius-card) !important;
-  box-shadow: var(--eo-shadow-card) !important;
-  /* Rows carry the card's inline padding, so the list only pads vertically. */
-  padding: 8px 0 !important;
 }
 
 html body .team-directory-card .team-member-list,
@@ -521,13 +524,12 @@ html body .role-portal-shell :is(
   .finance-list-card
 ) {
   width: 100% !important;
-  background: transparent !important;
+  background: var(--eo-color-surface) !important;
   color: var(--eo-color-text) !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--eo-color-border) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 16px 0 !important;
+  border: 1px solid var(--eo-color-border) !important;
+  border-radius: var(--eo-radius-card) !important;
+  box-shadow: var(--eo-shadow-card) !important;
+  padding: var(--eo-card-padding) !important;
   margin: 0 !important;
 }
 
@@ -543,7 +545,7 @@ html body .dashboard-shell :is(
   .record-card,
   .quote-row
 ):last-child {
-  border-bottom: 0 !important;
+  border-bottom-color: var(--eo-color-border) !important;
 }
 
 html body .dashboard-shell .jobs-operations-row td,
@@ -1396,24 +1398,6 @@ body :is(.dashboard-shell, .role-portal-shell) :is(
   .finance-metric-grid
 ) {
   margin-top: var(--eo-actions-top-gap) !important;
-}
-
-/* Buttons and controls should never visually collide. */
-body :is(.dashboard-shell, .role-portal-shell) :is(
-  .inline-actions,
-  .button-row,
-  .action-row,
-  .actions,
-  .card-actions,
-  .page-header-action,
-  .jobs-header-actions,
-  .form-actions,
-  .modal-actions
-) {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: var(--eo-control-gap) !important;
 }
 
 /* Form fields and label/control pairs. */
