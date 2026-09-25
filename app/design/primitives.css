@@ -191,6 +191,12 @@ body:has(main.eo-document) .eo-backdrop {
   white-space: nowrap;
 }
 
+.eo-upcoming-content {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+}
+
 .dashboard-shell .owner-home-primary {
   display: grid;
   gap: var(--eo-control-gap);
