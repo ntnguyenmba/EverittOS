@@ -31,8 +31,6 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
   return (
     <main id="main-content" className="auth-page auth-tech-page">
-      <div className="auth-tech-background" aria-hidden="true" />
-      <div className="auth-tech-overlay" aria-hidden="true" />
 
       <div className="auth-tech-shell">
         <header className="auth-tech-header">
@@ -63,30 +61,9 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           min-height: 100svh;
           overflow-x: hidden;
           isolation: isolate;
-          background: #e9eef2;
+          background: transparent;
           color: #172433;
           font-family: var(--font-manrope), Manrope, sans-serif;
-        }
-
-        .auth-tech-background {
-          position: fixed;
-          inset: 0;
-          z-index: -3;
-          background-image: url('/hero.jpg');
-          background-size: cover;
-          background-position: center;
-          opacity: 0.62;
-          filter: saturate(0.82) contrast(1.02) brightness(0.92);
-          transform: scale(1.015);
-        }
-
-        .auth-tech-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: -2;
-          background:
-            linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
-            linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3));
         }
 
         .auth-tech-shell {
@@ -397,14 +374,6 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
             overflow-y: auto;
           }
 
-          .auth-tech-background {
-            background-position: 56% center;
-          }
-
-          .auth-tech-overlay {
-            background: linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48));
-          }
-
           .auth-tech-shell {
             padding: 16px 14px 20px;
           }
@@ -468,10 +437,6 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
             --auth-column-width: 500px;
             padding-left: 28px;
             padding-right: 28px;
-          }
-
-          .auth-tech-background {
-            background-position: center;
           }
         }
       `}</style>

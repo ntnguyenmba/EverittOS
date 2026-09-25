@@ -2,9 +2,57 @@
    Pages may opt in directly; the final rhythm layer also maps established
    product classes to these same tokens. */
 
+/* Application backdrop. Mounted once in the root layout, so it survives route
+   changes and loading states. Shells and pages stay transparent to show it;
+   an explicit shell variant opts out by painting its own opaque surface. */
+.eo-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  /* Large-viewport height keeps the image from rescaling as mobile browser
+     toolbars collapse; inset covers safe areas under viewport-fit=cover. */
+  height: 100vh;
+  height: 100lvh;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--eo-shell-base);
+}
+
+.eo-backdrop::before,
+.eo-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.eo-backdrop::before {
+  background-image: var(--eo-shell-image);
+  background-position: var(--eo-shell-image-position);
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: var(--eo-shell-image-opacity);
+  filter: var(--eo-shell-image-filter);
+}
+
+.eo-backdrop::after {
+  background: var(--eo-shell-overlay);
+}
+
+@media print {
+  .eo-backdrop { display: none; }
+}
+
 .eo-chrome {
   width: min(100%, var(--eo-view-max));
   margin-inline: auto;
+}
+
+/* One visible keyboard focus ring for every interactive element. Zero
+   specificity, so component rules can restyle it but never need to remove it. */
+:where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 3px solid var(--eo-color-focus-ring);
+  outline-offset: 2px;
 }
 
 .eo-card {

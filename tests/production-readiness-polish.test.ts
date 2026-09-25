@@ -22,10 +22,12 @@ describe('Production readiness polish', () => {
     assert.match(pbx, /PrivacyInfo\.xcprivacy/);
   });
 
-  it('dashboard CSS wires mobile alignment sheets', () => {
+  it('dashboard CSS keeps its mobile alignment layers inline, in order', () => {
     const css = readFileSync('app/dashboard.css', 'utf8');
-    assert.match(css, /dashboard-mobile-alignment\.css/);
-    assert.match(css, /dashboard-metric-responsive-fix\.css/);
+    assert.doesNotMatch(css, /@import/);
+    const alignment = css.indexOf('--- dashboard-mobile-alignment ---');
+    const metrics = css.indexOf('--- dashboard-metric-responsive-fix ---');
+    assert.ok(alignment > 0 && metrics > alignment);
     const layout = readFileSync('app/layout.tsx', 'utf8');
     assert.match(layout, /global-content-rhythm\.css/);
   });

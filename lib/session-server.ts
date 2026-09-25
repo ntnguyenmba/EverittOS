@@ -9,7 +9,7 @@ export function readLastActivity(request: NextRequest): string | undefined {
 
 function redirectWithCookies(url: URL, source: NextResponse): NextResponse {
   const redirect = NextResponse.redirect(url);
-  source.cookies.getAll().forEach(({ name, value }) => redirect.cookies.set(name, value));
+  source.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
   return redirect;
 }
 
@@ -18,7 +18,7 @@ async function expireSession(request: NextRequest, supabase: SupabaseClient, res
   clearSessionMarkers(response);
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const json = NextResponse.json({ error: detail, code: 'session_expired' }, { status: 401 });
-    response.cookies.getAll().forEach(({ name, value }) => json.cookies.set(name, value));
+    response.cookies.getAll().forEach((cookie) => json.cookies.set(cookie));
     clearSessionMarkers(json);
     return json;
   }

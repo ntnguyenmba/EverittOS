@@ -17,25 +17,33 @@ function readyKey(userId: string) {
 export function WorkspaceBootstrap() {
   const pathname = usePathname() || '/';
   const bootstrappingRef = useRef(false);
+  const readyUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isSessionExemptPath(pathname)) return;
 
     async function ensureWorkspace() {
       if (bootstrappingRef.current) return;
+      // The local session only picks the cache key; the setup and ensure endpoints
+      // verify the user on the server. This avoids an auth round trip per navigation.
       const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (!user) return;
+        data: { session }
+      } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user || readyUserRef.current === user.id) return;
 
       try {
-        if (window.sessionStorage.getItem(readyKey(user.id)) === '1') return;
+        if (window.sessionStorage.getItem(readyKey(user.id)) === '1') {
+          readyUserRef.current = user.id;
+          return;
+        }
       } catch {
         /* storage blocked */
       }
 
       let org = await fetchOrganizationContext(user.id);
       if (org?.organizationId) {
+        readyUserRef.current = user.id;
         try {
           window.sessionStorage.setItem(readyKey(user.id), '1');
         } catch {
@@ -54,6 +62,7 @@ export function WorkspaceBootstrap() {
         await fetch('/api/auth/setup', { method: 'POST' });
         org = await fetchOrganizationContext(user.id);
         if (org?.organizationId) {
+          readyUserRef.current = user.id;
           try {
             window.sessionStorage.setItem(readyKey(user.id), '1');
           } catch {

@@ -49,7 +49,9 @@ import {
 
 function redirectWithCookies(url: URL, source: NextResponse) {
   const redirect = NextResponse.redirect(url);
-  source.cookies.getAll().forEach(({ name, value }) => { redirect.cookies.set(name, value); });
+  // Copy full cookie objects. Copying only name/value drops path, maxAge, httpOnly and
+  // secure, which turns refreshed Supabase tokens into path-scoped duplicates.
+  source.cookies.getAll().forEach((cookie) => { redirect.cookies.set(cookie); });
   return redirect;
 }
 function roleBlockedRedirect(request: NextRequest, source: NextResponse, role?: string | null, _pathname?: string, _detail?: string) {

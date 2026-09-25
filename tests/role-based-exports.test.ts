@@ -264,7 +264,9 @@ describe('role-based exports', () => {
     const css = readFileSync('app/form-alignment-fixes.css', 'utf8');
     assert.match(css, /jobs-shell-minimal/);
     assert.match(css, /min-height: 44px/);
-    assert.match(css, /dashboard-shell-background[\s\S]*display: block/);
+    assert.doesNotMatch(css, /eo-backdrop/);
+    const layout = readFileSync('app/layout.tsx', 'utf8');
+    assert.match(layout, /<AppBackdrop \/>/);
   });
 
   it('today and finished filters use shared canonical logic', () => {

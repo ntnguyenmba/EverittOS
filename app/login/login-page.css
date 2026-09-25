@@ -31,8 +31,6 @@
 .auth-tech-card:has(.login-intro) .auth-legal-note { margin-top:13px; color:#5b667a!important; font-size:10.5px; font-weight:500; line-height:1.45; }
 
 @media(max-width:760px) {
-  .auth-tech-page .auth-tech-background { opacity:.58!important; filter:saturate(.8) contrast(1.01) brightness(.96)!important; background-position:center!important; }
-  .auth-tech-page .auth-tech-overlay { background:linear-gradient(180deg,rgba(20,39,53,.2),rgba(20,39,53,.38))!important; }
   .auth-tech-page .auth-tech-shell { padding:16px 0 22px!important; }
   .auth-tech-page .auth-tech-header { width:calc(100vw - 44px)!important; max-width:calc(100vw - 44px)!important; }
   .auth-tech-page .auth-tech-card:has(.login-intro) { width:calc(100vw - 44px)!important; max-width:430px!important; margin:18px auto 20px!important; padding:24px 22px 20px!important; border-radius:22px; background:rgba(250,252,253,.965); }

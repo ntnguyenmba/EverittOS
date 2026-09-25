@@ -37,12 +37,13 @@ export function sessionMarkerCookieOptions(): Record<string, unknown> {
   return { path: '/', sameSite: 'lax', secure, httpOnly: true };
 }
 
-export function applySessionMarkers(response: NextResponse, tabId?: string): string {
+export function applySessionMarkers(response: NextResponse, tabId?: string, existingIssuedAt?: string): string {
   const tab = tabId || createTabSessionId();
   const now = touchActivityTimestamp();
   response.cookies.set(TAB_SESSION_COOKIE, tab, sessionMarkerCookieOptions());
   response.cookies.set(LAST_ACTIVITY_COOKIE, now, sessionMarkerCookieOptions());
-  response.cookies.set(SESSION_ISSUED_COOKIE, now, sessionMarkerCookieOptions());
+  // A new tab joins the existing login; only a fresh sign-in starts the absolute window.
+  response.cookies.set(SESSION_ISSUED_COOKIE, existingIssuedAt || now, sessionMarkerCookieOptions());
   return tab;
 }
 

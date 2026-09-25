@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { applySessionMarkers } from '@/lib/auth-cookies';
-import { createTabSessionId, TAB_SESSION_COOKIE } from '@/lib/session-policy';
+import { createTabSessionId, SESSION_ISSUED_COOKIE, TAB_SESSION_COOKIE } from '@/lib/session-policy';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
@@ -22,6 +22,6 @@ export async function GET() {
   const tabSessionId = existing || createTabSessionId();
 
   const response = NextResponse.json({ ok: true, tabSessionId });
-  applySessionMarkers(response, tabSessionId);
+  applySessionMarkers(response, tabSessionId, cookieStore.get(SESSION_ISSUED_COOKIE)?.value);
   return attachCookies(response);
 }

@@ -24,7 +24,7 @@
 .client-job-secondary { margin:7px 0 0; line-height:1.45; }
 .client-job-schedule strong { color:#233845; font-size:15px; font-weight:600; }
 .contractor-job-card,.contractor-job-card-display,.client-job-card,.contractor-job-card > button,.contractor-job-card a,.contractor-history-card a,.client-job-card a,.client-job-card button { pointer-events:auto!important; cursor:pointer!important; }
-.client-job-card:hover,.client-job-card:focus-visible,.contractor-job-card:focus-within { background:rgba(40,93,120,.035)!important; outline:none; }
+.client-job-card:hover,.client-job-card:focus-visible,.contractor-job-card:focus-within { background:rgba(40,93,120,.035)!important; }
 
 /* Pending native photos use the existing photo area and disappear after successful sync. */
 .contractor-photo-preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:12px; margin-top:12px; }

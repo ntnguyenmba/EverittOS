@@ -148,8 +148,12 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
     recordActivity();
   }, [recordActivity]);
 
+  // Only crossing between exempt (login, legal) and protected paths restarts the idle
+  // clock; ordinary soft navigation keeps one set of listeners and timers.
+  const exempt = isSessionExemptPath(pathname);
+
   useEffect(() => {
-    if (isSessionExemptPath(pathname)) return;
+    if (exempt) return;
     let cancelled = false;
 
     async function initializeIdleSession() {
@@ -193,7 +197,7 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
       clearTimers();
       closeWarning();
     };
-  }, [pathname, recordActivity, clearTimers, closeWarning, resumeActiveSession]);
+  }, [exempt, recordActivity, clearTimers, closeWarning, resumeActiveSession]);
 
   return (
     <>

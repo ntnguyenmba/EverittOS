@@ -192,8 +192,6 @@ a[href*="/portal/client/jobs/"] {
   background-color: transparent !important;
 }
 
-.jobs-shell-minimal .dashboard-shell-background { display: block !important; }
-.jobs-shell-minimal .dashboard-shell-overlay { display: block !important; }
 
 .jobs-list-page {
   max-width: 1180px;
@@ -274,7 +272,7 @@ a[href*="/portal/client/jobs/"] {
 .jobs-operations-table tr:last-child td { border-bottom: 0; }
 .jobs-operations-row { cursor: pointer; }
 .jobs-operations-row:hover,
-.jobs-operations-row:focus-visible { background: rgba(255,255,255,.97) !important; outline: none; }
+.jobs-operations-row:focus-visible { background: rgba(255,255,255,.97) !important; }
 
 .jobs-col-date { width: 18%; }
 .jobs-col-property { width: 42%; }

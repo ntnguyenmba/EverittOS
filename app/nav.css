@@ -586,7 +586,7 @@ select:focus-visible,
 
 .dashboard-shell {
   grid-template-columns: 272px minmax(0, 1fr) !important;
-  background: var(--bg) !important;
+  background: transparent !important;
 }
 
 .main {

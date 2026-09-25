@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSync } from '@/components/locale-sync';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
+import { AppBackdrop } from '@/components/app-backdrop';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { ActivityHeartbeat } from '@/components/activity-heartbeat';
 import { SessionGuard } from '@/components/session-guard';
@@ -60,5 +61,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><ContractorJobPayVisibility /><ExpensesListEnhancer /><AskEverittQuickClear /><UniversalListLimit /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><RoleHomeGuard /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><AppBackdrop /><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><ContractorJobPayVisibility /><ExpensesListEnhancer /><AskEverittQuickClear /><UniversalListLimit /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><RoleHomeGuard /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }

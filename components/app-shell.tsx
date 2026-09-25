@@ -51,8 +51,6 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
   const shellClass = ['dashboard-shell', 'shared-hamburger-shell', rolePortalClass.trim(), className].filter(Boolean).join(' ');
 
   return <div className={shellClass}>
-    <div className="dashboard-shell-background" aria-hidden="true" />
-    <div className="dashboard-shell-overlay" aria-hidden="true" />
     <UnsavedChangesGuard />
     <AppNavigationTracker />
     <OfflineSyncManager />
@@ -60,9 +58,7 @@ export function AppShell({ plan, role, className, children }: AppShellProps) {
     <header className="dashboard-shell-header"><MobileNav plan={resolvedPlan} role={resolvedRole} /></header>
     <main id="main-content" className="main"><AppPageContent>{showAi ? <AskEverittCommand plan={resolvedPlan} embedded={false} /> : null}{roleSource ? <RoleContextBanner role={resolvedRole} /> : null}{children}</AppPageContent><AppFooter /></main>
     <style jsx global>{`
-      .dashboard-shell{position:relative;isolation:isolate;min-height:100dvh;width:100%;max-width:100%;display:block;overflow-x:clip;background:var(--eo-color-page)}
-      .dashboard-shell-background{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url('/hero.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;opacity:.48;filter:saturate(.45) contrast(.96) brightness(.78)}
-      .dashboard-shell-overlay{position:fixed;inset:0;z-index:1;pointer-events:none;background:var(--eo-shell-overlay)}
+      .dashboard-shell{position:relative;isolation:isolate;min-height:100dvh;width:100%;max-width:100%;display:block;overflow-x:clip;background:transparent}
       .dashboard-shell>.sidebar,.dashboard-shell-header,.dashboard-shell>.main{position:relative;z-index:2}.dashboard-shell>.sidebar{display:none}
       .dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;max-width:100%;padding:max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 8px max(14px,env(safe-area-inset-left));box-sizing:border-box;background:var(--eo-color-brand);border-bottom:1px solid var(--eo-shell-header-border)}
       .dashboard-shell>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:16px max(var(--eo-space-5),env(safe-area-inset-right)) 24px max(var(--eo-space-5),env(safe-area-inset-left))!important;box-sizing:border-box!important;overflow-x:clip!important;background:transparent!important}

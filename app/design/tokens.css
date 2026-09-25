@@ -16,10 +16,19 @@
   --eo-color-border: #d5dee5;
   --eo-color-border-strong: #b8c7d1;
   --eo-color-focus: rgba(40, 93, 120, 0.18);
+  --eo-color-focus-ring: #285d78;
   --eo-color-on-brand: #ffffff;
 
-  /* Existing signed-in shell appearance */
-  --eo-shell-overlay: rgba(19, 36, 51, 0.58);
+  /* Application backdrop: the one place the EverittOS atmosphere is tuned.
+     Rendered once by components/app-backdrop.tsx through .eo-backdrop. */
+  --eo-shell-base: #e9eef2;
+  --eo-shell-image: url('/hero.jpg');
+  --eo-shell-image-position: center center;
+  --eo-shell-image-opacity: 0.62;
+  --eo-shell-image-filter: saturate(0.82) contrast(1.02) brightness(0.92);
+  --eo-shell-overlay:
+    linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
+    linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3));
   --eo-shell-header-border: rgba(255, 255, 255, 0.08);
   --eo-role-banner-border: rgba(255, 255, 255, 0.2);
   --eo-role-banner-context: rgba(255, 255, 255, 0.76);
@@ -84,6 +93,13 @@
   --job-action-gap: var(--eo-space-5);
   --job-button-gap: var(--eo-space-4);
   --job-card-pad: var(--eo-card-padding);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --eo-shell-image-position: 56% center;
+    --eo-shell-overlay: linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48));
+  }
 }
 
 @media (max-width: 700px) {

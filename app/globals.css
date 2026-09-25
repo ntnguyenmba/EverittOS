@@ -317,7 +317,7 @@ p { color: var(--muted); line-height: 1.7; }
     'mobile mobile'
     'side main';
   min-height: 100vh;
-  background: var(--bg);
+  background: transparent;
 }
 
 .dashboard-shell-mobile {
@@ -3202,7 +3202,6 @@ html[data-deployment='production'] #vercel-toolbar {
   color: var(--accent-strong, #1e4975);
   text-decoration: underline;
   text-decoration-thickness: 2px;
-  outline: none;
 }
 
 .auth-form label.auth-consent .legal-inline-link {
