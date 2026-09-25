@@ -66,7 +66,7 @@ function ExpensesContent() {
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, date: localIsoDate() }));
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM }));
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -79,6 +79,10 @@ function ExpensesContent() {
   const [filterSearch, setFilterSearch] = useState('');
   const requestedExpenseId = searchParams.get('edit') || searchParams.get('expense') || '';
   const shouldEditRequestedExpense = Boolean(searchParams.get('edit'));
+
+  useEffect(() => {
+    setForm((current) => (current.date ? current : { ...current, date: localIsoDate() }));
+  }, []);
 
   const hasAccess = canAccessFinancials(role, plan);
   const canManage = hasAccess;
