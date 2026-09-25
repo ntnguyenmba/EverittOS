@@ -49,7 +49,7 @@
   --eo-heading-gap: var(--eo-space-4);
   --eo-section-gap: var(--eo-space-5);
   --eo-card-padding-block: var(--eo-space-5);
-  --eo-card-padding-inline: 24px;
+  --eo-card-padding-inline: 28px;
   --eo-card-padding: var(--eo-card-padding-block) var(--eo-card-padding-inline);
   --eo-box-gap: var(--eo-space-4);
 
@@ -70,6 +70,7 @@
   --eo-page-pad-bottom: calc(var(--eo-space-6) + env(safe-area-inset-bottom, 0px));
   --eo-header-bg: var(--eo-color-brand);
   --eo-tap: 44px;
+  --eo-control-height: 48px;
   --eo-control: 48px;
   --eo-filter-tab: 36px;
 
@@ -132,7 +133,7 @@
   :root {
     --eo-section-gap: var(--eo-space-4);
     --eo-card-padding-block: 18px;
-    --eo-card-padding-inline: 20px;
+    --eo-card-padding-inline: 24px;
     --eo-control-gap: 9px;
     --job-button-gap: var(--eo-space-4);
   }
@@ -141,7 +142,7 @@
 @media (max-width: 420px) {
   :root {
     --eo-card-padding-block: var(--eo-space-4);
-    --eo-card-padding-inline: 20px;
+    --eo-card-padding-inline: 24px;
     --eo-control-gap: 8px;
   }
 }
