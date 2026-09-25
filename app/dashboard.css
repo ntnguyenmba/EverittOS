@@ -647,7 +647,7 @@ body:has(.today-page) .today-page {
   .dashboard-home > .dashboard-start-card,
   .dashboard-home > .dashboard-actions-card,
   .dashboard-home > .dashboard-today-card {
-    padding: 18px !important;
+    padding: var(--eo-card-padding) !important;
   }
 
   .dashboard-start-list,
@@ -1104,7 +1104,7 @@ body:has(.today-page) .today-page {
   .dashboard-home > .dashboard-actions-card,
   .dashboard-home > .dashboard-today-card {
     border-radius: 22px !important;
-    padding: 20px !important;
+    padding: var(--eo-card-padding) !important;
   }
 
   .dashboard-collapse-title {
@@ -1348,7 +1348,7 @@ body:has(.today-page) .today-page {
   .dashboard-home > .dashboard-start-card,
   .dashboard-home > .dashboard-actions-card,
   .dashboard-home > .dashboard-today-card {
-    padding: 18px !important;
+    padding: var(--eo-card-padding) !important;
     border-radius: 20px !important;
   }
 
@@ -1466,7 +1466,7 @@ body:has(.today-page) .today-page {
   min-width: 0 !important;
   width: 100% !important;
   min-height: 176px !important;
-  padding: 20px !important;
+  padding: var(--eo-card-padding) !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
@@ -1532,7 +1532,7 @@ body:has(.today-page) .today-page {
 
   .dashboard-revenue-metric {
     min-height: auto !important;
-    padding: 18px !important;
+    padding: var(--eo-card-padding) !important;
     gap: 8px !important;
   }
 
